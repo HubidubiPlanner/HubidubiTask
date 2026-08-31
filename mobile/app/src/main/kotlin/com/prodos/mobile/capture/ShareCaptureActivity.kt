@@ -1,0 +1,24 @@
+package com.prodos.mobile.capture
+
+import android.app.Activity
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Toast
+import com.prodos.mobile.sync.Sync
+
+/**
+ * Share-target capture. Text shared from any app lands here and goes straight
+ * to the durable outbox — no WebView, no network, no validation. Capture must
+ * never fail (PLAN.md principle 7).
+ */
+class ShareCaptureActivity : Activity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val text = intent?.getStringExtra(Intent.EXTRA_TEXT)?.trim()
+        if (!text.isNullOrEmpty()) {
+            Sync.open(applicationContext).capture(text)
+            Toast.makeText(this, "Captured", Toast.LENGTH_SHORT).show()
+        }
+        finish()
+    }
+}

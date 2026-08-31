@@ -1,0 +1,1 @@
+Local-first, LAN-only productivity client. No cloud, ever.

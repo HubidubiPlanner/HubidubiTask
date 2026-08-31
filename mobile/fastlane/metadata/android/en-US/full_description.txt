@@ -1,0 +1,12 @@
+prodos mobile is the pocket client for a local-first productivity OS. It keeps
+a full offline mirror of your vault, syncs only over your own LAN to your own
+workstation, and hosts plugin views. No cloud is ever contacted.
+
+- Capture works offline, from a home-screen widget or the share sheet, and
+  never fails.
+- Tasks, notes, events and the GTD inbox are all available in airplane mode.
+- Sync happens automatically when you are home on the LAN; changes are
+  field-merged and note conflicts are preserved, never silently discarded.
+- Traffic is protected by a pinned self-signed certificate established at
+  pairing — stronger than public-CA trust, and unreadable to anything on the
+  network.

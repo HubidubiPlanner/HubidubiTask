@@ -1,0 +1,77 @@
+package com.prodos.mobile.data
+
+import com.prodos.core.EntityRecord
+import com.prodos.core.LocalStore
+import com.prodos.core.OutboxEntry
+import com.prodos.core.OutboxStore
+
+/** core.LocalStore backed by Room/SQLCipher. */
+class RoomLocalStore(private val db: ProdosDatabase) : LocalStore {
+    private val dao = db.entities()
+    private val state = db.syncState()
+
+    override fun get(id: String): EntityRecord? =
+        dao.get(id)?.takeIf { !it.is_conflict_copy }?.let { rowToRecord(it) }
+
+    override fun put(record: EntityRecord) {
+        val existing = dao.get(record.id)
+        dao.put(
+            EntityRow(
+                id = record.id,
+                type = record.type,
+                updated = record.updated,
+                fields_json = Json.fieldsToJson(record.fields),
+                deleted = record.deleted,
+                base_json = existing?.base_json,
+                is_conflict_copy = existing?.is_conflict_copy ?: false,
+            )
+        )
+    }
+
+    override fun base(id: String): EntityRecord? =
+        dao.get(id)?.base_json?.let { Json.recordFromJson(it) }
+
+    override fun setBase(record: EntityRecord) {
+        val existing = dao.get(record.id) ?: return put(record).also { setBase(record) }
+        dao.put(existing.copy(base_json = Json.recordToJson(record)))
+    }
+
+    override fun addConflictCopy(record: EntityRecord) {
+        dao.put(
+            EntityRow(
+                id = record.id, type = record.type, updated = record.updated,
+                fields_json = Json.fieldsToJson(record.fields),
+                deleted = false, base_json = null, is_conflict_copy = true,
+            )
+        )
+    }
+
+    override fun conflictCopies(): List<EntityRecord> =
+        dao.conflictCopies().map { rowToRecord(it) }
+
+    override fun cursor(): Long = state.get(KEY_CURSOR)?.toLongOrNull() ?: 0L
+    override fun setCursor(value: Long) = state.set(SyncStateRow(KEY_CURSOR, value.toString()))
+
+    fun byType(type: String): List<EntityRecord> = dao.byType(type).map { rowToRecord(it) }
+
+    private fun rowToRecord(r: EntityRow) = EntityRecord(
+        id = r.id, type = r.type, updated = r.updated,
+        fields = Json.fieldsFromJson(r.fields_json), deleted = r.deleted,
+    )
+
+    companion object { const val KEY_CURSOR = "cursor" }
+}
+
+/** core.OutboxStore backed by Room. Its rows are the durable outbox. */
+class RoomOutboxStore(db: ProdosDatabase) : OutboxStore {
+    private val dao = db.outbox()
+
+    override fun add(entry: OutboxEntry): Long =
+        dao.add(OutboxRow(op = entry.op, record_json = Json.recordToJson(entry.record)))
+
+    override fun pending(): List<OutboxEntry> = dao.pending().map {
+        OutboxEntry(op = it.op, record = Json.recordFromJson(it.record_json), seq = it.seq)
+    }
+
+    override fun remove(seq: Long) = dao.remove(seq)
+}

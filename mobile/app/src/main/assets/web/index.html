@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>prodos</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header>
+    <span id="status" class="offline">local only</span>
+    <h1>prodos</h1>
+  </header>
+
+  <main id="home">
+    <button id="capture-btn" class="primary">＋ Capture</button>
+    <section id="launcher">
+      <h2>Views</h2>
+      <ul id="views"></ul>
+    </section>
+    <section>
+      <h2>Recent captures</h2>
+      <ul id="inbox"></ul>
+    </section>
+  </main>
+
+  <!-- Plugin views render in origin-isolated iframes; see host.js. -->
+  <div id="plugin-host" hidden></div>
+
+  <script src="host.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
