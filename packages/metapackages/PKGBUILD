@@ -1,0 +1,31 @@
+# Maintainer: prodos
+# Metapackages (PLAN.md Phase 3). Dependency-only; no payload.
+pkgbase=prodos-meta
+pkgname=('prodos-base' 'prodos-workstation' 'prodos-thin' 'prodos-plugins-default')
+pkgver=0.1.0
+pkgrel=1
+arch=('any')
+url="https://gitlab.local/prodos"
+license=('MIT')
+
+package_prodos-base() {
+  pkgdesc="prodos base: vault CLI, sync, firewall, discovery"
+  depends=('prodos-vault' 'prodos-sync' 'nftables' 'avahi')
+}
+
+package_prodos-plugins-default() {
+  pkgdesc="prodos default plugin set"
+  depends=('prodos-plugin-tasks' 'prodos-plugin-calendar' 'prodos-plugin-inbox')
+}
+
+package_prodos-workstation() {
+  pkgdesc="prodos workstation: holds the vault, runs inference and the agent"
+  depends=('prodos-base' 'prodos-plugin-host' 'prodos-plugins-default'
+           'radicale' 'syncthing' 'git')
+  # 'prodos-agent' and 'llama.cpp' added in Phase 4.
+}
+
+package_prodos-thin() {
+  pkgdesc="prodos thin client: no local state, no local inference"
+  depends=('openssh' 'mosh' 'tmux')
+}

@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""agenda skill. JSON stdin -> JSON stdout. Dependency-free: parses the
+subset of iCalendar it needs (DTSTART/SUMMARY/UID) and task due: metadata
+directly, since only /usr is visible under bwrap."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+DUE_RE = re.compile(r"^- \[ \] (.*?)\s*<!--[^>]*\bdue:(\d{4}-\d{2}-\d{2})[^>]*-->")
+ICS_PROP_RE = re.compile(r"^(DTSTART|SUMMARY|UID)[^:]*:(.*)$")
+
+
+def _unfold(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw in text.replace("\r\n", "\n").split("\n"):
+        if raw[:1] in (" ", "\t") and lines:
+            lines[-1] += raw[1:]
+        else:
+            lines.append(raw)
+    return lines
+
+
+def _events(cal_dir: Path):
+    for ics in sorted(cal_dir.rglob("*.ics")):
+        props: dict[str, str] = {}
+        in_event = False
+        for line in _unfold(ics.read_text(encoding="utf-8", errors="replace")):
+            if line == "BEGIN:VEVENT":
+                in_event, props = True, {}
+            elif line == "END:VEVENT":
+                if in_event and "DTSTART" in props:
+                    yield props, ics.parent.name
+                in_event = False
+            elif in_event:
+                m = ICS_PROP_RE.match(line)
+                if m:
+                    props[m.group(1)] = m.group(2)
+
+
+def _dtstart_day(value: str) -> str | None:
+    m = re.match(r"^(\d{4})(\d{2})(\d{2})", value)
+    return f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else None
+
+
+def main() -> int:
+    params = json.load(sys.stdin) if not sys.stdin.isatty() else {}
+    days = int(params.get("days") or 7)
+    vault = Path(os.environ["PRODOS_VAULT"])
+    start = date.today()
+    end = start + timedelta(days=days - 1)
+
+    events = []
+    cal_dir = vault / "calendars"
+    if cal_dir.exists():
+        for props, calendar in _events(cal_dir):
+            day = _dtstart_day(props["DTSTART"])
+            if day and start.isoformat() <= day <= end.isoformat():
+                time_m = re.search(r"T(\d{2})(\d{2})", props["DTSTART"])
+                events.append({
+                    "day": day,
+                    "time": f"{time_m.group(1)}:{time_m.group(2)}" if time_m else None,
+                    "summary": props.get("SUMMARY", ""),
+                    "calendar": calendar,
+                })
+
+    tasks = []
+    tasks_dir = vault / "tasks"
+    if tasks_dir.exists():
+        for f in sorted(tasks_dir.glob("*.md")):
+            for line in f.read_text(encoding="utf-8", errors="replace").split("\n"):
+                m = DUE_RE.match(line)
+                if m and start.isoformat() <= m.group(2) <= end.isoformat():
+                    tasks.append({"day": m.group(2), "text": m.group(1),
+                                  "project": f.stem})
+
+    events.sort(key=lambda e: (e["day"], e["time"] or ""))
+    tasks.sort(key=lambda t: t["day"])
+    print(json.dumps({"from": start.isoformat(), "to": end.isoformat(),
+                      "events": events, "due_tasks": tasks}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

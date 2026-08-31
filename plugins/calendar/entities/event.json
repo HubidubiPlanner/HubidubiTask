@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "event",
+  "type": "object",
+  "required": ["id", "updated", "type", "summary", "dtstart", "calendar"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^e_[a-f0-9]+$"},
+    "updated": {"type": "string"},
+    "type": {"const": "event"},
+    "summary": {"type": "string"},
+    "dtstart": {"type": "string"},
+    "dtend": {"type": ["string", "null"]},
+    "all_day": {"type": "boolean"},
+    "calendar": {"type": "string"},
+    "location": {"type": ["string", "null"]},
+    "description": {"type": ["string", "null"]},
+    "uid": {"type": "string"}
+  }
+}

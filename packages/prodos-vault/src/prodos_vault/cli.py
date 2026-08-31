@@ -18,12 +18,25 @@ def _open(vault: Vault):
     return indexer.open_index(vault)
 
 
+def _require_type(vault: Vault, etype: str, plugin: str) -> bool:
+    """Post-extraction, entity types come from plugins (Phase 3). A command
+    whose type is not registered refuses instead of writing files that would
+    never be indexed."""
+    if etype in vault.entity_registry():
+        return True
+    print(f"entity type {etype!r} is not registered — install the {plugin!r} "
+          f"plugin and run `prodos-plugins refresh`", file=sys.stderr)
+    return False
+
+
 # ---------------------------------------------------------------- capture
 
 def cmd_capture(vault: Vault, args) -> int:
     from .formats.inbox_md import format_item_line
     from .ids import new_id
 
+    if not _require_type(vault, "inbox_item", "inbox"):
+        return 1
     text = " ".join(args.text).strip()
     if not text:
         print("nothing to capture", file=sys.stderr)
@@ -43,6 +56,8 @@ def cmd_task_add(vault: Vault, args) -> int:
     from .formats import tasks_md
     from .index import indexer
 
+    if not _require_type(vault, "task", "tasks"):
+        return 1
     path = vault.tasks_dir / f"{args.project}.md"
     task_id = tasks_md.append_task(
         path, " ".join(args.text).strip(), due=args.due, ctx=args.ctx)

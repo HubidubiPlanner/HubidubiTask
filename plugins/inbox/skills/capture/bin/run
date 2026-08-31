@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""capture skill. JSON stdin -> JSON stdout. Append-only, no validation
+beyond non-empty text — capture must never fail."""
+
+import json
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+def new_id() -> str:
+    alphabet = "abcdefghijklmnopqrstuvwxyz234567"
+    return "i_" + "".join(alphabet[b & 31] for b in os.urandom(8))
+
+
+def main() -> int:
+    params = json.load(sys.stdin)
+    text = str(params["text"]).strip()
+    if not text:
+        print(json.dumps({"error": "nothing to capture"}))
+        return 1
+    now = datetime.now()
+    path = Path(os.environ["PRODOS_VAULT"]) / "inbox" / f"{now:%Y-%m-%d}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    item_id = new_id()
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(f"- {now:%H:%M} {text}  <!-- id:{item_id} -->\n")
+    print(json.dumps({"id": item_id}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,19 @@
+# Maintainer: prodos
+pkgname=prodos-plugin-inbox
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="prodos plugin: GTD capture inbox, append-only"
+arch=('any')
+url="https://gitlab.local/prodos"
+license=('MIT')
+depends=('prodos-plugin-host')
+install=prodos-plugin.install
+source=()
+
+package() {
+  local dest="$pkgdir/usr/share/prodos/plugins/inbox"
+  local src="$startdir"
+  install -d "$dest"
+  cp -r "$src/PLUGIN.md" "$src/entities" "$src/skills" "$dest/"
+  chmod 755 "$dest"/skills/*/bin/run
+}

@@ -1,0 +1,21 @@
+# Maintainer: prodos
+# Plugins are pacman packages (PLAN.md Phase 3): pacman owns versioning,
+# dependency resolution, and signature verification — no bespoke plugin manager.
+pkgname=prodos-plugin-tasks
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="prodos plugin: project-scoped task lists with contexts and due dates"
+arch=('any')
+url="https://gitlab.local/prodos"
+license=('MIT')
+depends=('prodos-plugin-host')
+install=prodos-plugin.install
+source=()
+
+package() {
+  local dest="$pkgdir/usr/share/prodos/plugins/tasks"
+  local src="$startdir"
+  install -d "$dest"
+  cp -r "$src/PLUGIN.md" "$src/entities" "$src/skills" "$src/views" "$dest/"
+  chmod 755 "$dest"/skills/*/bin/run
+}
