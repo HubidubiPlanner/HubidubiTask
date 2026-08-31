@@ -8,7 +8,7 @@ import hashlib
 import json
 import os
 import sqlite3
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,41 +21,60 @@ def _mtime_rfc3339(path: Path) -> str:
     return datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _fts_fields(entity) -> tuple[str, str]:
-    t = entity.type
-    if t == "task":
-        return entity.text, " ".join(
-            filter(None, [entity.project, entity.context or "", *entity.tags])
-        )
-    if t == "note":
-        return entity.title, entity.body + (" " + " ".join(entity.tags) if entity.tags else "")
+def _as_dict(entity) -> dict:
+    return asdict(entity) if is_dataclass(entity) else dict(entity)
+
+
+def _fts_fields(d: dict) -> tuple[str, str]:
+    """(title, body) for the FTS row, from a normalized entity dict. Handles
+    the four core types plus generic checkbox/frontmatter plugin types."""
+    t = d.get("type")
+    tags = d.get("tags") or []
+    if t == "note" or ("body" in d and "title" in d):  # frontmatter-shaped (note, project)
+        return d.get("title", ""), " ".join(
+            filter(None, [d.get("body", ""), *tags]))
     if t == "event":
-        return entity.summary, " ".join(
-            filter(None, [entity.calendar, entity.location or "", entity.description or ""])
-        )
-    return entity.text, ""  # inbox_item
+        return d.get("summary", ""), " ".join(
+            filter(None, [d.get("calendar", ""), d.get("location") or "",
+                          d.get("description") or ""]))
+    if "text" in d:  # checkbox- or inbox-shaped (task, next_action, waiting_for, inbox_item)
+        return d.get("text", ""), " ".join(
+            filter(None, [d.get("project") or "", d.get("context") or "", *tags]))
+    return str(d.get("title") or d.get("id", "")), ""
 
 
-def _parse(vault: Vault, path: Path, domain: str) -> list[tuple[object, int | None]]:
+def _parse(vault: Vault, path: Path, domain: str) -> list[tuple[dict, int | None]]:
     text = path.read_text(encoding="utf-8", errors="replace")
     mtime = _mtime_rfc3339(path)
+
+    # Core types keep their typed parsers; everything else is dispatched by the
+    # format declared in the entity registry.
     if domain == "task":
         from ..formats import tasks_md
-
-        return [(t, ln) for t, ln in tasks_md.parse_file(text, path, mtime)]
+        return [(_as_dict(t), ln) for t, ln in tasks_md.parse_file(text, path, mtime)]
     if domain == "inbox_item":
         from ..formats import inbox_md
-
-        return [(i, ln) for i, ln in inbox_md.parse_file(text, path, mtime)]
+        return [(_as_dict(i), ln) for i, ln in inbox_md.parse_file(text, path, mtime)]
     if domain == "note":
         from ..formats import notes_md
-
         note = notes_md.parse_file(text, path, mtime)
-        return [(note, None)] if note else []
+        return [(_as_dict(note), None)] if note else []
     if domain == "event":
         from ..formats import ics
+        return [(_as_dict(e), None) for e in ics.parse_file(text, path, mtime)]
 
-        return [(e, None) for e in ics.parse_file(text, path, mtime)]
+    fmt = vault.entity_format(domain)
+    from ..formats import generic
+    if fmt == "checkbox":
+        return generic.parse_checkbox(text, path, mtime, domain)
+    if fmt == "frontmatter":
+        return generic.parse_frontmatter(text, path, mtime, domain)
+    if fmt == "inbox":
+        from ..formats import inbox_md
+        return [(_as_dict(i), ln) for i, ln in inbox_md.parse_file(text, path, mtime)]
+    if fmt == "ics":
+        from ..formats import ics
+        return [(_as_dict(e), None) for e in ics.parse_file(text, path, mtime)]
     return []
 
 
@@ -100,26 +119,26 @@ def index_file(conn: sqlite3.Connection, vault: Vault, path: Path) -> int:
             conn.execute(f"DELETE FROM links WHERE src_id IN ({qs})", old_ids)
         conn.execute("DELETE FROM entities WHERE file = ?", (rel,))
 
-        for entity, line in parsed:
-            data = json.dumps(asdict(entity), ensure_ascii=False, sort_keys=True)
+        for d, line in parsed:
+            data = json.dumps(d, ensure_ascii=False, sort_keys=True)
             conn.execute(
                 "INSERT OR REPLACE INTO entities (id, type, updated, file, line, data)"
                 " VALUES (?, ?, ?, ?, ?, ?)",
-                (entity.id, entity.type, entity.updated, rel, line, data),
+                (d["id"], d["type"], d["updated"], rel, line, data),
             )
-            title, body = _fts_fields(entity)
-            conn.execute("DELETE FROM entities_fts WHERE id = ?", (entity.id,))
+            title, body = _fts_fields(d)
+            conn.execute("DELETE FROM entities_fts WHERE id = ?", (d["id"],))
             conn.execute(
                 "INSERT INTO entities_fts (id, title, body) VALUES (?, ?, ?)",
-                (entity.id, title, body),
+                (d["id"], title, body),
             )
-            if entity.type == "note":
+            if d.get("body"):  # note bodies and any frontmatter type may link
                 from ..formats import notes_md
 
-                for target in notes_md.wikilinks(entity.body):
+                for target in notes_md.wikilinks(d["body"]):
                     conn.execute(
                         "INSERT INTO links (src_id, dst, kind) VALUES (?, ?, 'wikilink')",
-                        (entity.id, target),
+                        (d["id"], target),
                     )
         conn.execute(
             "INSERT OR REPLACE INTO files (path, mtime_ns, content_hash) VALUES (?, ?, ?)",

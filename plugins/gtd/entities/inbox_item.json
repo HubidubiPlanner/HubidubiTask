@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "inbox_item",
+  "type": "object",
+  "required": ["id", "updated", "type", "text"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^i_[a-z2-7]+$"},
+    "updated": {"type": "string"},
+    "type": {"const": "inbox_item"},
+    "text": {"type": "string"},
+    "time": {"type": "string"},
+    "date": {"type": "string"}
+  }
+}

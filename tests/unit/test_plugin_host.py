@@ -18,12 +18,33 @@ REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 
 def test_shipped_plugins_are_valid():
     reg = discover([REPO_PLUGINS])
-    assert sorted(reg.plugins) == ["calendar", "inbox", "tasks"]
-    assert reg.errors == []
+    assert sorted(reg.plugins) == ["calendar", "gtd", "inbox", "tasks"]
+    assert reg.errors == []  # all four manifests load
+
+
+def test_phase3_install_set_entity_types():
+    reg = discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"})
     types = reg.entity_types()
     assert sorted(types) == ["event", "inbox_item", "note", "task"]
     assert types["note"]["plugin"] is None  # note stays core
     assert types["task"]["plugin"] == "tasks"
+
+
+def test_gtd_install_set_entity_types():
+    reg = discover([REPO_PLUGINS], names={"gtd", "calendar"})
+    types = reg.entity_types()
+    assert sorted(types) == [
+        "event", "inbox_item", "next_action", "note", "project",
+        "someday", "waiting_for"]
+    assert types["next_action"]["plugin"] == "gtd"
+    assert types["waiting_for"]["path"] == "tasks/waiting.md"
+
+
+def test_gtd_conflicts_with_inbox():
+    # gtd supersedes inbox+tasks; installing both is a fatal config error.
+    reg = discover([REPO_PLUGINS], names={"gtd", "inbox"})
+    with pytest.raises(RegistryError, match="inbox_item"):
+        reg.entity_types()
 
 
 def test_invalid_manifest_refused_with_error(tmp_path):
@@ -97,8 +118,8 @@ def test_extraction_uninstall_reinstall_cycle(vault, tmp_path):
         "- 09:00 an item  <!-- id:i_keep0001 -->\n")
     before = _tree_hash(vault.root)
 
-    # "install": all three plugins registered
-    reg = discover([REPO_PLUGINS])
+    # "install": the Phase 3 set registered
+    reg = discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"})
     export_entity_types(vault, reg)
     conn = indexer.open_index(vault)
     assert queries.counts(conn) == {"task": 1, "inbox_item": 1}
@@ -115,7 +136,7 @@ def test_extraction_uninstall_reinstall_cycle(vault, tmp_path):
     assert (vault.tasks_dir / "p.md").exists()  # files untouched
 
     # "reinstall": entities come back, nothing lost
-    export_entity_types(vault, discover([REPO_PLUGINS]))
+    export_entity_types(vault, discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"}))
     indexer.sweep(conn, vault)
     tasks = queries.task_list(conn)
     assert tasks[0]["text"] == "keep me" and tasks[0]["due"] == "2026-09-09"

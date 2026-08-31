@@ -15,7 +15,8 @@ package_prodos-base() {
 
 package_prodos-plugins-default() {
   pkgdesc="prodos default plugin set"
-  depends=('prodos-plugin-tasks' 'prodos-plugin-calendar' 'prodos-plugin-inbox')
+  # gtd supersedes the tasks + inbox extraction plugins (Phase 6).
+  depends=('prodos-plugin-gtd' 'prodos-plugin-calendar')
 }
 
 package_prodos-workstation() {

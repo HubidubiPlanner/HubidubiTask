@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""gtd-next skill. Ranks open next actions for the given context, available
+time, and energy. Deterministic. Dependency-free (only /usr under bwrap)."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from datetime import date
+from pathlib import Path
+
+CHECKBOX = re.compile(r"^\s*- \[( |x|X)\] (.*)$")
+META = re.compile(r"<!--\s*(.*?)\s*-->")
+PAIR = re.compile(r"([a-z_]+):(\S+)")
+
+ENERGY_RANK = {"low": 0, "med": 1, "high": 2}
+
+
+def meta_of(text: str) -> dict:
+    m = META.search(text)
+    return dict(PAIR.findall(m.group(1))) if m else {}
+
+
+def score(action: dict, want_ctx: str | None, minutes: int | None,
+          energy: str | None, today: str) -> float:
+    s = 0.0
+    # Overdue / due-soon rises to the top.
+    due = action.get("due")
+    if due:
+        if due < today:
+            s += 100
+        elif due == today:
+            s += 50
+        else:
+            s += 10
+    # Fits the available time.
+    est = action.get("time")
+    if minutes and est and est.isdigit():
+        s += 20 if int(est) <= minutes else -50
+    # Matches energy (an action needing no more than the energy on hand).
+    if energy and action.get("energy") in ENERGY_RANK:
+        if ENERGY_RANK[action["energy"]] <= ENERGY_RANK[energy]:
+            s += 15
+        else:
+            s -= 30
+    return s
+
+
+def main() -> int:
+    raw = sys.stdin.read()
+    params = json.loads(raw) if raw.strip() else {}
+    want_ctx = params.get("context")
+    minutes = params.get("minutes")
+    energy = params.get("energy")
+    today = date.today().isoformat()
+
+    vault = Path(os.environ["PRODOS_VAULT"])
+    tasks_dir = vault / "tasks"
+    actions = []
+    if tasks_dir.exists():
+        for f in sorted(tasks_dir.glob("*.md")):
+            if f.name == "waiting.md":
+                continue
+            for line in f.read_text(encoding="utf-8", errors="replace").split("\n"):
+                m = CHECKBOX.match(line)
+                if not m or m.group(1) in ("x", "X"):
+                    continue
+                md = meta_of(m.group(2))
+                if "id" not in md:
+                    continue
+                text = META.sub("", m.group(2)).strip()
+                actions.append({
+                    "id": md["id"], "text": text, "project": f.stem,
+                    "context": md.get("ctx"), "due": md.get("due"),
+                    "time": md.get("time"), "energy": md.get("energy"),
+                })
+
+    if want_ctx:
+        actions = [a for a in actions if a["context"] == want_ctx]
+    ranked = sorted(actions, key=lambda a: -score(a, want_ctx, minutes, energy, today))
+    print(json.dumps({"context": want_ctx, "actions": ranked}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

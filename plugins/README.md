@@ -3,13 +3,26 @@
 Phase 3 (PLAN.md): the three Phase 1 core features, extracted into plugins to
 prove the plugin API against real consumers rather than a hypothetical one.
 
-| Plugin | Entity type | Skill | View |
+| Plugin | Entity type(s) | Skills | Views |
 |---|---|---|---|
 | `tasks` | `task` | `task-add` | `task-list` |
 | `calendar` | `event` | `agenda` | — |
 | `inbox` | `inbox_item` | `capture` | — |
+| `gtd` | `inbox_item`, `next_action`, `waiting_for`, `someday`, `project` | `gtd-clarify`, `gtd-weekly-review`, `gtd-next`, `gtd-file` | `capture`, `clarify`, `next-actions`, `weekly-review` |
 
 `note` stays a core (non-plugin) entity type.
+
+**Install sets.** `gtd` (Phase 6) is the workflow layer and **supersedes**
+`tasks` + `inbox` — it owns the richer GTD entity model, so its PKGBUILD
+`conflicts` with them. Install either the GTD set (`gtd` + `calendar`, the
+default) or the Phase 3 extraction set (`tasks` + `calendar` + `inbox`), never
+both. The two share this source tree only for reference; `discover(names=…)`
+picks one set.
+
+A plugin type is parsed by the `format` its manifest declares — `checkbox`
+(task-style lines), `frontmatter` (YAML+body docs), `inbox`, or `ics` — which
+is how the indexer handles GTD's new types and its multiple types per
+directory (`tasks/` holds `next_action`; `tasks/waiting.md` is `waiting_for`).
 
 ## Layout (per plugin)
 

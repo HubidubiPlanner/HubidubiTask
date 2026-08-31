@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "someday",
+  "type": "object",
+  "required": ["id", "updated", "type", "text"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^t_[a-z2-7]+$"},
+    "updated": {"type": "string"},
+    "type": {"const": "someday"},
+    "text": {"type": "string"},
+    "done": {"type": "boolean"},
+    "tags": {"type": "array", "items": {"type": "string"}}
+  }
+}

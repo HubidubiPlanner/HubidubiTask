@@ -23,7 +23,7 @@ USER_DIR = Path.home() / ".local/share/prodos/plugins"
 
 # note stays a core (non-plugin) entity type.
 CORE_ENTITY_TYPES: dict[str, dict] = {
-    "note": {"path": "notes/", "suffix": ".md", "plugin": None},
+    "note": {"path": "notes/", "suffix": ".md", "format": "frontmatter", "plugin": None},
 }
 
 
@@ -55,7 +55,9 @@ class Registry:
                     raise RegistryError(
                         f"entity type {t!r} claimed by both {other!r} and "
                         f"{plugin.name!r} — fatal configuration error")
-                types[t] = {"path": ent["path"], "suffix": ent["suffix"],
+                suffix = ent.get("suffix", ".md")
+                fmt = ent.get("format") or ("ics" if suffix == ".ics" else "frontmatter")
+                types[t] = {"path": ent["path"], "suffix": suffix, "format": fmt,
                             "plugin": plugin.name,
                             "schema": str(plugin.dir / ent["schema"])}
         return types
@@ -93,13 +95,19 @@ def plugin_dirs() -> list[Path]:
     return [SYSTEM_DIR, USER_DIR]
 
 
-def discover(dirs: list[Path] | None = None) -> Registry:
+def discover(dirs: list[Path] | None = None,
+             names: set[str] | None = None) -> Registry:
+    """Discover plugins. `names`, when given, restricts loading to those plugin
+    directory names — used to pick one install set out of a source tree that
+    also holds mutually-superseding plugins (e.g. gtd vs tasks+inbox)."""
     reg = Registry()
     for base in dirs if dirs is not None else plugin_dirs():
         if not base.is_dir():
             continue
         for pdir in sorted(base.iterdir()):
             if not pdir.is_dir():
+                continue
+            if names is not None and pdir.name not in names:
                 continue
             try:
                 m = load_manifest(pdir)
@@ -131,6 +139,7 @@ def export_entity_types(vault, reg: Registry) -> Path:
     types = reg.entity_types()  # raises on duplicates before writing anything
     vault.prodos_dir.mkdir(parents=True, exist_ok=True)
     payload = {"types": {t: {"path": s["path"], "suffix": s["suffix"],
+                             "format": s.get("format", "frontmatter"),
                              "plugin": s["plugin"]}
                          for t, s in types.items()}}
     vault.entity_types_path.write_text(

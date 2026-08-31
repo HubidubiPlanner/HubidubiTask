@@ -35,7 +35,7 @@ def vault(tmp_path):
 def agent_server(vault, monkeypatch):
     monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
     tasks_md.append_task(vault.tasks_dir / "p.md", "buy milk")
-    reg = discover([REPO_PLUGINS])
+    reg = discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"})
     export_entity_types(vault, reg)
 
     scripted = ScriptedClient([

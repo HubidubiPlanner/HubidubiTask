@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "project",
+  "type": "object",
+  "required": ["id", "updated", "type", "title"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^p_[a-z2-7]+$"},
+    "updated": {"type": "string"},
+    "type": {"const": "project"},
+    "title": {"type": "string"},
+    "status": {"type": ["string", "null"], "enum": ["active", "on-hold", "done", null]},
+    "outcome": {"type": ["string", "null"]},
+    "body": {"type": "string"},
+    "created": {"type": ["string", "null"]},
+    "tags": {"type": "array", "items": {"type": "string"}}
+  }
+}

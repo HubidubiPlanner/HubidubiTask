@@ -18,7 +18,8 @@ REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 @pytest.fixture
 def agent_env(vault, monkeypatch, tmp_path):
     monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
-    reg = discover([REPO_PLUGINS])
+    # Phase 3 install set (the agent tests use inbox.capture / vault-query).
+    reg = discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"})
     export_entity_types(vault, reg)
     conn = indexer.open_index(vault)
     log_file = tmp_path / "agent.log"

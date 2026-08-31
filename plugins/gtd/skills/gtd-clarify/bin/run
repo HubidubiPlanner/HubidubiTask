@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""gtd-clarify skill. Proposes a classification for one inbox item using the
+local model, and NEVER commits. Dependency-free (only /usr under bwrap);
+network: lan lets it reach the llama.cpp endpoint.
+
+Endpoint is PRODOS_MODEL_ENDPOINT (default the local llama.cpp server), so
+tests point it at a scripted fake."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+import urllib.request
+from pathlib import Path
+
+ENDPOINT = os.environ.get(
+    "PRODOS_MODEL_ENDPOINT", "http://127.0.0.1:8080/v1/chat/completions")
+
+VALID_KINDS = {"next_action", "project", "waiting_for", "someday", "reference", "trash"}
+VALID_ENERGY = {"low", "med", "high"}
+
+SYSTEM = """You are a GTD clarify assistant. Given one captured inbox item, \
+respond with ONE JSON object and nothing else:
+
+{"actionable": bool, "kind": "next_action|project|waiting_for|someday|reference|trash", \
+"text": "the concrete next action or project outcome", "context": "@computer|@errands|@home|@calls|@agenda/<person>|null", \
+"time_minutes": int|null, "energy": "low|med|high|null", "delegate_to": "person|null", \
+"reason": "one short sentence"}
+
+Rules: a single physical action is next_action; an outcome needing multiple \
+actions is a project; something delegated is waiting_for with delegate_to set; \
+not-now is someday; non-actionable reference material is reference; junk is \
+trash. Output JSON only."""
+
+
+def read_item_text(vault: Path, inbox_id: str) -> str | None:
+    inbox = vault / "inbox"
+    if not inbox.exists():
+        return None
+    for f in sorted(inbox.glob("*.md")):
+        for line in f.read_text(encoding="utf-8", errors="replace").split("\n"):
+            if f"id:{inbox_id}" in line:
+                m = re.match(r"^- \d{2}:\d{2} (.*?)\s*<!--", line)
+                return m.group(1).strip() if m else None
+    return None
+
+
+def call_model(item_text: str) -> dict:
+    payload = {
+        "model": "local",
+        "messages": [
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": item_text},
+        ],
+        "temperature": 0.1,
+        "stream": False,
+        "response_format": {"type": "json_object"},
+    }
+    req = urllib.request.Request(
+        ENDPOINT, data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=55) as r:
+        body = json.loads(r.read())
+    content = body["choices"][0]["message"]["content"]
+    return parse_proposal(content)
+
+
+def parse_proposal(content: str) -> dict:
+    start, end = content.find("{"), content.rfind("}")
+    obj = json.loads(content[start:end + 1])
+    return normalize(obj)
+
+
+def normalize(obj: dict) -> dict:
+    kind = obj.get("kind")
+    if kind not in VALID_KINDS:
+        kind = "next_action" if obj.get("actionable", True) else "reference"
+    energy = obj.get("energy")
+    if energy not in VALID_ENERGY:
+        energy = None
+    ctx = obj.get("context")
+    if ctx in ("null", "", None):
+        ctx = None
+    tmin = obj.get("time_minutes")
+    if not isinstance(tmin, int):
+        tmin = None
+    return {
+        "actionable": bool(obj.get("actionable", kind not in ("reference", "trash"))),
+        "kind": kind,
+        "text": str(obj.get("text") or "").strip(),
+        "context": ctx,
+        "time_minutes": tmin,
+        "energy": energy,
+        "delegate_to": obj.get("delegate_to") if obj.get("delegate_to") not in ("null", "") else None,
+        "reason": str(obj.get("reason") or "").strip(),
+    }
+
+
+def main() -> int:
+    params = json.loads(sys.stdin.read())
+    vault = Path(os.environ["PRODOS_VAULT"])
+    text = params.get("text")
+    if not text and params.get("inbox_id"):
+        text = read_item_text(vault, params["inbox_id"])
+    if not text:
+        print(json.dumps({"error": "no item text"}))
+        return 1
+    try:
+        proposal = call_model(text)
+    except Exception as e:  # model unreachable / bad output
+        print(json.dumps({"error": f"clarify failed: {e}"}))
+        return 1
+    # Proposes only — the caller (clarify view / gtd-file) commits.
+    print(json.dumps({"inbox_id": params.get("inbox_id"),
+                      "item_text": text, "proposal": proposal}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

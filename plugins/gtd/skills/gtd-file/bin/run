@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""gtd-file skill. Commits a confirmed clarification: writes the target entity
+and deletes the inbox line. Dependency-free (only /usr under bwrap).
+
+The write scopes are inbox, tasks, projects, someday — the organize step moves
+an item out of the queue into exactly one of them."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
+
+
+def new_id(prefix: str) -> str:
+    return prefix + "_" + "".join(ALPHABET[b & 31] for b in os.urandom(8))
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def find_inbox_line(vault: Path, inbox_id: str):
+    inbox = vault / "inbox"
+    for f in sorted(inbox.glob("*.md")):
+        lines = f.read_text(encoding="utf-8").split("\n")
+        for i, line in enumerate(lines):
+            if f"id:{inbox_id}" in line:
+                m = re.match(r"^- \d{2}:\d{2} (.*?)\s*<!--", line)
+                return f, i, lines, (m.group(1).strip() if m else "")
+    return None
+
+
+def delete_inbox_line(f: Path, idx: int, lines: list[str]) -> None:
+    del lines[idx]
+    f.write_text("\n".join(lines), encoding="utf-8")
+
+
+def append_checkbox(path: Path, text: str, meta: dict, project: str | None = None) -> None:
+    parts = [f"id:{meta.pop('id')}"] + [f"{k}:{v}" for k, v in meta.items() if v]
+    line = f"- [ ] {text}  <!-- {' '.join(parts)} -->"
+    if path.exists():
+        content = path.read_text(encoding="utf-8")
+        if content and not content.endswith("\n"):
+            content += "\n"
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        content = (f"---\nproject: {project}\n---\n\n" if project else "")
+    path.write_text(content + line + "\n", encoding="utf-8")
+
+
+def main() -> int:
+    params = json.loads(sys.stdin.read())
+    vault = Path(os.environ["PRODOS_VAULT"])
+    found = find_inbox_line(vault, params["inbox_id"])
+    if not found:
+        print(json.dumps({"error": "inbox item not found"}))
+        return 1
+    inbox_file, idx, lines, inbox_text = found
+    text = (params.get("text") or inbox_text).strip()
+    kind = params["kind"]
+    updated = now()
+    created_id = None
+
+    if kind == "trash":
+        pass  # just remove it from the inbox
+    elif kind == "next_action":
+        project = params.get("project") or "inbox"
+        created_id = new_id("t")
+        meta = {"id": created_id, "updated": updated}
+        if params.get("ctx") or params.get("context"):
+            meta["ctx"] = params.get("context") or params.get("ctx")
+        if params.get("due"):
+            meta["due"] = params["due"]
+        if params.get("time"):
+            meta["time"] = str(params["time"])
+        if params.get("energy"):
+            meta["energy"] = params["energy"]
+        append_checkbox(vault / "tasks" / f"{project}.md", text, meta, project=project)
+    elif kind == "waiting_for":
+        created_id = new_id("t")
+        meta = {"id": created_id, "updated": updated}
+        if params.get("who"):
+            meta["who"] = params["who"]
+        if params.get("due"):
+            meta["due"] = params["due"]
+        append_checkbox(vault / "tasks" / "waiting.md", text, meta)
+    elif kind == "someday":
+        created_id = new_id("t")
+        append_checkbox(vault / "someday" / "someday.md", text,
+                        {"id": created_id, "updated": updated})
+    elif kind == "project":
+        created_id = new_id("p")
+        slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "project"
+        path = vault / "projects" / f"{slug}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"---\nid: {created_id}\ntitle: {text}\nstatus: active\n"
+            f"created: {updated}\nupdated: {updated}\n---\n\n"
+            f"Outcome: {text}\n\n## Next actions\n", encoding="utf-8")
+
+    delete_inbox_line(inbox_file, idx, lines)
+    print(json.dumps({"filed": kind, "id": created_id,
+                      "inbox_id": params["inbox_id"]}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,22 @@
+# Maintainer: prodos
+# The GTD workflow plugin supersedes the tasks and inbox extraction plugins —
+# it owns the richer entity model — so it conflicts with them.
+pkgname=prodos-plugin-gtd
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="prodos plugin: Getting Things Done workflow"
+arch=('any')
+url="https://gitlab.local/prodos"
+license=('MIT')
+depends=('prodos-plugin-host')
+conflicts=('prodos-plugin-tasks' 'prodos-plugin-inbox')
+install=prodos-plugin.install
+source=()
+
+package() {
+  local dest="$pkgdir/usr/share/prodos/plugins/gtd"
+  local src="$startdir"
+  install -d "$dest"
+  cp -r "$src/PLUGIN.md" "$src/entities" "$src/skills" "$src/views" "$dest/"
+  chmod 755 "$dest"/skills/*/bin/run
+}

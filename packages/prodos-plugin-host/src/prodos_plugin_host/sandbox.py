@@ -92,6 +92,12 @@ def run_skill(vault, plugin, skill_spec: dict, params: dict) -> dict:
             "(set PRODOS_SKILL_SANDBOX=dangerously-none for development only)")
 
     env = {"PATH": "/usr/bin:/bin", "PRODOS_VAULT": str(vault.root)}
+    # Skills that declare `network: lan` may need the model endpoint as host
+    # config; forward only that one variable, and only to lan skills.
+    if skill_spec["sandbox"].get("network") == "lan":
+        endpoint = os.environ.get("PRODOS_MODEL_ENDPOINT")
+        if endpoint:
+            env["PRODOS_MODEL_ENDPOINT"] = endpoint
     try:
         proc = subprocess.run(
             cmd, input=json.dumps(params).encode("utf-8"),

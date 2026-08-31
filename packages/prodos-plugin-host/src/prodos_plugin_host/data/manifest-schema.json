@@ -18,8 +18,9 @@
         "properties": {
           "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
           "schema": {"type": "string"},
-          "path": {"type": "string", "pattern": "^[a-z][a-z0-9_/-]*/$"},
-          "suffix": {"type": "string", "pattern": "^\\.[a-z0-9]+$", "default": ".md"}
+          "path": {"type": "string", "pattern": "^[a-z][a-z0-9_./-]*$"},
+          "suffix": {"type": "string", "pattern": "^\\.[a-z0-9]+$", "default": ".md"},
+          "format": {"enum": ["checkbox", "frontmatter", "inbox", "ics"]}
         }
       }
     },

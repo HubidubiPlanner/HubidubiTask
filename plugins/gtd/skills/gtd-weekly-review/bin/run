@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""gtd-weekly-review skill. Read-only. Dependency-free (only /usr under bwrap):
+parses the vault's markdown directly.
+
+Emits the review checklist, with projects-without-a-next-action first — the
+defining GTD failure."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+
+CHECKBOX = re.compile(r"^\s*- \[( |x|X)\] (.*)$")
+META = re.compile(r"<!--\s*(.*?)\s*-->")
+PAIR = re.compile(r"([a-z_]+):(\S+)")
+DTSTART = re.compile(r"^DTSTART[^:]*:(\d{8})")
+SUMMARY = re.compile(r"^SUMMARY:(.*)$")
+
+
+def meta_of(text: str) -> dict:
+    m = META.search(text)
+    return dict(PAIR.findall(m.group(1))) if m else {}
+
+
+def checkbox_lines(path: Path):
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8", errors="replace").split("\n"):
+        m = CHECKBOX.match(line)
+        if not m:
+            continue
+        done = m.group(1) in ("x", "X")
+        body, md = m.group(2), meta_of(m.group(2))
+        if "id" in md:
+            yield done, body, md
+
+
+def main() -> int:
+    _ = sys.stdin.read()
+    params = {}
+    try:
+        params = json.loads(_) if _.strip() else {}
+    except ValueError:
+        pass
+    stale_days = int(params.get("stale_days") or 90)
+    vault = Path(os.environ["PRODOS_VAULT"])
+    today = date.today()
+
+    # Inbox: is it empty?
+    inbox_dir = vault / "inbox"
+    inbox_count = 0
+    if inbox_dir.exists():
+        for f in inbox_dir.glob("*.md"):
+            inbox_count += sum(1 for ln in f.read_text(encoding="utf-8", errors="replace").split("\n")
+                               if re.match(r"^- \d{2}:\d{2} ", ln))
+
+    # Next actions by project key (= source filename stem).
+    tasks_dir = vault / "tasks"
+    actions_by_project: dict[str, int] = {}
+    if tasks_dir.exists():
+        for f in sorted(tasks_dir.glob("*.md")):
+            if f.name == "waiting.md":
+                continue
+            for done, _body, _md in checkbox_lines(f):
+                if not done:
+                    actions_by_project[f.stem] = actions_by_project.get(f.stem, 0) + 1
+
+    # Projects lacking a next action (the defining GTD failure).
+    projects_dir = vault / "projects"
+    stale_projects = []
+    if projects_dir.exists():
+        for f in sorted(projects_dir.glob("*.md")):
+            key = f.stem
+            title = key
+            mm = re.search(r"^title:\s*(.+)$", f.read_text(encoding="utf-8", errors="replace"),
+                           re.MULTILINE)
+            if mm:
+                title = mm.group(1).strip()
+            if actions_by_project.get(key, 0) == 0:
+                stale_projects.append({"project": key, "title": title})
+
+    # Overdue waiting-fors.
+    overdue_waiting = []
+    for done, body, md in checkbox_lines(tasks_dir / "waiting.md"):
+        due = md.get("due")
+        if not done and due and due < today.isoformat():
+            text = META.sub("", body).strip()
+            overdue_waiting.append({"text": text, "who": md.get("who"), "due": due})
+
+    # Someday untouched for stale_days.
+    someday_dir = vault / "someday"
+    stale_someday = []
+    cutoff = (today - timedelta(days=stale_days)).isoformat()
+    for f in (sorted(someday_dir.glob("*.md")) if someday_dir.exists() else []):
+        for done, body, md in checkbox_lines(f):
+            updated = (md.get("updated") or "")[:10]
+            if not done and updated and updated < cutoff:
+                stale_someday.append({"text": META.sub("", body).strip(), "updated": updated})
+
+    # Calendar look-back / look-ahead (±7 days).
+    lookback, lookahead = [], []
+    cal_dir = vault / "calendars"
+    if cal_dir.exists():
+        for ics in cal_dir.rglob("*.ics"):
+            lines = ics.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n").split("\n")
+            summary = ""
+            for ln in lines:
+                s = SUMMARY.match(ln)
+                if s:
+                    summary = s.group(1).strip()
+                d = DTSTART.match(ln)
+                if d:
+                    day = f"{d.group(1)[:4]}-{d.group(1)[4:6]}-{d.group(1)[6:8]}"
+                    delta = (date.fromisoformat(day) - today).days
+                    if -7 <= delta < 0:
+                        lookback.append({"day": day, "summary": summary})
+                    elif 0 <= delta <= 7:
+                        lookahead.append({"day": day, "summary": summary})
+
+    print(json.dumps({
+        "inbox_empty": inbox_count == 0,
+        "inbox_count": inbox_count,
+        "projects_without_next_action": stale_projects,
+        "overdue_waiting_for": overdue_waiting,
+        "stale_someday": stale_someday,
+        "calendar_lookback": sorted(lookback, key=lambda e: e["day"]),
+        "calendar_lookahead": sorted(lookahead, key=lambda e: e["day"]),
+    }))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

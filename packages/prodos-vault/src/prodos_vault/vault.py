@@ -73,7 +73,7 @@ class Vault:
         instance — CLI processes are short-lived.
         """
         if getattr(self, "_registry", None) is None:
-            self._registry = dict(BUILTIN_ENTITY_TYPES)
+            self._registry = {t: dict(s) for t, s in BUILTIN_ENTITY_TYPES.items()}
             if self.entity_types_path.exists():
                 import json
 
@@ -82,18 +82,28 @@ class Vault:
                     types = loaded.get("types")
                     if isinstance(types, dict) and types:
                         self._registry = {
-                            t: {"path": s["path"], "suffix": s["suffix"]}
+                            t: {
+                                "path": s["path"],
+                                "suffix": s["suffix"],
+                                "format": s.get("format") or _default_format(s["suffix"]),
+                            }
                             for t, s in types.items()
                         }
                 except (ValueError, KeyError, TypeError):
                     pass  # corrupt registry: builtin map keeps the vault usable
         return self._registry
 
-    def classify(self, path: Path) -> str | None:
-        """Entity type a file belongs to, by registry path prefix, or None.
+    def entity_format(self, etype: str) -> str:
+        spec = self.entity_registry().get(etype, {})
+        return spec.get("format") or _default_format(spec.get("suffix", ".md"))
 
-        Skips hidden files and Radicale's .Radicale.props (Phase 2 serves
-        calendars/ directly from the vault).
+    def classify(self, path: Path) -> str | None:
+        """Entity type a file belongs to, or None.
+
+        A spec whose `path` names a file (no trailing slash) is an exact match
+        and takes precedence over a directory spec covering the same file —
+        this is how `tasks/waiting.md` (waiting_for) is distinguished from
+        `tasks/*.md` (next_action). Skips hidden files and .Radicale.props.
         """
         try:
             rel = path.resolve().relative_to(self.root.resolve())
@@ -103,31 +113,54 @@ class Vault:
             return None
         if not rel.parts:
             return None
-        for etype, spec in self.entity_registry().items():
-            if rel.parts[0] == spec["path"].rstrip("/") and path.suffix == spec["suffix"]:
+        rel_posix = rel.as_posix()
+        registry = self.entity_registry()
+        # Exact-file specs win over directory specs.
+        for etype, spec in registry.items():
+            p = spec["path"]
+            if not p.endswith("/") and rel_posix == p and path.suffix == spec["suffix"]:
+                return etype
+        for etype, spec in registry.items():
+            p = spec["path"]
+            if p.endswith("/") and rel.parts[0] == p.rstrip("/") and path.suffix == spec["suffix"]:
                 return etype
         return None
 
     def entity_files(self):
         """Yield (path, type) for every indexable file in the vault."""
-        seen_dirs = []
+        candidates: list[Path] = []
         for spec in self.entity_registry().values():
-            d = self.root / spec["path"].rstrip("/")
-            if d not in seen_dirs:
-                seen_dirs.append(d)
-        for d in seen_dirs:
-            if not d.exists():
+            p = spec["path"]
+            if p.endswith("/"):
+                d = self.root / p.rstrip("/")
+                if d.exists():
+                    candidates.extend(x for x in d.rglob("*") if x.is_file())
+            else:
+                f = self.root / p
+                if f.is_file():
+                    candidates.append(f)
+        seen: set[Path] = set()
+        for p in sorted(candidates):
+            if p in seen:
                 continue
-            for p in sorted(d.rglob("*")):
-                if p.is_file():
-                    domain = self.classify(p)
-                    if domain:
-                        yield p, domain
+            seen.add(p)
+            domain = self.classify(p)
+            if domain:
+                yield p, domain
 
 
+def _default_format(suffix: str) -> str:
+    return "ics" if suffix == ".ics" else "frontmatter"
+
+
+# format: how the indexer parses this type's files.
+#   checkbox    -> "- [ ] text <!-- id:.. key:val -->" lines (tasks, next_action, ...)
+#   inbox       -> "- HH:MM text <!-- id:.. -->" append-only lines
+#   frontmatter -> YAML frontmatter + markdown body (notes, project)
+#   ics         -> iCalendar
 BUILTIN_ENTITY_TYPES: dict[str, dict] = {
-    "inbox_item": {"path": "inbox/", "suffix": ".md"},
-    "note": {"path": "notes/", "suffix": ".md"},
-    "task": {"path": "tasks/", "suffix": ".md"},
-    "event": {"path": "calendars/", "suffix": ".ics"},
+    "inbox_item": {"path": "inbox/", "suffix": ".md", "format": "inbox"},
+    "note": {"path": "notes/", "suffix": ".md", "format": "frontmatter"},
+    "task": {"path": "tasks/", "suffix": ".md", "format": "checkbox"},
+    "event": {"path": "calendars/", "suffix": ".ics", "format": "ics"},
 }
