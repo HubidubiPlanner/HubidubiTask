@@ -7,11 +7,17 @@ dependencies = [
     "prodos-vault",
 ]
 
+# The agent proxy (/v1/agent/ask) activates only when prodos-agent is present;
+# the server degrades to 501 without it, so it stays an optional extra.
+[project.optional-dependencies]
+agent = ["prodos-agent"]
+
 [project.scripts]
 prodos-sync = "prodos_sync.cli:main"
 
 [tool.uv.sources]
 prodos-vault = { workspace = true }
+prodos-agent = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

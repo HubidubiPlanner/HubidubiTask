@@ -41,7 +41,8 @@ class Client:
 @pytest.fixture
 def sync_server(vault):
     """A running no-TLS server plus a paired client. Yields (server, client)."""
-    srv = serve(vault, "127.0.0.1", 0, use_tls=False)
+    # Phase 2 fixture: no agent wired in (that path lives in test_agent_endpoint).
+    srv = serve(vault, "127.0.0.1", 0, use_tls=False, agent_factory=lambda: None)
     port = srv.server_address[1]
     thread = threading.Thread(target=srv.serve_forever, daemon=True)
     thread.start()

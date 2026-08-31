@@ -21,8 +21,8 @@ package_prodos-plugins-default() {
 package_prodos-workstation() {
   pkgdesc="prodos workstation: holds the vault, runs inference and the agent"
   depends=('prodos-base' 'prodos-plugin-host' 'prodos-plugins-default'
+           'prodos-agent' 'llama.cpp'
            'radicale' 'syncthing' 'git')
-  # 'prodos-agent' and 'llama.cpp' added in Phase 4.
 }
 
 package_prodos-thin() {

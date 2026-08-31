@@ -4,6 +4,7 @@ requires-python = ">=3.12"
 
 [manifest]
 members = [
+    "prodos-agent",
     "prodos-plugin-host",
     "prodos-sync",
     "prodos-vault",
@@ -99,6 +100,23 @@ wheels = [
 ]
 
 [[package]]
+name = "prodos-agent"
+version = "0.1.0"
+source = { editable = "packages/prodos-agent" }
+dependencies = [
+    { name = "jsonschema" },
+    { name = "prodos-plugin-host" },
+    { name = "prodos-vault" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "jsonschema", specifier = ">=4.0" },
+    { name = "prodos-plugin-host", editable = "packages/prodos-plugin-host" },
+    { name = "prodos-vault", editable = "packages/prodos-vault" },
+]
+
+[[package]]
 name = "prodos-plugin-host"
 version = "0.1.0"
 source = { editable = "packages/prodos-plugin-host" }
@@ -123,8 +141,17 @@ dependencies = [
     { name = "prodos-vault" },
 ]
 
+[package.optional-dependencies]
+agent = [
+    { name = "prodos-agent" },
+]
+
 [package.metadata]
-requires-dist = [{ name = "prodos-vault", editable = "packages/prodos-vault" }]
+requires-dist = [
+    { name = "prodos-agent", marker = "extra == 'agent'", editable = "packages/prodos-agent" },
+    { name = "prodos-vault", editable = "packages/prodos-vault" },
+]
+provides-extras = ["agent"]
 
 [[package]]
 name = "prodos-vault"

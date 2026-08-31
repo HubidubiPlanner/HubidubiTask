@@ -143,11 +143,17 @@ def test_push_note_and_inbox_and_event(sync_server, vault):
     assert len(ics_files) == 1 and "Dentist" in ics_files[0].read_text()
 
 
-def test_plugins_and_agent_stubs(sync_server):
+def test_plugins_endpoint(sync_server):
     srv, client = sync_server
     status, body = client.request("GET", "/v1/plugins")
     assert status == 200 and body == {"plugins": []}
-    status, body = client.request("POST", "/v1/agent/ask", {"q": "hi"})
+
+
+def test_agent_ask_without_agent_installed(sync_server):
+    """The sync fixture forces no agent; the endpoint must 501 cleanly, not
+    500. (The agent-present path is covered in test_agent_endpoint.py.)"""
+    srv, client = sync_server
+    status, body = client.request("POST", "/v1/agent/ask", {"query": "hi"})
     assert status == 501
 
 

@@ -27,13 +27,18 @@ from . import auth, certs, changelog, db
 class SyncServer(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, addr, vault, use_tls: bool = True):
+    def __init__(self, addr, vault, use_tls: bool = True, agent_factory=None):
         super().__init__(addr, Handler)
         self.vault = vault
         self.lock = threading.Lock()  # serialize sqlite + file mutations
         self.sync_conn = db.connect(db.sync_db_path(vault))
         self.index_conn = indexer.open_index(vault, check_same_thread=False)
         changelog.purge_expired_tombstones(self.sync_conn)
+        # Returns a ready Agent, or None if the agent package is absent. The
+        # agent shares this server's index_conn (all access is under self.lock).
+        self._agent_factory = agent_factory or self._default_agent_factory
+        self._agent = None
+        self._agent_built = False
         if use_tls:
             cert, key = certs.ensure_cert(vault)
             ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -42,6 +47,21 @@ class SyncServer(ThreadingHTTPServer):
             self.fingerprint = certs.fingerprint(cert)
         else:
             self.fingerprint = None
+
+    def agent_factory(self):
+        if not self._agent_built:
+            self._agent = self._agent_factory()
+            self._agent_built = True
+        return self._agent
+
+    def _default_agent_factory(self):
+        try:
+            from prodos_agent.client import LlamaClient
+            from prodos_agent.loop import Agent
+            from prodos_plugin_host.registry import discover
+        except ImportError:
+            return None
+        return Agent(self.vault, self.index_conn, discover(), LlamaClient())
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -86,7 +106,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/changes":
             return self._push_changes()
         if path == "/v1/agent/ask":
-            return self._json(501, {"error": "agent not available until Phase 4"})
+            return self._agent_ask()
         self._json(404, {"error": "not found"})
 
     def do_GET(self):
@@ -146,6 +166,48 @@ class Handler(BaseHTTPRequestHandler):
         # Populated in Phase 3 from installed plugin manifests.
         self._json(200, {"plugins": []})
 
+    def _agent_ask(self):
+        """Stream the agent loop as NDJSON. The phone must survive the stream
+        dropping mid-response without corrupting local state, so each event is
+        a self-contained JSON line and nothing is committed client-side until
+        the terminal answer event arrives."""
+        device_id = self._device()
+        if not device_id:
+            return self._json(401, {"error": "unauthorized"})
+        body = self._body()
+        if body is None or not body.get("query"):
+            return self._json(400, {"error": "missing query"})
+        agent = self.server.agent_factory() if self.server.agent_factory else None
+        if agent is None:
+            return self._json(501, {"error": "agent not installed on this host"})
 
-def serve(vault, bind: str, port: int = 5233, use_tls: bool = True) -> SyncServer:
-    return SyncServer((bind, port), vault, use_tls=use_tls)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/x-ndjson")
+        self.send_header("Transfer-Encoding", "chunked")
+        self.end_headers()
+        try:
+            with self.server.lock:
+                for event in agent.run_streamed(str(body["query"])):
+                    self._chunk(json.dumps(event) + "\n")
+        except (BrokenPipeError, ConnectionResetError):
+            return  # client hung up mid-stream; nothing to roll back
+        except Exception as e:  # e.g. model unreachable — tell the client, don't 500
+            try:
+                self._chunk(json.dumps({"event": "error", "error": str(e)}) + "\n")
+            except (BrokenPipeError, ConnectionResetError):
+                return
+        try:
+            self._chunk("")  # terminating zero-length chunk
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _chunk(self, text: str) -> None:
+        data = text.encode("utf-8")
+        self.wfile.write(f"{len(data):X}\r\n".encode("ascii") + data + b"\r\n")
+        self.wfile.flush()
+
+
+def serve(vault, bind: str, port: int = 5233, use_tls: bool = True,
+          agent_factory=None) -> SyncServer:
+    return SyncServer((bind, port), vault, use_tls=use_tls,
+                      agent_factory=agent_factory)

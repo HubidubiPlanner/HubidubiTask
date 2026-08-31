@@ -12,7 +12,7 @@ GET  /v1/changes?since=<cursor>   entities changed since cursor
 POST /v1/changes                  batch of client-side changes
 GET  /v1/plugins                  installed plugin manifests (Phase 3)
 GET  /v1/plugins/<name>/bundle    signed view bundle (Phase 5)
-POST /v1/agent/ask                proxy to the agent (Phase 4, 501 for now)
+POST /v1/agent/ask                streams the agent loop as NDJSON (Phase 4)
 ```
 
 - The cursor is a monotonic server-side sequence number, never a wall clock.
