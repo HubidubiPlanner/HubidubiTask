@@ -34,8 +34,10 @@ CREATE VIRTUAL TABLE IF NOT EXISTS entities_fts USING fts5(
 """
 
 
-def connect(db_path) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
+def connect(db_path, check_same_thread: bool = True) -> sqlite3.Connection:
+    """check_same_thread=False is safe only when the caller serializes access
+    (the sync server does, behind one lock)."""
+    conn = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.row_factory = sqlite3.Row

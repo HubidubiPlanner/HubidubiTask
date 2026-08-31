@@ -171,10 +171,11 @@ def rebuild(vault: Vault) -> int:
     return total
 
 
-def open_index(vault: Vault, do_sweep: bool = True) -> sqlite3.Connection:
+def open_index(vault: Vault, do_sweep: bool = True,
+               check_same_thread: bool = True) -> sqlite3.Connection:
     """Open (creating if absent) the vault index, optionally sweeping stale files."""
     vault.prodos_dir.mkdir(parents=True, exist_ok=True)
-    conn = schema.connect(vault.index_path)
+    conn = schema.connect(vault.index_path, check_same_thread=check_same_thread)
     if do_sweep:
         sweep(conn, vault)
     return conn

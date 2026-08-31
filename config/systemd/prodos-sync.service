@@ -1,0 +1,15 @@
+# User unit: install to ~/.config/systemd/user/, then
+#   systemctl --user enable --now prodos-sync
+# Set the bind address to the workstation's LAN IP (never 0.0.0.0).
+
+[Unit]
+Description=prodos change-feed API
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/prodos-sync serve --bind 192.168.1.60
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

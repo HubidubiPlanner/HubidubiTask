@@ -1,0 +1,13 @@
+# History and rollback, not sync (PLAN.md Phase 2).
+# Pairs with vault-autocommit.timer. Setup:
+#   git init --bare /srv/git/vault.git
+#   git -C ~/vault init && git -C ~/vault remote add origin /srv/git/vault.git
+#   printf '.prodos/\n.Radicale.*\n' > ~/vault/.gitignore
+
+[Unit]
+Description=Auto-commit the vault if dirty
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/vault
+ExecStart=/bin/sh -c 'git add -A && git diff --cached --quiet || { git commit -q -m "auto: $(date -Iseconds)" && git push -q origin HEAD; }'

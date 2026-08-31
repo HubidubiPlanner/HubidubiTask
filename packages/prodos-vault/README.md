@@ -6,8 +6,9 @@ and the GTD inbox as hardcoded core features. Files are the source of truth;
 
 ## Setup
 
+From the repo root (uv workspace):
+
 ```sh
-cd packages/prodos-vault
 uv sync
 ```
 
@@ -34,9 +35,11 @@ visible immediately even with no watcher running.
 
 ## Tests
 
+From the repo root:
+
 ```sh
-uv run pytest ../../tests/unit          # fast unit tests
-uv run pytest ../../tests/acceptance    # Phase 1 acceptance criteria from PLAN.md
+uv run pytest tests/unit          # fast unit tests
+uv run pytest tests/acceptance    # Phase 1 acceptance criteria from PLAN.md
 ```
 
 ## Format notes
