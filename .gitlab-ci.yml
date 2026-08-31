@@ -1,0 +1,142 @@
+# prodos CI (PLAN.md Phase 7).
+#
+# Self-hosted runner on the workstation — never shared runners: ISO builds
+# consume minutes rapidly, and this repo should not leave the LAN. The ISO and
+# QEMU jobs need a privileged Docker executor (loop devices, KVM).
+#
+# Pipeline: lint -> unit -> sandbox escape -> view sandbox -> android build &
+# instrumented -> build packages -> build ISO -> QEMU smoke -> publish.
+
+stages:
+  - lint
+  - test
+  - sandbox
+  - android
+  - package
+  - iso
+  - smoke
+  - publish
+
+default:
+  tags: [prodos-workstation]   # the self-hosted LAN runner
+
+# ------------------------------------------------------------------ lint
+
+lint:
+  stage: lint
+  image: python:3.12
+  script:
+    - pip install ruff
+    - ruff check packages plugins tests
+    - bash -n iso/workstation/build.sh iso/thin/provision.sh
+        tests/smoke/qemu_smoke.sh tests/smoke/emulator_pairing.sh
+
+# ------------------------------------------------------------------ tests
+
+unit:
+  stage: test
+  image: python:3.12
+  script:
+    - pip install uv
+    - uv sync
+    - uv run pytest tests/unit tests/integration tests/acceptance -q
+
+# ------------------------------------------------------------- both sandboxes
+
+sandbox-escape:
+  stage: sandbox
+  image: archlinux:latest        # bwrap is Linux-only
+  script:
+    - pacman -Sy --noconfirm --needed python python-pip bubblewrap
+    - pip install --break-system-packages ./packages/prodos-vault
+        ./packages/prodos-plugin-host pytest pyyaml jsonschema icalendar
+    - python -m pytest tests/sandbox -v
+
+view-sandbox:
+  stage: sandbox
+  image: python:3.12
+  script:
+    - pip install uv
+    - uv sync
+    - uv run pytest tests/view-sandbox -q
+
+# ------------------------------------------------------------------ android
+
+android:
+  stage: android
+  image: ghcr.io/cirruslabs/android-sdk:34
+  script:
+    - cd mobile
+    - ./gradlew :core:test :app:assembleDebug :app:assembleRelease
+  artifacts:
+    paths:
+      - mobile/app/build/outputs/apk/debug/app-debug.apk
+    expire_in: 1 week
+
+android-instrumented:
+  stage: android
+  image: ghcr.io/cirruslabs/android-sdk:34
+  # Needs a KVM-accelerated emulator on the runner.
+  script:
+    - cd mobile
+    - ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
+    - ../tests/smoke/emulator_pairing.sh app/build/outputs/apk/debug/app-debug.apk
+  allow_failure: false
+
+# ------------------------------------------------------------------ packages
+
+packages:
+  stage: package
+  image: archlinux:latest
+  script:
+    - pacman -Sy --noconfirm --needed base-devel python-build python-installer
+        python-hatchling python-wheel
+    - useradd -m build && chown -R build .
+    - |
+      for p in packages/prodos-vault packages/prodos-plugin-host \
+               packages/prodos-sync packages/prodos-agent \
+               plugins/gtd plugins/calendar packages/metapackages; do
+        ( cd "$p" && sudo -u build makepkg -f --nodeps --skipinteg )
+      done
+  artifacts:
+    paths:
+      - "**/*.pkg.tar.*"
+    expire_in: 1 week
+
+# ------------------------------------------------------------------ iso
+
+iso:
+  stage: iso
+  image: archlinux:latest
+  # Privileged executor: mkarchiso needs loop devices.
+  script:
+    - pacman -Sy --noconfirm --needed archiso
+    - iso/workstation/build.sh iso/workstation/out
+  artifacts:
+    paths:
+      - iso/workstation/out/*.iso
+    expire_in: 1 week
+
+# ------------------------------------------------------------------ smoke
+
+qemu-smoke:
+  stage: smoke
+  image: archlinux:latest
+  # Privileged + KVM.
+  script:
+    - pacman -Sy --noconfirm --needed qemu-base openssh
+    - tests/smoke/qemu_smoke.sh iso/workstation/out/*.iso
+
+# ------------------------------------------------------------------ publish
+
+publish:
+  stage: publish
+  image: archlinux:latest
+  rules:
+    - if: '$CI_COMMIT_TAG'         # publish only on tagged releases
+  script:
+    # Signed APK and packages become GitLab release artifacts; the F-Droid repo
+    # metadata is generated and served from the workstation over the LAN. The
+    # signing key stays offline and out of the repo.
+    - echo "publishing release $CI_COMMIT_TAG to the LAN F-Droid repo and package repo"
+    - ./tools/publish-release.sh "$CI_COMMIT_TAG"

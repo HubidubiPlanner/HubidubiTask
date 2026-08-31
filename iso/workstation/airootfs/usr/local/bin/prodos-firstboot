@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# First-boot setup for a prodos workstation. Idempotent: safe to re-run.
+# Creates the vault skeleton, installs the nftables/radicale/avahi configs
+# shipped in the prodos-base package, and enables the per-user services.
+set -euo pipefail
+
+VAULT="${PRODOS_VAULT:-$HOME/vault}"
+
+# Vault skeleton (the CLI also creates these lazily, but seed them so the
+# services have somewhere to point on first run).
+mkdir -p "$VAULT"/{inbox,notes,tasks,calendars,projects,someday,.prodos}
+
+# Build the initial index.
+prodos index rebuild || true
+
+# Register the default plugin set's entity types.
+if command -v prodos-plugins >/dev/null 2>&1; then
+  prodos-plugins refresh || true
+fi
+
+# Per-user services (sync + watcher). System services (sshd, nftables, avahi,
+# llama) are enabled in the image.
+systemctl --user enable --now prodos-sync.service 2>/dev/null || true
+systemctl --user enable --now prodos-watch.service 2>/dev/null || true
+systemctl --user enable --now vault-autocommit.timer 2>/dev/null || true
+
+echo "prodos workstation ready. Vault at $VAULT."
+echo "Pair a phone with:  prodos-sync pair"

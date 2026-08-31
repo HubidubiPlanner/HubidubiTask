@@ -1,0 +1,35 @@
+# prodos-workstation package list (PLAN.md Phase 7).
+# base + prodos-workstation metapackage + default plugins. The prodos-* packages
+# come from the LAN repo declared in pacman.conf; build.sh builds them first.
+
+# --- base live/install system (subset of releng essentials) ---
+base
+linux
+linux-firmware
+mkinitcpio
+mkinitcpio-archiso
+syslinux
+edk2-shell
+memtest86+-efi
+intel-ucode
+amd-ucode
+sudo
+nano
+vim
+openssh
+git
+
+# --- prodos ---
+prodos-workstation
+prodos-plugins-default
+
+# prodos-workstation already pulls: prodos-base (prodos-vault, prodos-sync,
+# nftables, avahi), prodos-plugin-host, prodos-agent, llama.cpp, radicale,
+# syncthing, git. Listed here only for a legible manifest.
+prodos-base
+prodos-plugin-host
+prodos-agent
+radicale
+syncthing
+nftables
+avahi
