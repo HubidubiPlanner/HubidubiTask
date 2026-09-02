@@ -39,6 +39,70 @@ class Sync private constructor(
         return true
     }
 
+    val isPaired: Boolean get() = engine != null
+
+    // ---- reads for the native UI (from the local mirror; work offline) ----
+
+    fun byType(type: String): List<EntityRecord> = store.byType(type)
+    fun inbox(): List<EntityRecord> = store.byType("inbox_item")
+    fun nextActions(): List<EntityRecord> =
+        store.byType("next_action").filter { it.fields["done"] != "true" }
+    fun projects(): List<EntityRecord> = store.byType("project")
+
+    /** Projects with no open next action — the defining GTD failure. */
+    fun projectsWithoutNextAction(): List<EntityRecord> {
+        val have = nextActions().mapNotNull { it.fields["project"] }.toSet()
+        return projects().filter { p ->
+            val key = (p.fields["title"] ?: "").lowercase().replace(Regex("\\s+"), "-")
+            key !in have
+        }
+    }
+
+    // ---- writes (queued to the durable outbox; sync on reconnect) ----
+
+    /** Client-side clarify commit: create the target entity, tombstone the
+     *  inbox item. Mirrors the gtd-file skill; deletion beats edit downstream. */
+    fun fileClarify(inboxId: String, kind: String, text: String,
+                    context: String? = null, project: String? = null) {
+        val now = com.prodos.core.nowUtc()
+        when (kind) {
+            "trash" -> {}
+            "next_action" -> {
+                val f = HashMap<String, String?>()
+                f["text"] = text; f["done"] = "false"
+                f["project"] = project ?: "inbox"
+                if (context != null) f["context"] = context
+                upsert("next_action", "t_" + randomSuffix(), f, now)
+            }
+            "waiting_for" -> upsert("waiting_for", "t_" + randomSuffix(),
+                hashMapOf("text" to text, "done" to "false"), now)
+            "someday" -> upsert("someday", "t_" + randomSuffix(),
+                hashMapOf("text" to text, "done" to "false"), now)
+            "project" -> upsert("project", "p_" + randomSuffix(),
+                hashMapOf("title" to text, "status" to "active"), now)
+        }
+        // Remove the inbox item.
+        val item = store.get(inboxId)
+        if (item != null) {
+            store.put(item.tombstone())
+            outbox.enqueueDelete(item)
+        }
+    }
+
+    fun markDone(id: String) {
+        val rec = store.get(id) ?: return
+        val updated = rec.copy(updated = com.prodos.core.nowUtc(),
+            fields = rec.fields + ("done" to "true"))
+        store.put(updated)
+        outbox.enqueueUpsert(updated)
+    }
+
+    private fun upsert(type: String, id: String, fields: Map<String, String?>, now: String) {
+        val rec = EntityRecord(id = id, type = type, updated = now, fields = fields)
+        store.put(rec)
+        outbox.enqueueUpsert(rec)
+    }
+
     companion object {
         fun open(context: Context): Sync {
             val db = Database.get(context)
