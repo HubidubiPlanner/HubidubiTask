@@ -1,0 +1,22 @@
+# Base image for prodos install-and-test runs (Phase 8 test harness).
+# Prebuilt and cached so the frequent loop only re-runs the test script, not
+# the dependency install. Rebuild only when these deps change:
+#   docker build -f tests/container/Dockerfile.arch -t prodos-test:base .
+FROM archlinux:latest
+
+# Everything needed to build the PKGBUILDs, run the suites (incl. the bwrap
+# sandbox-escape tests — Linux-only, the whole reason a container earns its
+# keep here), and drive a live sync + agent smoke.
+RUN pacman -Sy --noconfirm --needed \
+      base-devel git sudo \
+      python python-pip \
+      python-build python-installer python-hatchling python-wheel \
+      python-watchdog python-yaml python-icalendar python-jsonschema \
+      python-pytest \
+      bubblewrap openssl curl \
+  && pacman -Scc --noconfirm
+
+# makepkg refuses to run as root; provide an unprivileged build user.
+RUN useradd -m builder && echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+
+WORKDIR /work
