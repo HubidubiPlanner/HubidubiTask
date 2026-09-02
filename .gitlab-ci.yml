@@ -108,10 +108,12 @@ packages:
 iso:
   stage: iso
   image: archlinux:latest
-  # Privileged executor: mkarchiso needs loop devices.
+  # Privileged executor: the Omarchy ISO build (Docker + loop devices).
+  variables:
+    OMARCHY_ISO_REF: "v4.0.0"   # pin the Omarchy base; bump deliberately
   script:
-    - pacman -Sy --noconfirm --needed archiso
-    - iso/workstation/build.sh iso/workstation/out
+    - pacman -Sy --noconfirm --needed archiso git docker
+    - OMARCHY_ISO_REF="$OMARCHY_ISO_REF" iso/workstation/build.sh iso/workstation/out
   artifacts:
     paths:
       - iso/workstation/out/*.iso

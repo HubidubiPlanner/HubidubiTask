@@ -6,24 +6,37 @@ builds need a privileged Linux host (loop devices), QEMU needs KVM. It all runs
 in CI on the self-hosted workstation runner; the files here are authored and
 syntax-checked, not built here.
 
-## workstation/ — the x86_64 ISO
+## workstation/ — the x86_64 ISO (Omarchy base, Phase 8)
 
-`archiso` profile derived from `releng`. `build.sh`:
+The workstation base is **Omarchy Quattro** (MIT). Its ISO builder
+`omacom-io/omarchy-iso` is itself an archiso profile, so prodos overlays onto a
+**pinned** checkout of it. `build.sh`:
 
-1. Builds every prodos package (`packages/*` + `plugins/{gtd,calendar,…}` +
+1. Builds every prodos package (`packages/*` + `plugins/{gtd,calendar}` +
    metapackages) into a local signed repo.
-2. Copies a fresh `releng` profile and overlays our `profiledef.sh`,
-   `packages.x86_64`, `pacman.conf`, and `airootfs/` (which enables sshd,
-   nftables, avahi, and llama via `.wants` symlinks and ships the `config/`
-   files and a `prodos-firstboot` setup script).
-3. Runs `mkarchiso`.
-
-Not based on Manjaro — its package delay and its own tooling layer are both
-things this project would strip anyway.
+2. Clones/uses a pinned `omarchy-iso` (`OMARCHY_ISO_REF`), injects the prodos
+   packages into its offline mirror + package list.
+3. Overlays our `airootfs/` — the **native Quickshell/Hyprland integration**
+   (no browser): `prodos-capture-gui` (Super+Shift+Space), `prodos-next-panel`,
+   the `ProdosStatus.qml` bar widget, `hypr/prodos-keybinds.conf` — plus the
+   hardened `nftables.conf`, the `config/` files, and `prodos-firstboot` (which
+   enables the per-user services, prefers **selfhostedai-agent** for inference,
+   strips Omarchy's cloud coding-agent widget, and wires the keybinds).
+4. Builds via `omarchy-iso-make` (Docker, reproducible).
 
 ```sh
-sudo iso/workstation/build.sh            # on Arch, privileged
+OMARCHY_ISO_REF=<tag/commit> sudo iso/workstation/build.sh   # on Arch, privileged
 ```
+
+`profiledef.sh` / `packages.x86_64` / `pacman.conf` here remain as the
+alternative **releng-base** path (integration model B) if you ever choose to
+own the whole surface instead of basing on Omarchy.
+
+### No-cloud enforcement
+Omarchy ships cloud-capable apps; `config/nftables.conf` now sets the **OUTPUT
+policy to drop** with only LAN + DNS + an (opt-in) mirror allowlist, so no app
+can phone home. Inference is the local selfhostedai-agent OpenAI server (loopback
+:8081); `prodos-agent status` shows the connection. See `packages/prodos-agent`.
 
 ## thin/ — the aarch64 thin client
 

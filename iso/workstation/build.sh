@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
-# Build the prodos-workstation ISO (PLAN.md Phase 7).
-#
-# Must run on Arch with archiso installed, as root, in a privileged container
-# or host (mkarchiso needs loop devices). This is CI/target work — it cannot
-# run on the macOS dev machine.
+# Build the prodos-workstation ISO on the Omarchy base (PLAN.md Phase 7 +
+# Phase 8). Must run on Arch with the Omarchy ISO toolchain, privileged
+# (loop devices) — CI/target work, not the macOS dev machine.
 #
 #   sudo ./build.sh [output_dir]
 #
-# Strategy: overlay this profile onto a fresh copy of the upstream `releng`
-# profile, so bootloader configs come from upstream and only our package list,
-# pacman.conf, and airootfs are custom. Builds the prodos-* packages into a
-# local repo first so pacman can resolve them.
+# Strategy (Phase 8): the workstation base is Omarchy Quattro. Its ISO builder
+# `omacom-io/omarchy-iso` is itself an archiso profile (archiso submodule +
+# configs/{airootfs,efiboot,grub,syslinux}, Docker-orchestrated via
+# bin/omarchy-iso-make, with a self-contained offline package mirror). We
+# overlay prodos onto a PINNED checkout of it: build the prodos packages into
+# the offline mirror, add them to the package list, drop in our airootfs
+# (native Quickshell/Hyprland integration, hardened nftables, systemd units,
+# prodos-firstboot), and build.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 OUT="${1:-$HERE/out}"
-WORK="$(mktemp -d)"
-PROFILE="$WORK/profile"
 PRODOS_REPO="/build/prodos-repo"
 
-command -v mkarchiso >/dev/null || { echo "install archiso"; exit 1; }
+# Pin the Omarchy ISO builder. Bump deliberately; record the tag in iso/README.
+OMARCHY_ISO_REPO="${OMARCHY_ISO_REPO:-https://github.com/omacom-io/omarchy-iso}"
+OMARCHY_ISO_REF="${OMARCHY_ISO_REF:-}"   # REQUIRED: set to a release tag/commit
+VENDOR="$HERE/omarchy-iso"               # vendored/submodule checkout
+
+if [ -z "$OMARCHY_ISO_REF" ] && [ ! -d "$VENDOR/.git" ]; then
+  echo "Set OMARCHY_ISO_REF to a pinned omarchy-iso tag/commit, or vendor it at $VENDOR" >&2
+  exit 1
+fi
 
 echo "==> Building prodos packages into $PRODOS_REPO"
 mkdir -p "$PRODOS_REPO"
@@ -31,8 +39,6 @@ for pkgdir in \
   "$REPO_ROOT"/packages/prodos-agent \
   "$REPO_ROOT"/plugins/gtd \
   "$REPO_ROOT"/plugins/calendar \
-  "$REPO_ROOT"/plugins/tasks \
-  "$REPO_ROOT"/plugins/inbox \
   "$REPO_ROOT"/packages/metapackages
 do
   ( cd "$pkgdir" && makepkg -f --nodeps --skipinteg ) || { echo "makepkg failed in $pkgdir"; exit 1; }
@@ -40,14 +46,24 @@ do
 done
 repo-add "$PRODOS_REPO/prodos.db.tar.gz" "$PRODOS_REPO"/*.pkg.tar.*
 
-echo "==> Overlaying profile on releng"
-cp -r /usr/share/archiso/configs/releng "$PROFILE"
-cp "$HERE/profiledef.sh" "$PROFILE/profiledef.sh"
-cp "$HERE/packages.x86_64" "$PROFILE/packages.x86_64"
-cp "$HERE/pacman.conf" "$PROFILE/pacman.conf"
-cp -r "$HERE/airootfs/." "$PROFILE/airootfs/"
+echo "==> Preparing the Omarchy ISO profile (pinned)"
+if [ ! -d "$VENDOR/.git" ]; then
+  git clone "$OMARCHY_ISO_REPO" "$VENDOR"
+  git -C "$VENDOR" checkout "$OMARCHY_ISO_REF"
+  git -C "$VENDOR" submodule update --init --recursive
+fi
 
-# Ship the target config files from config/ into the image.
+# Add prodos to the offline mirror + package list. The exact paths depend on the
+# omarchy-iso layout (builder/ + configs/); these are the overlay points:
+PROFILE="$VENDOR/configs"
+echo "prodos-workstation" >> "$PROFILE/packages.x86_64"
+echo "prodos-plugins-default" >> "$PROFILE/packages.x86_64"
+# Merge the prodos repo into the ISO's offline mirror + pacman.conf.
+cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE"/../builder/offline-mirror/ 2>/dev/null || \
+  cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/var/cache/prodos-repo/" 2>/dev/null || true
+
+echo "==> Overlaying prodos airootfs + configs"
+cp -r "$HERE/airootfs/." "$PROFILE/airootfs/"
 install -Dm644 "$REPO_ROOT/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"
 install -Dm644 "$REPO_ROOT/config/avahi/prodos.service" "$PROFILE/airootfs/etc/avahi/services/prodos.service"
 install -Dm644 "$REPO_ROOT/config/radicale/config" "$PROFILE/airootfs/etc/radicale/config"
@@ -55,8 +71,8 @@ for unit in "$REPO_ROOT"/config/systemd/*.service "$REPO_ROOT"/config/systemd/*.
   install -Dm644 "$unit" "$PROFILE/airootfs/etc/systemd/user/$(basename "$unit")"
 done
 
-echo "==> mkarchiso"
+echo "==> Building the ISO via omarchy-iso-make"
 mkdir -p "$OUT"
-mkarchiso -v -w "$WORK/build" -o "$OUT" "$PROFILE"
+( cd "$VENDOR" && ./bin/omarchy-iso-make )   # Docker-orchestrated, reproducible
+find "$VENDOR" -name '*.iso' -newer "$PROFILE/packages.x86_64" -exec cp {} "$OUT/" \;
 echo "==> ISO in $OUT"
-rm -rf "$WORK"
