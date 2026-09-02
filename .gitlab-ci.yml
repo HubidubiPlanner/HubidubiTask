@@ -41,24 +41,23 @@ unit:
     - uv sync
     - uv run pytest tests/unit tests/integration tests/acceptance -q
 
-# ------------------------------------------------------------- both sandboxes
+# ------------------------------------------------------------- skill sandbox
 
+# bwrap needs a NATIVE-arch runner (its user-namespace + mount syscalls are not
+# emulated) — GitLab.com's shared runners are native amd64, so this works.
 sandbox-escape:
   stage: sandbox
-  image: archlinux:latest        # bwrap is Linux-only
+  image: archlinux:latest
   script:
+    # pacman 7's landlock download sandbox may be blocked by the runner kernel.
+    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed python python-pip bubblewrap
     - pip install --break-system-packages ./packages/prodos-vault
         ./packages/prodos-plugin-host pytest pyyaml jsonschema icalendar
     - python -m pytest tests/sandbox -v
 
-view-sandbox:
-  stage: sandbox
-  image: python:3.12
-  script:
-    - pip install uv
-    - uv sync
-    - uv run pytest tests/view-sandbox -q
+# (The Phase-3 view-sandbox suite was retired in Phase 8: plugins are headless
+# and the WebView bridge is gone, so there is no plugin UI code to sandbox.)
 
 # ------------------------------------------------------------------ android
 
@@ -76,12 +75,13 @@ android:
 android-instrumented:
   stage: android
   image: ghcr.io/cirruslabs/android-sdk:34
-  # Needs a KVM-accelerated emulator on the runner.
+  # Needs a KVM-accelerated emulator on the runner — opt-in until provisioned.
+  when: manual
+  allow_failure: true
   script:
     - cd mobile
     - ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
     - ../tests/smoke/emulator_pairing.sh app/build/outputs/apk/debug/app-debug.apk
-  allow_failure: false
 
 # ------------------------------------------------------------------ packages
 
@@ -89,6 +89,7 @@ packages:
   stage: package
   image: archlinux:latest
   script:
+    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed base-devel python-build python-installer
         python-hatchling python-wheel
     - useradd -m build && chown -R build .
@@ -109,9 +110,13 @@ iso:
   stage: iso
   image: archlinux:latest
   # Privileged executor: the Omarchy ISO build (Docker + loop devices).
+  # Opt-in until a privileged self-hosted runner + Omarchy base are provisioned.
+  when: manual
+  allow_failure: true
   variables:
     OMARCHY_ISO_REF: "v4.0.0"   # pin the Omarchy base; bump deliberately
   script:
+    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed archiso git docker
     - OMARCHY_ISO_REF="$OMARCHY_ISO_REF" iso/workstation/build.sh iso/workstation/out
   artifacts:
@@ -124,8 +129,11 @@ iso:
 qemu-smoke:
   stage: smoke
   image: archlinux:latest
-  # Privileged + KVM.
+  # Privileged + KVM; consumes the iso artifact. Opt-in like the iso job.
+  when: manual
+  allow_failure: true
   script:
+    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed qemu-base openssh
     - tests/smoke/qemu_smoke.sh iso/workstation/out/*.iso
 
