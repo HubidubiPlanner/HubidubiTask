@@ -2,7 +2,18 @@
 # Prebuilt and cached so the frequent loop only re-runs the test script, not
 # the dependency install. Rebuild only when these deps change:
 #   docker build -f tests/container/Dockerfile.arch -t prodos-test:base .
-FROM archlinux:latest
+# Base is arch-specific: amd64 uses the official archlinux (the real workstation
+# target, used in CI); Apple Silicon uses Arch Linux ARM so bwrap runs NATIVELY
+# — bwrap's user-namespace + mount syscalls are not emulated by QEMU or Rosetta,
+# so the sandbox tests only work on a native-arch container. run.sh selects it.
+ARG BASE=archlinux:latest
+FROM ${BASE}
+
+# pacman 7's alpm download sandbox uses landlock, which the Colima VM kernel
+# does not permit ("Landlock ruleset could not be applied: Operation not
+# permitted"). Unnecessary in a throwaway build container — disable it, under
+# the [options] section (appending to EOF would land in a repo section).
+RUN sed -i '/^\[options\]/a DisableSandbox' /etc/pacman.conf
 
 # Everything needed to build the PKGBUILDs, run the suites (incl. the bwrap
 # sandbox-escape tests — Linux-only, the whole reason a container earns its

@@ -18,18 +18,32 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 IMAGE="prodos-test:base"
 DOCKER="${DOCKER:-docker}"
 
+# The sandbox tests use bwrap, whose user-namespace + mount syscalls are NOT
+# emulated by QEMU or Rosetta — they only work on a native-arch container. So
+# match the container arch to the host: Apple Silicon runs Arch Linux ARM
+# natively; x86_64 (and CI) runs the official archlinux, the real target.
+case "$(uname -m)" in
+  arm64|aarch64)
+    BASE="${PRODOS_BASE:-menci/archlinuxarm:latest}"
+    PLATFORM="${PRODOS_PLATFORM:-linux/arm64}" ;;
+  *)
+    BASE="${PRODOS_BASE:-archlinux:latest}"
+    PLATFORM="${PRODOS_PLATFORM:-linux/amd64}" ;;
+esac
+
 if ! "$DOCKER" info >/dev/null 2>&1; then
   echo "No container runtime. On macOS:  brew install colima docker && colima start" >&2
   exit 1
 fi
 
 if [ "${1:-}" = "--rebuild" ] || ! "$DOCKER" image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "==> Building base image $IMAGE (cached after first build)"
-  "$DOCKER" build -f "$REPO/tests/container/Dockerfile.arch" -t "$IMAGE" "$REPO/tests/container"
+  echo "==> Building base image $IMAGE ($PLATFORM, $BASE; cached after first build)"
+  "$DOCKER" build --platform "$PLATFORM" --build-arg "BASE=$BASE" \
+    -f "$REPO/tests/container/Dockerfile.arch" -t "$IMAGE" "$REPO/tests/container"
 fi
 
-echo "==> Running install-and-test in a container"
-exec "$DOCKER" run --rm -i --privileged \
+echo "==> Running install-and-test in a container ($PLATFORM)"
+exec "$DOCKER" run --rm -i --privileged --platform "$PLATFORM" \
   -v "$REPO":/src:ro \
   "$IMAGE" \
   bash /src/tests/container/test-inside.sh
