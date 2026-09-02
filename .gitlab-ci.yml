@@ -1,11 +1,24 @@
-# prodos CI (PLAN.md Phase 7).
+# prodos CI (PLAN.md Phase 7 + Phase 8).
 #
-# Self-hosted runner on the workstation — never shared runners: ISO builds
-# consume minutes rapidly, and this repo should not leave the LAN. The ISO and
-# QEMU jobs need a privileged Docker executor (loop devices, KVM).
+# The light jobs (lint, unit, skill sandbox, android build, packages) run on
+# GitLab's shared runners so CI works out of the box. The heavy jobs that the
+# plan wants on a self-hosted LAN runner — the Omarchy ISO build (privileged
+# Docker + loop devices), the QEMU smoke test (KVM), and the Android emulator —
+# are tagged `prodos-workstation` and set `when: manual`, so they only run once
+# that runner is registered and someone triggers them.
 #
-# Pipeline: lint -> unit -> sandbox escape -> view sandbox -> android build &
-# instrumented -> build packages -> build ISO -> QEMU smoke -> publish.
+# Pipeline: lint -> unit -> sandbox escape -> android build (+manual instrumented)
+# -> packages -> [manual] ISO -> [manual] QEMU smoke -> publish (tags).
+
+# ---------------------------------------------------------------------------
+# CI IS DISABLED FOR NOW. This workflow rule prevents ANY pipeline from being
+# created, so no runner — shared or self-hosted — is ever engaged. The job
+# definitions below are kept for later. To re-enable, delete this `workflow`
+# block (and, for the heavy jobs, register a self-hosted runner and tag them).
+# ---------------------------------------------------------------------------
+workflow:
+  rules:
+    - when: never
 
 stages:
   - lint
@@ -16,9 +29,6 @@ stages:
   - iso
   - smoke
   - publish
-
-default:
-  tags: [prodos-workstation]   # the self-hosted LAN runner
 
 # ------------------------------------------------------------------ lint
 
