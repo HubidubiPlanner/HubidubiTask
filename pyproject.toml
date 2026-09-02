@@ -8,3 +8,13 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# The real signal — pyflakes (unused imports/vars, bad f-strings), import
+# ordering, and the default pycodestyle error subset — without ruff's more
+# opinionated rules that don't fit this code's deliberate style.
+select = ["E4", "E7", "E9", "F", "I", "W"]

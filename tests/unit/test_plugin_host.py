@@ -5,13 +5,11 @@ import sys
 from pathlib import Path
 
 import pytest
-
+from prodos_plugin_host.manifest import ManifestError
+from prodos_plugin_host.manifest import load as load_manifest
+from prodos_plugin_host.registry import RegistryError, discover, export_entity_types
 from prodos_vault.formats import tasks_md
 from prodos_vault.index import indexer, queries
-
-from prodos_plugin_host import registry as reg_mod
-from prodos_plugin_host.manifest import ManifestError, load as load_manifest
-from prodos_plugin_host.registry import RegistryError, discover, export_entity_types
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 

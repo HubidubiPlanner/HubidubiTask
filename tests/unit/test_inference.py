@@ -9,8 +9,6 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-import pytest
-
 from prodos_agent import config as agent_config
 from prodos_agent.client import DEFAULT_ENDPOINT, LlamaClient
 

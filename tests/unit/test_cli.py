@@ -1,7 +1,6 @@
 import re
 
 import pytest
-
 from prodos_vault import cli
 
 

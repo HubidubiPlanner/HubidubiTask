@@ -3,11 +3,9 @@ import threading
 import urllib.request
 
 import pytest
-
-from prodos_vault.vault import Vault
-
-from prodos_sync import auth, db
+from prodos_sync import auth
 from prodos_sync.server import serve
+from prodos_vault.vault import Vault
 
 
 @pytest.fixture

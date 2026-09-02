@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import SUPPORTED_API
-from .manifest import ManifestError, load as load_manifest
+from .manifest import ManifestError
+from .manifest import load as load_manifest
 
 log = logging.getLogger("prodos.plugins")
 

@@ -1,5 +1,4 @@
 import pytest
-
 from prodos_vault.vault import Vault
 
 

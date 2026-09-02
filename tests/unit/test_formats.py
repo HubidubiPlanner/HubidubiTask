@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from prodos_vault.formats import ics, inbox_md, notes_md, tasks_md
 from prodos_vault.entities import Note
+from prodos_vault.formats import ics, inbox_md, notes_md, tasks_md
 
 MTIME = "2026-08-31T12:00:00Z"
 

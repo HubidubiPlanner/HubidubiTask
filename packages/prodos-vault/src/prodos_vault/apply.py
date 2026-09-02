@@ -118,7 +118,8 @@ def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
 
 
 def upsert_event(vault, d: dict, existing_rel: str | None = None) -> Path:
-    from icalendar import Calendar, Event as IcsEvent
+    from icalendar import Calendar
+    from icalendar import Event as IcsEvent
 
     if existing_rel:
         path = vault.root / existing_rel

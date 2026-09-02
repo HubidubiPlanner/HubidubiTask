@@ -4,15 +4,13 @@ Mirrors PLAN.md's Phase 2 acceptance where it can run off-target:
 "curl against /v1/changes with a valid device token returns entity JSON".
 """
 
-import json
 import ssl
 import threading
 import urllib.request
 
-from prodos_vault.formats import tasks_md
-
 from prodos_sync import auth, certs
 from prodos_sync.server import serve
+from prodos_vault.formats import tasks_md
 
 
 def test_changes_requires_token(sync_server):

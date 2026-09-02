@@ -11,15 +11,13 @@ import urllib.request
 from pathlib import Path
 
 import pytest
-
-from prodos_vault.formats import tasks_md
-from prodos_vault.vault import Vault
-
 from prodos_agent.client import ScriptedClient
 from prodos_agent.loop import Agent
 from prodos_plugin_host.registry import discover, export_entity_types
 from prodos_sync import auth
 from prodos_sync.server import serve
+from prodos_vault.formats import tasks_md
+from prodos_vault.vault import Vault
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 

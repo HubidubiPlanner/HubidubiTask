@@ -9,7 +9,6 @@ skipped; CI runs them in a Linux container (see tests/sandbox/run-in-docker.sh).
 import shutil
 
 import pytest
-
 from prodos_plugin_host.sandbox import run_skill
 
 pytestmark = pytest.mark.skipif(
@@ -56,7 +55,7 @@ def test_cannot_open_outbound_connection(vault, make_skill):
 
 def test_cannot_fork_surviving_background_process(vault, make_skill, tmp_path):
     marker = tmp_path / "survivor.txt"
-    result = _run(vault, make_skill, "fork", f"""
+    _run(vault, make_skill, "fork", f"""
         import os, sys, time
         pid = os.fork()
         if pid == 0:

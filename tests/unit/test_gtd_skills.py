@@ -9,7 +9,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
-
 from prodos_plugin_host.registry import discover
 from prodos_plugin_host.sandbox import run_skill
 
@@ -58,13 +57,11 @@ def test_weekly_review_overdue_waiting_and_stale_someday(gtd, vault):
 # ------------------------------------------------------------ gtd-next
 
 def test_next_ranks_by_context_and_due(gtd, vault):
-    from datetime import date
-    today = date.today().isoformat()
     (vault.tasks_dir / "p.md").write_text(
         "---\nproject: p\n---\n\n"
-        f"- [ ] overdue thing  <!-- id:t_1 ctx:@computer due:2000-01-01 -->\n"
-        f"- [ ] later thing  <!-- id:t_2 ctx:@computer due:2999-01-01 -->\n"
-        f"- [ ] errand  <!-- id:t_3 ctx:@errands -->\n")
+        "- [ ] overdue thing  <!-- id:t_1 ctx:@computer due:2000-01-01 -->\n"
+        "- [ ] later thing  <!-- id:t_2 ctx:@computer due:2999-01-01 -->\n"
+        "- [ ] errand  <!-- id:t_3 ctx:@errands -->\n")
     res = _run(gtd, vault, "gtd-next", {"context": "@computer"})
     ids = [a["id"] for a in res["actions"]]
     assert ids == ["t_1", "t_2"]        # errand filtered out; overdue first
@@ -107,7 +104,7 @@ def test_file_project_and_waiting_and_trash(gtd, vault):
     assert p["id"].startswith("p_")
     assert list((vault.root / "projects").glob("*.md"))
 
-    w = _run(gtd, vault, "gtd-file", {"inbox_id": "i_w", "kind": "waiting_for", "who": "irs"})
+    _run(gtd, vault, "gtd-file", {"inbox_id": "i_w", "kind": "waiting_for", "who": "irs"})
     assert "who:irs" in (vault.tasks_dir / "waiting.md").read_text()
 
     t = _run(gtd, vault, "gtd-file", {"inbox_id": "i_t", "kind": "trash"})

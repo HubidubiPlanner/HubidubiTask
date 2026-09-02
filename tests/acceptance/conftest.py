@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-
 from prodos_vault.formats import ics
 from prodos_vault.vault import Vault
 

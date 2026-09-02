@@ -2,15 +2,12 @@ import json
 from pathlib import Path
 
 import pytest
-
-from prodos_vault.formats import tasks_md
-from prodos_vault.index import indexer
-
-from prodos_plugin_host.registry import discover, export_entity_types
-
 from prodos_agent.client import ScriptedClient
 from prodos_agent.context import run_vault_query
 from prodos_agent.loop import Agent, _parse_action
+from prodos_plugin_host.registry import discover, export_entity_types
+from prodos_vault.formats import tasks_md
+from prodos_vault.index import indexer
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 
@@ -161,9 +158,9 @@ def test_every_skill_invocation_logged(agent_env):
     agent, conn, log_file = make(client)
     agent.run("what tasks")
     lines = [json.loads(x) for x in log_file.read_text().splitlines()]
-    events = [l["event"] for l in lines]
+    events = [rec["event"] for rec in lines]
     assert "ask" in events and "tool_result" in events and "answer" in events
-    tr = next(l for l in lines if l["event"] == "tool_result")
+    tr = next(rec for rec in lines if rec["event"] == "tool_result")
     assert tr["tool"] == "vault-query" and tr["params"] == {"query": "task"}
 
 

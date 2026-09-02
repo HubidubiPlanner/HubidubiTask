@@ -71,7 +71,8 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> list[Event]:
 
 def render_event(summary: str, dtstart: datetime, dtend: datetime, uid: str) -> str:
     """Minimal single-event VCALENDAR, for tests and future `event add`."""
-    from icalendar import Calendar, Event as IcsEvent
+    from icalendar import Calendar
+    from icalendar import Event as IcsEvent
 
     cal = Calendar()
     cal.add("VERSION", "2.0")

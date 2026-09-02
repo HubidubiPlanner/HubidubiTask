@@ -49,7 +49,7 @@ def test_index_and_queries(vault):
 
     # wikilink extracted
     links = conn.execute("SELECT dst FROM links WHERE src_id='n_seed0001'").fetchall()
-    assert [l["dst"] for l in links] == ["plugin-api"]
+    assert [row["dst"] for row in links] == ["plugin-api"]
     conn.close()
 
 

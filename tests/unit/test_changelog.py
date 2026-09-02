@@ -1,9 +1,7 @@
-import time
-
-from prodos_vault.formats import tasks_md
-from prodos_vault.index import indexer
 
 from prodos_sync import changelog, db
+from prodos_vault.formats import tasks_md
+from prodos_vault.index import indexer
 
 
 def _conns(vault):
