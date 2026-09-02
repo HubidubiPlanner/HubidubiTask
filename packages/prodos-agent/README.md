@@ -26,18 +26,36 @@ budget, truncated oldest/least-relevant first.
 
 ## Inference
 
-Talks to a `llama.cpp` server's OpenAI-compatible endpoint (`:8080` by
-default; see `config/systemd/llama.service`). The model client is pluggable —
+Talks to any **OpenAI-compatible** endpoint ("a wire format, not a
+destination"). The default is the user's local **selfhostedai-agent** OpenAI server
+(`http://127.0.0.1:8081/v1`, plaintext + loopback-only, optional bearer key);
+`llama.cpp` on :8080 is a documented fallback. The client is pluggable —
 `ScriptedClient` drives the loop in tests, so everything around inference is
-developed and verified without a live model. Real inference and the Phase 6
-clarify-accuracy evaluation require the workstation's GPU.
+developed and verified without a live model.
+
+Endpoint resolution: `$PRODOS_MODEL_ENDPOINT` → `[inference]` in the vault's
+`.prodos/config.toml` → selfhostedai-agent default. Config shape:
+
+```toml
+[inference]
+endpoint = "http://127.0.0.1:8081/v1/chat/completions"
+api_key = ""              # optional bearer
+tls_fingerprint = ""      # optional sha256:... pin for non-loopback https
+model = "local"
+```
 
 ## Interfaces
 
 ```sh
+prodos-agent status [--json]                       # inference connection status
 prodos-agent ask "what's on my plate this week?"   # one-shot
 prodos-agent chat                                  # TUI, tmux/SSH friendly
 ```
+
+`status` probes `GET /v1/models` and reports connected/disconnected + the served
+models — the one source of truth behind the desktop bar indicator and the
+mobile status chip. `ask`/`chat` print an "inference offline" banner instead of
+failing opaquely.
 
 Plus `POST /v1/agent/ask` on prodos-sync: streams the loop as NDJSON, one
 self-contained JSON event per line. The phone can lose the stream mid-response

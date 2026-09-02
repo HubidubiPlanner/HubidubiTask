@@ -77,7 +77,9 @@ def test_index_rebuild(run, vault):
 
 
 def test_agenda_shows_due_task(run):
-    run("task", "add", "due soon", "--due", "2026-09-01")
-    # today is before 2027; use a wide window via --days
+    from datetime import date, timedelta
+
+    due = (date.today() + timedelta(days=3)).isoformat()  # future-relative, not fragile
+    run("task", "add", "due soon", "--due", due)
     _, out = run("agenda", "--days", "365")
     assert "due soon" in out

@@ -6,6 +6,7 @@ index running, so its path is interpreter start + one file append.
 """
 
 import argparse
+import json
 import sys
 from datetime import date, datetime, timedelta
 
@@ -75,6 +76,9 @@ def cmd_task_list(vault: Vault, args) -> int:
     tasks = queries.task_list(
         conn, project=args.project, context=args.ctx, include_done=args.all)
     conn.close()
+    if getattr(args, "json", False):
+        print(json.dumps(tasks))
+        return 0
     for t in tasks:
         box = "[x]" if t["done"] else "[ ]"
         extra = " ".join(
@@ -141,6 +145,11 @@ def cmd_agenda(vault: Vault, args) -> int:
     result = queries.agenda(conn, start.isoformat(), end.isoformat())
     conn.close()
 
+    if getattr(args, "json", False):
+        print(json.dumps({"from": start.isoformat(), "to": end.isoformat(),
+                          **result}))
+        return 0
+
     by_day: dict[str, list[str]] = {}
     for ev in result["events"]:
         day = ev["dtstart"][:10]
@@ -184,6 +193,9 @@ def cmd_inbox(vault: Vault, args) -> int:
     conn = _open(vault)
     items = queries.inbox_items(conn)
     conn.close()
+    if getattr(args, "json", False):
+        print(json.dumps(items))
+        return 0
     for i in items:
         print(f"{i['id']}  {i['date']} {i['time']}  {i['text']}")
     if not items:
@@ -230,6 +242,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--project")
     sp.add_argument("--ctx")
     sp.add_argument("--all", action="store_true", help="include done tasks")
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
     sp.set_defaults(func=cmd_task_list)
     sp = tsub.add_parser("done")
     sp.add_argument("id")
@@ -244,6 +257,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("agenda", help="events and due tasks")
     sp.add_argument("--days", type=int, default=7)
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
     sp.set_defaults(func=cmd_agenda)
 
     sp = sub.add_parser("search", help="full-text search")
@@ -251,6 +265,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_search)
 
     sp = sub.add_parser("inbox", help="list unprocessed inbox items")
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
     sp.set_defaults(func=cmd_inbox)
 
     ip = sub.add_parser("index", help="index maintenance")

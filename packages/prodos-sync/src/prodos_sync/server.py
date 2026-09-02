@@ -56,12 +56,13 @@ class SyncServer(ThreadingHTTPServer):
 
     def _default_agent_factory(self):
         try:
-            from prodos_agent.client import LlamaClient
+            from prodos_agent import config as agent_config
             from prodos_agent.loop import Agent
             from prodos_plugin_host.registry import discover
         except ImportError:
             return None
-        return Agent(self.vault, self.index_conn, discover(), LlamaClient())
+        client = agent_config.client_for(self.vault)
+        return Agent(self.vault, self.index_conn, discover(), client)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -115,9 +116,23 @@ class Handler(BaseHTTPRequestHandler):
             return self._pull_changes(parsed)
         if parsed.path == "/v1/plugins":
             return self._plugins()
+        if parsed.path == "/v1/agent/health":
+            return self._agent_health()
         if parsed.path.startswith("/v1/plugins/") and parsed.path.endswith("/bundle"):
             return self._json(404, {"error": "plugin bundles arrive in Phase 5"})
         self._json(404, {"error": "not found"})
+
+    def _agent_health(self):
+        """Report inference-server reachability so the phone can show a native
+        connection-status chip. The phone can't reach the model directly (it is
+        loopback-only on the workstation); the workstation probes on its behalf."""
+        if not self._device():
+            return self._json(401, {"error": "unauthorized"})
+        agent = self.server.agent_factory()
+        if agent is None:
+            return self._json(200, {"connected": False, "server": None,
+                                    "models": [], "error": "agent not installed"})
+        self._json(200, agent.client.health())
 
     def _pair(self):
         body = self._body()
