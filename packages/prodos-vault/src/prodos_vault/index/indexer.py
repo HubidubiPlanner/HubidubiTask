@@ -107,7 +107,9 @@ def index_file(conn: sqlite3.Connection, vault: Vault, path: Path) -> int:
     rel = _relpath(vault, path)
     raw = path.read_bytes()
     content_hash = hashlib.sha256(raw).hexdigest()
-    mtime_ns = path.stat().st_mtime_ns
+    st = path.stat()
+    mtime_ns = st.st_mtime_ns
+    size = st.st_size
     parsed = _parse(vault, path, domain)
 
     with conn:
@@ -141,8 +143,9 @@ def index_file(conn: sqlite3.Connection, vault: Vault, path: Path) -> int:
                         (d["id"], target),
                     )
         conn.execute(
-            "INSERT OR REPLACE INTO files (path, mtime_ns, content_hash) VALUES (?, ?, ?)",
-            (rel, mtime_ns, content_hash),
+            "INSERT OR REPLACE INTO files (path, mtime_ns, size, content_hash)"
+            " VALUES (?, ?, ?, ?)",
+            (rel, mtime_ns, size, content_hash),
         )
     return len(parsed)
 
@@ -152,15 +155,22 @@ def sweep(conn: sqlite3.Connection, vault: Vault) -> int:
 
     Cheap enough to run before every read command, so `prodos task list`
     reflects a vim edit with no watcher running.
+
+    The quick-check is (mtime_ns, size), not mtime alone: some filesystems
+    (notably overlayfs in containers) collapse rapid successive writes to the
+    same mtime_ns, so an edit that changes size — e.g. a task going `[ ]`→`[x]`
+    with `done:` metadata — would otherwise be missed. This is the standard
+    rsync/make quick-check and stays hash-free, so the sweep budget is intact.
     """
-    known = {r["path"]: r["mtime_ns"] for r in conn.execute(
-        "SELECT path, mtime_ns FROM files")}
+    known = {r["path"]: (r["mtime_ns"], r["size"]) for r in conn.execute(
+        "SELECT path, mtime_ns, size FROM files")}
     changed = 0
     seen = set()
     for path, _domain in vault.entity_files():
         rel = _relpath(vault, path)
         seen.add(rel)
-        if known.get(rel) != path.stat().st_mtime_ns:
+        st = path.stat()
+        if known.get(rel) != (st.st_mtime_ns, st.st_size):
             index_file(conn, vault, path)
             changed += 1
     for rel in set(known) - seen:

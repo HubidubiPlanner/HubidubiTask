@@ -7,6 +7,7 @@ DDL = """
 CREATE TABLE IF NOT EXISTS files (
     path TEXT PRIMARY KEY,          -- vault-relative, posix separators
     mtime_ns INTEGER NOT NULL,
+    size INTEGER NOT NULL DEFAULT 0,
     content_hash TEXT NOT NULL
 );
 
@@ -42,4 +43,8 @@ def connect(db_path, check_same_thread: bool = True) -> sqlite3.Connection:
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.row_factory = sqlite3.Row
     conn.executescript(DDL)
+    # Defensive migration for indexes created before `size` existed.
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(files)")}
+    if "size" not in cols:
+        conn.execute("ALTER TABLE files ADD COLUMN size INTEGER NOT NULL DEFAULT 0")
     return conn
