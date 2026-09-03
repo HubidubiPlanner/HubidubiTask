@@ -42,6 +42,18 @@ repo-add "$PRODOS_REPO/prodos.db.tar.gz" "$PRODOS_REPO"/*.pkg.tar.*
 echo "==> Assembling the archiso profile (releng + prodos)"
 cp -r /usr/share/archiso/configs/releng "$PROFILE"
 
+# Branding: make it announce itself as prodos, not vanilla Arch.
+sed -i \
+  -e 's/^iso_name=.*/iso_name="prodos"/' \
+  -e 's/^iso_label=.*/iso_label="PRODOS_$(date +%Y%m)"/' \
+  -e 's#^iso_publisher=.*#iso_publisher="prodos <https://github.com/hubidubitask/HubidubiTask>"#' \
+  -e 's/^iso_application=.*/iso_application="prodos workstation live medium"/' \
+  "$PROFILE/profiledef.sh"
+# Retitle the boot-menu entries (SYSLINUX/BIOS + systemd-boot/UEFI + grub).
+grep -rlZ "Arch Linux install medium" "$PROFILE" 2>/dev/null \
+  | xargs -0 -r sed -i 's/Arch Linux install medium/prodos live/g'
+# The epic-font banner in airootfs/etc/motd greets you at login.
+
 # Append prodos + a usable base to releng's package list (keeps all boot deps).
 cat >> "$PROFILE/packages.x86_64" <<'PKGS'
 
