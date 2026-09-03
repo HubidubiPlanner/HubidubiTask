@@ -5,10 +5,17 @@
 set -euo pipefail
 
 VAULT="${PRODOS_VAULT:-$HOME/vault}"
+SEED=/usr/share/prodos/seed/vault
 
-# Vault skeleton (the CLI also creates these lazily, but seed them so the
-# services have somewhere to point on first run).
-mkdir -p "$VAULT"/{inbox,notes,tasks,calendars,projects,someday,.prodos}
+# On first run, seed the vault from the image (a starter vault + config baked
+# in at build time). If there is no seed, just create the empty skeleton.
+if [ ! -d "$VAULT" ] && [ -d "$SEED" ]; then
+  mkdir -p "$VAULT"
+  cp -a "$SEED/." "$VAULT/"
+  echo "seeded vault from $SEED"
+else
+  mkdir -p "$VAULT"/{inbox,notes,tasks,calendars,projects,someday,.prodos}
+fi
 
 # Build the initial index.
 prodos index rebuild || true
