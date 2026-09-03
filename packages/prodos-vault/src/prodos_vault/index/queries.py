@@ -34,16 +34,19 @@ def search(conn: sqlite3.Connection, query: str, limit: int = 20) -> list[dict]:
 
 
 def task_list(conn: sqlite3.Connection, project: str | None = None,
-              context: str | None = None, include_done: bool = False) -> list[dict]:
-    rows = conn.execute("SELECT data FROM entities WHERE type = 'task'").fetchall()
+              context: str | None = None, include_done: bool = False,
+              type_: str = "task") -> list[dict]:
+    """Checkbox-shaped entities of a type — `task` (Phase 3) or `next_action`
+    (GTD), which share the same on-disk form under tasks/."""
+    rows = conn.execute("SELECT data FROM entities WHERE type = ?", (type_,)).fetchall()
     tasks = _rows_to_entities(rows)
     if not include_done:
         tasks = [t for t in tasks if not t["done"]]
     if project:
-        tasks = [t for t in tasks if t["project"] == project]
+        tasks = [t for t in tasks if t.get("project") == project]
     if context:
         tasks = [t for t in tasks if t.get("context") == context]
-    tasks.sort(key=lambda t: (t.get("due") or "9999", t["project"], t["text"]))
+    tasks.sort(key=lambda t: (t.get("due") or "9999", t.get("project") or "", t["text"]))
     return tasks
 
 
@@ -52,6 +55,13 @@ def find_task(conn: sqlite3.Connection, task_id: str) -> tuple[dict, str] | None
         "SELECT data, file FROM entities WHERE id = ? AND type = 'task'",
         (task_id,),
     ).fetchone()
+    return (json.loads(row["data"]), row["file"]) if row else None
+
+
+def find_entity(conn: sqlite3.Connection, entity_id: str) -> tuple[dict, str] | None:
+    """Locate any entity by id (ids are globally unique)."""
+    row = conn.execute(
+        "SELECT data, file FROM entities WHERE id = ?", (entity_id,)).fetchone()
     return (json.loads(row["data"]), row["file"]) if row else None
 
 

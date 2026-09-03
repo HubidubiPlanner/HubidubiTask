@@ -78,13 +78,18 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> list[tuple[Tas
 
 
 def format_task_line(text: str, *, task_id: str | None = None,
-                     due: str | None = None, ctx: str | None = None) -> str:
-    md: dict[str, str] = {"id": task_id or new_id("task")}
+                     due: str | None = None, ctx: str | None = None,
+                     id_prefix: str = "task",
+                     extra: dict[str, str] | None = None) -> str:
+    md: dict[str, str] = {"id": task_id or new_id(id_prefix)}
     if due:
         md["due"] = due
     if ctx:
         md["ctx"] = ctx
     md["updated"] = now_rfc3339()
+    for k, v in (extra or {}).items():
+        if v is not None and v != "":
+            md[k] = str(v)
     return f"- [ ] {text}  {_meta.render(md)}"
 
 
@@ -93,12 +98,14 @@ def new_project_file(project: str) -> str:
 
 
 def append_task(path: Path, text: str, *, due: str | None = None,
-                ctx: str | None = None) -> str:
+                ctx: str | None = None, id_prefix: str = "task",
+                extra: dict[str, str] | None = None) -> str:
     """Append a task line to a project file, creating it if needed.
 
-    Returns the new task id.
+    Returns the new entity id. `id_prefix` and `extra` let callers write a
+    next_action (t_ id, with time/energy metadata) into the same on-disk shape.
     """
-    line = format_task_line(text, due=due, ctx=ctx)
+    line = format_task_line(text, due=due, ctx=ctx, id_prefix=id_prefix, extra=extra)
     task_id = _meta.extract(line)[1]["id"]
     if path.exists():
         content = path.read_text(encoding="utf-8")

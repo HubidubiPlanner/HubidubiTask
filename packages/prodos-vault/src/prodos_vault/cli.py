@@ -111,6 +111,75 @@ def cmd_task_done(vault: Vault, args) -> int:
     return 0
 
 
+# ------------------------------------------------------------ next actions (GTD)
+
+def cmd_next_add(vault: Vault, args) -> int:
+    """Add a next_action directly, without going through the inbox. Fills the
+    gap where, under the GTD plugin set, `task add` has no registered type."""
+    from .formats import tasks_md
+    from .index import indexer
+
+    if not _require_type(vault, "next_action", "gtd"):
+        return 1
+    extra = {}
+    if args.time:
+        extra["time"] = str(args.time)
+    if args.energy:
+        extra["energy"] = args.energy
+    path = vault.tasks_dir / f"{args.project}.md"
+    action_id = tasks_md.append_task(
+        path, " ".join(args.text).strip(), due=args.due, ctx=args.ctx, extra=extra)
+    conn = indexer.open_index(vault, do_sweep=False)  # write-through
+    indexer.index_file(conn, vault, path)
+    conn.close()
+    print(action_id)
+    return 0
+
+
+def cmd_next_list(vault: Vault, args) -> int:
+    from .index import queries
+
+    conn = _open(vault)
+    actions = queries.task_list(
+        conn, project=args.project, context=args.ctx, include_done=args.all,
+        type_="next_action")
+    conn.close()
+    if getattr(args, "json", False):
+        print(json.dumps(actions))
+        return 0
+    for a in actions:
+        box = "[x]" if a["done"] else "[ ]"
+        meta = " ".join(filter(None, [
+            f"due:{a['due']}" if a.get("due") else "", a.get("context") or "",
+            f"~{a['time']}m" if a.get("time") else "",
+            a.get("energy") or ""]))
+        meta = f"  {meta}" if meta else ""
+        print(f"{a['id']}  {box} {a['text']}  ({a.get('project','')}){meta}")
+    return 0
+
+
+def cmd_next_done(vault: Vault, args) -> int:
+    from .formats import tasks_md
+    from .index import indexer, queries
+
+    conn = _open(vault)
+    found = queries.find_entity(conn, args.id)
+    if not found:
+        print(f"no entity with id {args.id}", file=sys.stderr)
+        conn.close()
+        return 1
+    _rec, rel = found
+    path = vault.root / rel
+    if not tasks_md.mark_done(path, args.id, date.today().isoformat()):
+        print(f"{args.id} not found in {rel}", file=sys.stderr)
+        conn.close()
+        return 1
+    indexer.index_file(conn, vault, path)
+    conn.close()
+    print(f"done: {args.id}")
+    return 0
+
+
 # ---------------------------------------------------------------- notes
 
 def cmd_note_new(vault: Vault, args) -> int:
@@ -247,6 +316,27 @@ def build_parser() -> argparse.ArgumentParser:
     sp = tsub.add_parser("done")
     sp.add_argument("id")
     sp.set_defaults(func=cmd_task_done)
+
+    # `next` — direct next_action management under the GTD plugin set.
+    xp = sub.add_parser("next", help="manage GTD next actions")
+    xsub = xp.add_subparsers(dest="next_command", required=True)
+    sp = xsub.add_parser("add", help="add a next action (skips the inbox)")
+    sp.add_argument("text", nargs="+")
+    sp.add_argument("--project", default="inbox")
+    sp.add_argument("--ctx", help="@computer, @calls, ...")
+    sp.add_argument("--due", help="YYYY-MM-DD")
+    sp.add_argument("--time", type=int, help="minutes estimate")
+    sp.add_argument("--energy", choices=["low", "med", "high"])
+    sp.set_defaults(func=cmd_next_add)
+    sp = xsub.add_parser("list")
+    sp.add_argument("--project")
+    sp.add_argument("--ctx")
+    sp.add_argument("--all", action="store_true", help="include done")
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
+    sp.set_defaults(func=cmd_next_list)
+    sp = xsub.add_parser("done")
+    sp.add_argument("id")
+    sp.set_defaults(func=cmd_next_done)
 
     np = sub.add_parser("note", help="manage notes")
     nsub = np.add_subparsers(dest="note_command", required=True)
