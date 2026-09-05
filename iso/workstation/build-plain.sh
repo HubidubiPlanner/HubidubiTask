@@ -90,6 +90,13 @@ rm -f "$PROFILE/airootfs/etc/systemd/system/multi-user.target.wants/nftables.ser
 install -d "$PROFILE/airootfs/usr/share/prodos/seed"
 cp -a "$HERE/seed/vault" "$PROFILE/airootfs/usr/share/prodos/seed/"
 
+# Bake the offline prodos package repo into the image so `prodos-add` can
+# install prodos onto the disk after archinstall (its Arch deps come from the
+# mirrors; prodos itself installs from this file repo — no cloud).
+install -d "$PROFILE/airootfs/usr/share/prodos/repo"
+cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/usr/share/prodos/repo/"
+cp "$PRODOS_REPO"/prodos.db* "$PRODOS_REPO"/prodos.files* "$PROFILE/airootfs/usr/share/prodos/repo/" 2>/dev/null || true
+
 # Guarantee our helper scripts are executable in the image. The exec bit can be
 # lost across the Lima/virtiofs mount, so set it authoritatively via mkarchiso's
 # file_permissions (and chmod the staged copies as a belt-and-suspenders).
@@ -97,7 +104,27 @@ chmod 0755 "$PROFILE"/airootfs/usr/local/bin/prodos-* 2>/dev/null || true
 sed -i '/^file_permissions=(/a\
   ["/usr/local/bin/prodos-firstboot"]="0:0:755"\
   ["/usr/local/bin/prodos-capture-gui"]="0:0:755"\
-  ["/usr/local/bin/prodos-next-panel"]="0:0:755"' "$PROFILE/profiledef.sh"
+  ["/usr/local/bin/prodos-next-panel"]="0:0:755"\
+  ["/usr/local/bin/prodos-add"]="0:0:755"' "$PROFILE/profiledef.sh"
+
+# NVIDIA-safe boot entry (nomodeset). nouveau can't drive new NVIDIA GPUs
+# (e.g. RTX 50-series/Blackwell) and the panel goes black on KMS; nomodeset
+# falls back to the UEFI framebuffer. Add it as the DEFAULT so the machine
+# boots to a visible console with no hand-editing.
+EFIENT="$PROFILE/efiboot/loader/entries"
+base_entry="$(ls "$EFIENT"/*archiso*x86_64*.conf 2>/dev/null | grep -v speech | head -1)"
+if [ -n "$base_entry" ]; then
+  sed -e 's/^title.*/title    prodos live (safe graphics — NVIDIA\/nomodeset)/' \
+      -e 's/^\(options .*\)/\1 nomodeset nouveau.modeset=0/' \
+      "$base_entry" > "$EFIENT/00-prodos-nomodeset.conf"
+  if grep -q '^default' "$PROFILE/efiboot/loader/loader.conf" 2>/dev/null; then
+    sed -i 's/^default .*/default 00-prodos-nomodeset.conf/' "$PROFILE/efiboot/loader/loader.conf"
+  else
+    echo 'default 00-prodos-nomodeset.conf' >> "$PROFILE/efiboot/loader/loader.conf"
+  fi
+fi
+# (BIOS/SYSLINUX users can add `nomodeset` by pressing Tab at the menu; you
+# boot UEFI, where the safe-graphics entry above is already the default.)
 
 # Ship the config files.
 install -Dm644 "$REPO/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"

@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# prodos-add — install prodos onto an already-installed Arch system, using the
+# offline prodos repo baked into this ISO. Run it ON THE LIVE MEDIUM, right
+# after `archinstall`, with the new system still mounted (default /mnt).
+#
+#   prodos-add [target_root] [username]
+#
+# It copies the offline prodos repo into the target, installs the prodos
+# packages (their Arch deps come from the mirrors), ships the systemd user
+# units + the seed vault, and arranges the vault to seed on the user's first
+# login. The risky partitioning stays with archinstall; this is just glue.
+set -euo pipefail
+
+TARGET="${1:-/mnt}"
+USERNAME="${2:-}"
+REPO_SRC=/usr/share/prodos/repo
+SEED_SRC=/usr/share/prodos/seed/vault
+
+[ -f "$TARGET/etc/pacman.conf" ] || { echo "No Arch install at $TARGET — run archinstall first and keep it mounted." >&2; exit 1; }
+[ -d "$REPO_SRC" ] || { echo "prodos repo missing at $REPO_SRC — is this a prodos ISO?" >&2; exit 1; }
+command -v arch-chroot >/dev/null || { echo "arch-chroot not found (run on the prodos/Arch live medium)." >&2; exit 1; }
+
+echo "==> Copying the offline prodos repo into the target"
+install -d "$TARGET/var/cache/prodos-repo"
+cp "$REPO_SRC"/*.pkg.tar.* "$TARGET/var/cache/prodos-repo/"
+cp "$REPO_SRC"/prodos.db* "$REPO_SRC"/prodos.files* "$TARGET/var/cache/prodos-repo/" 2>/dev/null || true
+
+if ! grep -q '^\[prodos\]' "$TARGET/etc/pacman.conf"; then
+  cat >> "$TARGET/etc/pacman.conf" <<'REPO'
+
+[prodos]
+SigLevel = Optional TrustAll
+Server = file:///var/cache/prodos-repo
+REPO
+fi
+
+echo "==> Installing prodos packages (deps from the Arch mirrors)"
+arch-chroot "$TARGET" pacman -Sy --noconfirm --needed \
+  prodos-vault prodos-plugin-host prodos-sync prodos-agent \
+  prodos-plugin-gtd prodos-plugin-calendar \
+  openssh nftables avahi tmux git vim
+
+echo "==> Shipping systemd user units, firstboot, and the seed"
+for u in /etc/systemd/user/prodos-*.service /etc/systemd/user/vault-*.service /etc/systemd/user/vault-*.timer; do
+  [ -f "$u" ] && install -Dm644 "$u" "$TARGET/etc/systemd/user/$(basename "$u")"
+done
+install -Dm755 /usr/local/bin/prodos-firstboot "$TARGET/usr/local/bin/prodos-firstboot"
+install -d "$TARGET/usr/share/prodos/seed"
+cp -a "$SEED_SRC" "$TARGET/usr/share/prodos/seed/"
+
+# Pick the target user (first /home entry if not given).
+[ -n "$USERNAME" ] || USERNAME="$(ls "$TARGET/home" 2>/dev/null | head -1)"
+
+if [ -n "$USERNAME" ] && [ -d "$TARGET/home/$USERNAME" ]; then
+  echo "==> Arranging vault seed + services for $USERNAME"
+  for rc in .bash_profile .zprofile; do
+    prof="$TARGET/home/$USERNAME/$rc"
+    if ! grep -q prodos-firstboot "$prof" 2>/dev/null; then
+      cat >> "$prof" <<'HOOK'
+if [ ! -e "$HOME/.prodos-seeded" ]; then
+  prodos-plugins refresh >/dev/null 2>&1 || true
+  prodos-firstboot || true
+  touch "$HOME/.prodos-seeded"
+fi
+HOOK
+    fi
+  done
+  uid_gid="$(arch-chroot "$TARGET" id -u "$USERNAME"):$(arch-chroot "$TARGET" id -g "$USERNAME")"
+  chown "$uid_gid" "$TARGET/home/$USERNAME"/.bash_profile "$TARGET/home/$USERNAME"/.zprofile 2>/dev/null || true
+  arch-chroot "$TARGET" systemctl --global enable \
+    prodos-sync.service prodos-watch.service vault-autocommit.timer 2>/dev/null || true
+else
+  echo "   (no user home found; create a user, then log in — the vault seeds on first login)"
+fi
+arch-chroot "$TARGET" systemctl enable sshd.service avahi-daemon.service 2>/dev/null || true
+
+cat <<DONE
+
+==> prodos installed into $TARGET. Reboot into your new system (remove the USB).
+    NVIDIA RTX: until you install the proprietary driver, boot with 'nomodeset'.
+    After first boot with network:  sudo pacman -S nvidia-open  (Blackwell/RTX 50xx)
+    then remove nomodeset. Inference: point [inference] in ~/vault/.prodos/config.toml
+    at your selfhostedai-agent, then 'prodos-agent status'.
+DONE
