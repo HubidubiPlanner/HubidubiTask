@@ -41,6 +41,7 @@ repo-add "$PRODOS_REPO/prodos.db.tar.gz" "$PRODOS_REPO"/*.pkg.tar.*
 
 echo "==> Assembling the archiso profile (releng + prodos)"
 cp -r /usr/share/archiso/configs/releng "$PROFILE"
+echo "-> releng copied; branding"
 
 # Branding: make it announce itself as prodos, not vanilla Arch.
 sed -i \
@@ -49,9 +50,13 @@ sed -i \
   -e 's#^iso_publisher=.*#iso_publisher="prodos <https://github.com/hubidubitask/HubidubiTask>"#' \
   -e 's/^iso_application=.*/iso_application="prodos workstation live medium"/' \
   "$PROFILE/profiledef.sh"
-# Retitle the boot-menu entries (SYSLINUX/BIOS + systemd-boot/UEFI + grub).
-grep -rlZ "Arch Linux install medium" "$PROFILE" 2>/dev/null \
-  | xargs -0 -r sed -i 's/Arch Linux install medium/prodos live/g'
+# Retitle the boot-menu entries. Best-effort and non-fatal: releng's exact
+# label string varies between archiso versions, so a no-match must NOT kill the
+# build (it did once, silently, under `set -o pipefail`).
+find "$PROFILE"/syslinux "$PROFILE"/efiboot "$PROFILE"/grub -type f 2>/dev/null | while read -r f; do
+  sed -i -e 's/Arch Linux install medium/prodos live/g' \
+         -e 's/^\(title[[:space:]]*\)Arch Linux.*/\1prodos live/' "$f" 2>/dev/null || true
+done
 # The epic-font banner in airootfs/etc/motd greets you at login.
 
 # Append prodos + a usable base to releng's package list (keeps all boot deps).
@@ -93,6 +98,7 @@ cp -a "$HERE/seed/vault" "$PROFILE/airootfs/usr/share/prodos/seed/"
 # Bake the offline prodos package repo into the image so `prodos-add` can
 # install prodos onto the disk after archinstall (its Arch deps come from the
 # mirrors; prodos itself installs from this file repo — no cloud).
+echo "-> baking offline prodos repo"
 install -d "$PROFILE/airootfs/usr/share/prodos/repo"
 cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/usr/share/prodos/repo/"
 cp "$PRODOS_REPO"/prodos.db* "$PRODOS_REPO"/prodos.files* "$PROFILE/airootfs/usr/share/prodos/repo/" 2>/dev/null || true
@@ -111,9 +117,11 @@ sed -i '/^file_permissions=(/a\
 # (e.g. RTX 50-series/Blackwell) and the panel goes black on KMS; nomodeset
 # falls back to the UEFI framebuffer. Add it as the DEFAULT so the machine
 # boots to a visible console with no hand-editing.
+echo "-> adding NVIDIA-safe (nomodeset) boot entry"
 EFIENT="$PROFILE/efiboot/loader/entries"
-base_entry="$(ls "$EFIENT"/*archiso*x86_64*.conf 2>/dev/null | grep -v speech | head -1)"
-if [ -n "$base_entry" ]; then
+# releng names its UEFI entries like 01-archiso-linux.conf (no 'x86_64').
+base_entry="$(ls "$EFIENT"/*archiso*linux.conf 2>/dev/null | grep -v speech | head -1 || true)"
+if [ -n "${base_entry:-}" ]; then
   sed -e 's/^title.*/title    prodos live (safe graphics — NVIDIA\/nomodeset)/' \
       -e 's/^\(options .*\)/\1 nomodeset nouveau.modeset=0/' \
       "$base_entry" > "$EFIENT/00-prodos-nomodeset.conf"
@@ -122,6 +130,8 @@ if [ -n "$base_entry" ]; then
   else
     echo 'default 00-prodos-nomodeset.conf' >> "$PROFILE/efiboot/loader/loader.conf"
   fi
+else
+  echo "   (warning: no base UEFI loader entry found; nomodeset default not set)" >&2
 fi
 # (BIOS/SYSLINUX users can add `nomodeset` by pressing Tab at the menu; you
 # boot UEFI, where the safe-graphics entry above is already the default.)
