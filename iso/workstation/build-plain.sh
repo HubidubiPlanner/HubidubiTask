@@ -148,8 +148,7 @@ done
 for rc in .zprofile .bash_profile; do
   cat >> "$PROFILE/airootfs/root/$rc" <<'HOOK'
 if [ ! -e /root/.prodos-seeded ]; then
-  prodos-plugins refresh >/dev/null 2>&1 || true
-  prodos-firstboot || true
+  prodos-firstboot || true   # seeds ~/vault, refreshes types, indexes
   touch /root/.prodos-seeded
 fi
 HOOK

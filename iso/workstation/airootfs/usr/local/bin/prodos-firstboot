@@ -17,13 +17,14 @@ else
   mkdir -p "$VAULT"/{inbox,notes,tasks,calendars,projects,someday,.prodos}
 fi
 
-# Build the initial index.
-prodos index rebuild || true
-
-# Register the default plugin set's entity types.
+# Register the default plugin set's entity types FIRST (so the index below
+# classifies the seeded files under the GTD types, not the builtin ones).
 if command -v prodos-plugins >/dev/null 2>&1; then
   prodos-plugins refresh || true
 fi
+
+# Build the initial index.
+prodos index rebuild || true
 
 # Per-user services (sync + watcher + inference). System services (sshd,
 # nftables, avahi) are enabled in the image.

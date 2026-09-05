@@ -58,8 +58,7 @@ if [ -n "$USERNAME" ] && [ -d "$TARGET/home/$USERNAME" ]; then
     if ! grep -q prodos-firstboot "$prof" 2>/dev/null; then
       cat >> "$prof" <<'HOOK'
 if [ ! -e "$HOME/.prodos-seeded" ]; then
-  prodos-plugins refresh >/dev/null 2>&1 || true
-  prodos-firstboot || true
+  prodos-firstboot || true   # seeds ~/vault, refreshes types, indexes
   touch "$HOME/.prodos-seeded"
 fi
 HOOK
