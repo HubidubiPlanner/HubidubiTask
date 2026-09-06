@@ -72,6 +72,11 @@ prodos-plugin-calendar
 openssh
 nftables
 avahi
+# NVIDIA open kernel driver — REQUIRED to light a Blackwell/RTX 50-series card
+# in the live env (nouveau can't drive it, and the bare framebuffer console goes
+# black mid-boot on this GPU). nvidia-utils pulls the matching userspace.
+nvidia-open
+nvidia-utils
 tmux
 git
 vim
@@ -113,25 +118,44 @@ sed -i '/^file_permissions=(/a\
   ["/usr/local/bin/prodos-next-panel"]="0:0:755"\
   ["/usr/local/bin/prodos-add"]="0:0:755"' "$PROFILE/profiledef.sh"
 
-# NVIDIA boot entries. On a machine whose only GPU is a brand-new NVIDIA card
-# (e.g. RTX 50-series/Blackwell) with no iGPU, nouveau can't drive it and the
-# console goes black when nouveau loads. The fix is to KEEP the kernel's
-# framebuffer console (simpledrm/efifb) and just block nouveau — NOT nomodeset,
-# which disables the framebuffer console too and gives a black screen with no
-# logs. Default to the nouveau-blocked entry; keep a nomodeset entry as a
-# deeper fallback and the stock entry as "normal".
-echo "-> adding NVIDIA boot entries (nouveau blocked default)"
+# NVIDIA graphics. On a machine whose only GPU is a brand-new NVIDIA card
+# (RTX 50-series/Blackwell) with no iGPU, nouveau can't drive it, AND the bare
+# framebuffer console (simpledrm/efifb) can't be sustained past early boot — you
+# see a few log lines, then black. The only thing that reliably lights the card
+# is NVIDIA's own kernel driver. So we bake in nvidia-open (the open kernel
+# modules, the ones that support Blackwell), load them early via the initramfs,
+# and boot with nvidia-drm.modeset=1 + nouveau blacklisted. Fallback entries
+# (bare framebuffer, then nomodeset) stay for other/older hardware.
+echo "-> configuring NVIDIA driver (nvidia-open, early KMS)"
+
+# Early-load the nvidia modules in the ISO's initramfs so KMS lights the display
+# before userspace, and blacklist nouveau at the module level (belt to the
+# kernel-param suspenders below).
+install -Dm644 /dev/stdin "$PROFILE/airootfs/etc/mkinitcpio.conf.d/nvidia.conf" <<'MKI'
+# prodos: pull NVIDIA's KMS-capable modules into the live initramfs so the RTX
+# lights up early instead of black-screening on the framebuffer console.
+MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+MKI
+install -Dm644 /dev/stdin "$PROFILE/airootfs/etc/modprobe.d/prodos-nvidia.conf" <<'MOD'
+blacklist nouveau
+options nvidia_drm modeset=1
+MOD
+
 EFIENT="$PROFILE/efiboot/loader/entries"
 base_entry="$(ls "$EFIENT"/*archiso*linux.conf 2>/dev/null | grep -v speech | head -1 || true)"
 if [ -n "${base_entry:-}" ]; then
-  # Default: keep the framebuffer console, block nouveau.
-  sed -e 's/^title.*/title    prodos live (NVIDIA — nouveau blocked)/' \
-      -e 's/^\(options .*\)/\1 modprobe.blacklist=nouveau nouveau.modeset=0/' \
+  # Default: drive the card with nvidia-open + KMS (blacklist nouveau).
+  sed -e 's/^title.*/title    prodos live (NVIDIA driver)/' \
+      -e 's/^\(options .*\)/\1 nvidia-drm.modeset=1 modprobe.blacklist=nouveau/' \
       "$base_entry" > "$EFIENT/00-prodos-nvidia.conf"
-  # Deeper fallback: disable all KMS as well.
+  # Fallback 1: no nvidia driver, keep the bare framebuffer console, block nouveau.
+  sed -e 's/^title.*/title    prodos live (framebuffer — no nvidia driver)/' \
+      -e 's/^\(options .*\)/\1 modprobe.blacklist=nouveau,nvidia,nvidia_drm nouveau.modeset=0/' \
+      "$base_entry" > "$EFIENT/01-prodos-framebuffer.conf"
+  # Fallback 2: disable all KMS.
   sed -e 's/^title.*/title    prodos live (fallback — nomodeset)/' \
-      -e 's/^\(options .*\)/\1 nomodeset modprobe.blacklist=nouveau/' \
-      "$base_entry" > "$EFIENT/01-prodos-nomodeset.conf"
+      -e 's/^\(options .*\)/\1 nomodeset modprobe.blacklist=nouveau,nvidia,nvidia_drm/' \
+      "$base_entry" > "$EFIENT/02-prodos-nomodeset.conf"
   if grep -q '^default' "$PROFILE/efiboot/loader/loader.conf" 2>/dev/null; then
     sed -i 's/^default .*/default 00-prodos-nvidia.conf/' "$PROFILE/efiboot/loader/loader.conf"
   else

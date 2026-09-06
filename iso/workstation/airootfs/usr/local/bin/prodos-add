@@ -38,7 +38,22 @@ echo "==> Installing prodos packages (deps from the Arch mirrors)"
 arch-chroot "$TARGET" pacman -Sy --noconfirm --needed \
   prodos-vault prodos-plugin-host prodos-sync prodos-agent \
   prodos-plugin-gtd prodos-plugin-calendar \
-  openssh nftables avahi tmux git vim
+  openssh nftables avahi tmux git vim \
+  nvidia-open nvidia-utils
+
+# NVIDIA: make the INSTALLED system light a Blackwell/RTX 50-series card on its
+# first boot (with no iGPU, this is the only display). nvidia-open + early KMS
+# via the initramfs + modeset — same recipe the live medium uses. Done through
+# modprobe.d so we don't have to touch archinstall's bootloader cmdline.
+echo "==> Wiring the NVIDIA driver into the installed system (early KMS)"
+install -Dm644 /dev/stdin "$TARGET/etc/mkinitcpio.conf.d/nvidia.conf" <<'MKI'
+MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+MKI
+install -Dm644 /dev/stdin "$TARGET/etc/modprobe.d/prodos-nvidia.conf" <<'MOD'
+blacklist nouveau
+options nvidia_drm modeset=1
+MOD
+arch-chroot "$TARGET" mkinitcpio -P 2>/dev/null || true
 
 echo "==> Shipping systemd user units, firstboot, and the seed"
 for u in /etc/systemd/user/prodos-*.service /etc/systemd/user/vault-*.service /etc/systemd/user/vault-*.timer; do
@@ -76,8 +91,10 @@ arch-chroot "$TARGET" systemctl enable sshd.service avahi-daemon.service 2>/dev/
 cat <<DONE
 
 ==> prodos installed into $TARGET. Reboot into your new system (remove the USB).
-    NVIDIA RTX: until you install the proprietary driver, boot with 'nomodeset'.
-    After first boot with network:  sudo pacman -S nvidia-open  (Blackwell/RTX 50xx)
-    then remove nomodeset. Inference: point [inference] in ~/vault/.prodos/config.toml
-    at your selfhostedai-agent, then 'prodos-agent status'.
+    NVIDIA: the nvidia-open driver + early KMS are already baked into the install,
+    so your graphics card should light up on first boot (no nomodeset needed). If the very
+    first boot is black, pick the fallback boot entry once and it will be fine
+    after the driver's initramfs settles.
+    Inference: point [inference] in ~/vault/.prodos/config.toml at your
+    selfhostedai-agent, then 'prodos-agent status'.
 DONE
