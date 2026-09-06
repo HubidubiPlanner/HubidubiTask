@@ -11,13 +11,16 @@ from . import auth, certs, db
 def cmd_serve(vault: Vault, args) -> int:
     from .server import serve
 
-    if args.bind == "0.0.0.0":
+    # 'auto' resolves the primary LAN IP so the unit needn't hardcode an address
+    # (DHCP-friendly, and pairing then works out of the box).
+    bind = _lan_ip() if args.bind == "auto" else args.bind
+    if bind == "0.0.0.0":
         print("refusing to bind 0.0.0.0 — bind the LAN interface explicitly",
               file=sys.stderr)
         return 1
-    srv = serve(vault, args.bind, args.port, use_tls=not args.no_tls)
+    srv = serve(vault, bind, args.port, use_tls=not args.no_tls)
     scheme = "http" if args.no_tls else "https"
-    print(f"prodos-sync on {scheme}://{args.bind}:{args.port} (vault: {vault.root})")
+    print(f"prodos-sync on {scheme}://{bind}:{args.port} (vault: {vault.root})")
     if srv.fingerprint:
         print(f"cert fingerprint: {srv.fingerprint}")
     try:
@@ -112,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sp = sub.add_parser("serve", help="run the sync API")
     sp.add_argument("--bind", default="127.0.0.1",
-                    help="LAN interface address (never 0.0.0.0)")
+                    help="LAN interface address, or 'auto' to detect it (never 0.0.0.0)")
     sp.add_argument("--port", type=int, default=5233)
     sp.add_argument("--no-tls", action="store_true",
                     help="plain HTTP, for local development only")
