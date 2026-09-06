@@ -113,28 +113,33 @@ sed -i '/^file_permissions=(/a\
   ["/usr/local/bin/prodos-next-panel"]="0:0:755"\
   ["/usr/local/bin/prodos-add"]="0:0:755"' "$PROFILE/profiledef.sh"
 
-# NVIDIA-safe boot entry (nomodeset). nouveau can't drive new NVIDIA GPUs
-# (e.g. RTX 50-series/Blackwell) and the panel goes black on KMS; nomodeset
-# falls back to the UEFI framebuffer. Add it as the DEFAULT so the machine
-# boots to a visible console with no hand-editing.
-echo "-> adding NVIDIA-safe (nomodeset) boot entry"
+# NVIDIA boot entries. On a machine whose only GPU is a brand-new NVIDIA card
+# (e.g. RTX 50-series/Blackwell) with no iGPU, nouveau can't drive it and the
+# console goes black when nouveau loads. The fix is to KEEP the kernel's
+# framebuffer console (simpledrm/efifb) and just block nouveau — NOT nomodeset,
+# which disables the framebuffer console too and gives a black screen with no
+# logs. Default to the nouveau-blocked entry; keep a nomodeset entry as a
+# deeper fallback and the stock entry as "normal".
+echo "-> adding NVIDIA boot entries (nouveau blocked default)"
 EFIENT="$PROFILE/efiboot/loader/entries"
-# releng names its UEFI entries like 01-archiso-linux.conf (no 'x86_64').
 base_entry="$(ls "$EFIENT"/*archiso*linux.conf 2>/dev/null | grep -v speech | head -1 || true)"
 if [ -n "${base_entry:-}" ]; then
-  sed -e 's/^title.*/title    prodos live (safe graphics — NVIDIA\/nomodeset)/' \
-      -e 's/^\(options .*\)/\1 nomodeset nouveau.modeset=0/' \
-      "$base_entry" > "$EFIENT/00-prodos-nomodeset.conf"
+  # Default: keep the framebuffer console, block nouveau.
+  sed -e 's/^title.*/title    prodos live (NVIDIA — nouveau blocked)/' \
+      -e 's/^\(options .*\)/\1 modprobe.blacklist=nouveau nouveau.modeset=0/' \
+      "$base_entry" > "$EFIENT/00-prodos-nvidia.conf"
+  # Deeper fallback: disable all KMS as well.
+  sed -e 's/^title.*/title    prodos live (fallback — nomodeset)/' \
+      -e 's/^\(options .*\)/\1 nomodeset modprobe.blacklist=nouveau/' \
+      "$base_entry" > "$EFIENT/01-prodos-nomodeset.conf"
   if grep -q '^default' "$PROFILE/efiboot/loader/loader.conf" 2>/dev/null; then
-    sed -i 's/^default .*/default 00-prodos-nomodeset.conf/' "$PROFILE/efiboot/loader/loader.conf"
+    sed -i 's/^default .*/default 00-prodos-nvidia.conf/' "$PROFILE/efiboot/loader/loader.conf"
   else
-    echo 'default 00-prodos-nomodeset.conf' >> "$PROFILE/efiboot/loader/loader.conf"
+    echo 'default 00-prodos-nvidia.conf' >> "$PROFILE/efiboot/loader/loader.conf"
   fi
 else
-  echo "   (warning: no base UEFI loader entry found; nomodeset default not set)" >&2
+  echo "   (warning: no base UEFI loader entry found; NVIDIA default not set)" >&2
 fi
-# (BIOS/SYSLINUX users can add `nomodeset` by pressing Tab at the menu; you
-# boot UEFI, where the safe-graphics entry above is already the default.)
 
 # Ship the config files.
 install -Dm644 "$REPO/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"
