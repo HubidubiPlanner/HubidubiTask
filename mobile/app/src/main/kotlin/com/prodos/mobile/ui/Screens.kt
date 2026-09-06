@@ -1,5 +1,6 @@
 package com.prodos.mobile.ui
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,9 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.prodos.core.EntityRecord
+import com.prodos.mobile.pairing.PairingActivity
 import kotlinx.coroutines.launch
 
 private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
@@ -161,6 +164,7 @@ fun ChatScreen(state: ProdosViewModel.UiState, vm: ProdosViewModel) {
 
 @Composable
 fun SettingsScreen(state: ProdosViewModel.UiState, vm: ProdosViewModel) {
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Settings", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -168,11 +172,28 @@ fun SettingsScreen(state: ProdosViewModel.UiState, vm: ProdosViewModel) {
         StatusDot(state.inference.connected,
             "Inference: " + (state.inference.server ?: "unknown"))
         Spacer(Modifier.height(16.dp))
-        Button(onClick = { vm.syncNow() }, enabled = state.paired && !state.syncing) {
-            Text(if (state.syncing) "Syncing…" else "Sync now")
-        }
+
+        // Pair / re-pair with a workstation. This is the entry point the UI was
+        // missing: it launches the pairing screen (paste the payload from
+        // `prodos-sync pair`, or scan its QR).
+        Button(
+            onClick = {
+                context.startActivity(Intent(context, PairingActivity::class.java))
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(if (state.paired) "Re-pair workstation" else "Pair workstation") }
+
         Spacer(Modifier.height(8.dp))
-        Text("Pair a new workstation from its QR via the Pairing screen " +
-            "(prodos-sync pair on the workstation).")
+        Button(
+            onClick = { vm.syncNow() },
+            enabled = state.paired && !state.syncing,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(if (state.syncing) "Syncing…" else "Sync now") }
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "On the workstation run:  prodos-sync pair\n" +
+                "Then paste the payload line here, or scan its QR.",
+        )
     }
 }
