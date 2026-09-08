@@ -55,6 +55,15 @@ options nvidia_drm modeset=1
 MOD
 arch-chroot "$TARGET" mkinitcpio -P 2>/dev/null || true
 
+# If archinstall set up systemd-boot, pin an 80x25 text console so its menu
+# doesn't lag for seconds on the RTX's big UEFI framebuffer (same GOP-redraw
+# quirk as the live medium). Harmless if the loader is GRUB (file absent).
+for lc in "$TARGET/boot/loader/loader.conf" "$TARGET/efi/loader/loader.conf" "$TARGET/boot/efi/loader/loader.conf"; do
+  [ -f "$lc" ] || continue
+  grep -q '^console-mode' "$lc" && sed -i 's/^console-mode.*/console-mode 0/' "$lc" || echo 'console-mode 0' >> "$lc"
+  echo "   (set console-mode 0 in $(basename "$(dirname "$lc")")/loader.conf for a fast boot menu)"
+done
+
 echo "==> Shipping systemd user units, firstboot, and the seed"
 for u in /etc/systemd/user/hubidubios-*.service /etc/systemd/user/vault-*.service /etc/systemd/user/vault-*.timer; do
   [ -f "$u" ] && install -Dm644 "$u" "$TARGET/etc/systemd/user/$(basename "$u")"

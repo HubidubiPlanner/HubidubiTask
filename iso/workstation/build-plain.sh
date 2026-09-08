@@ -157,6 +157,9 @@ if [ -n "${base_entry:-}" ]; then
   sed -e 's/^title.*/title    HubidubiOS live (fallback — nomodeset)/' \
       -e 's/^\(options .*\)/\1 nomodeset modprobe.blacklist=nouveau,nvidia,nvidia_drm/' \
       "$base_entry" > "$EFIENT/02-hubidubios-nomodeset.conf"
+  # Declutter the menu: drop the stock archiso linux + speech entries (our three
+  # HubidubiOS entries replace the plain one). Fewer entries = no scroll-off.
+  rm -f "$EFIENT"/*archiso*linux.conf "$EFIENT"/*speech*.conf
   if grep -q '^default' "$PROFILE/efiboot/loader/loader.conf" 2>/dev/null; then
     sed -i 's/^default .*/default 00-hubidubios-nvidia.conf/' "$PROFILE/efiboot/loader/loader.conf"
   else
@@ -165,6 +168,14 @@ if [ -n "${base_entry:-}" ]; then
 else
   echo "   (warning: no base UEFI loader entry found; NVIDIA default not set)" >&2
 fi
+
+# systemd-boot on a large NVIDIA UEFI framebuffer (GOP) redraws the whole screen
+# on every keypress, so the cursor lags for seconds. Pin an 80x25 text console
+# (console-mode 0) so redraws are instant, and give a short timeout so the
+# pre-selected NVIDIA entry just boots without any navigation.
+LOADER="$PROFILE/efiboot/loader/loader.conf"
+grep -q '^console-mode' "$LOADER" 2>/dev/null && sed -i 's/^console-mode.*/console-mode 0/' "$LOADER" || echo 'console-mode 0' >> "$LOADER"
+grep -q '^timeout'      "$LOADER" 2>/dev/null && sed -i 's/^timeout.*/timeout 8/'        "$LOADER" || echo 'timeout 8'        >> "$LOADER"
 
 # Ship the config files.
 install -Dm644 "$REPO/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"
