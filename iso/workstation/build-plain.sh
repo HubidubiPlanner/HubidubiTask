@@ -43,19 +43,20 @@ echo "==> Assembling the archiso profile (releng + prodos)"
 cp -r /usr/share/archiso/configs/releng "$PROFILE"
 echo "-> releng copied; branding"
 
-# Branding: make it announce itself as prodos, not vanilla Arch.
+# Branding: make it announce itself as HubidubiOS, not vanilla Arch. (The name
+# is the OS branding; the CLI/packages stay `prodos`.)
 sed -i \
-  -e 's/^iso_name=.*/iso_name="prodos"/' \
-  -e 's/^iso_label=.*/iso_label="PRODOS_$(date +%Y%m)"/' \
-  -e 's#^iso_publisher=.*#iso_publisher="prodos <https://github.com/hubidubitask/HubidubiTask>"#' \
-  -e 's/^iso_application=.*/iso_application="prodos workstation live medium"/' \
+  -e 's/^iso_name=.*/iso_name="hubidubios"/' \
+  -e 's/^iso_label=.*/iso_label="HUBIDUBIOS_$(date +%Y%m)"/' \
+  -e 's#^iso_publisher=.*#iso_publisher="HubidubiOS <https://github.com/hubidubitask/HubidubiTask>"#' \
+  -e 's/^iso_application=.*/iso_application="HubidubiOS workstation live medium"/' \
   "$PROFILE/profiledef.sh"
 # Retitle the boot-menu entries. Best-effort and non-fatal: releng's exact
 # label string varies between archiso versions, so a no-match must NOT kill the
 # build (it did once, silently, under `set -o pipefail`).
 find "$PROFILE"/syslinux "$PROFILE"/efiboot "$PROFILE"/grub -type f 2>/dev/null | while read -r f; do
-  sed -i -e 's/Arch Linux install medium/prodos live/g' \
-         -e 's/^\(title[[:space:]]*\)Arch Linux.*/\1prodos live/' "$f" 2>/dev/null || true
+  sed -i -e 's/Arch Linux install medium/HubidubiOS live/g' \
+         -e 's/^\(title[[:space:]]*\)Arch Linux.*/\1HubidubiOS live/' "$f" 2>/dev/null || true
 done
 # The epic-font banner in airootfs/etc/motd greets you at login.
 
@@ -145,15 +146,15 @@ EFIENT="$PROFILE/efiboot/loader/entries"
 base_entry="$(ls "$EFIENT"/*archiso*linux.conf 2>/dev/null | grep -v speech | head -1 || true)"
 if [ -n "${base_entry:-}" ]; then
   # Default: drive the card with nvidia-open + KMS (blacklist nouveau).
-  sed -e 's/^title.*/title    prodos live (NVIDIA driver)/' \
+  sed -e 's/^title.*/title    HubidubiOS live (NVIDIA driver)/' \
       -e 's/^\(options .*\)/\1 nvidia-drm.modeset=1 modprobe.blacklist=nouveau/' \
       "$base_entry" > "$EFIENT/00-prodos-nvidia.conf"
   # Fallback 1: no nvidia driver, keep the bare framebuffer console, block nouveau.
-  sed -e 's/^title.*/title    prodos live (framebuffer — no nvidia driver)/' \
+  sed -e 's/^title.*/title    HubidubiOS live (framebuffer — no nvidia driver)/' \
       -e 's/^\(options .*\)/\1 modprobe.blacklist=nouveau,nvidia,nvidia_drm nouveau.modeset=0/' \
       "$base_entry" > "$EFIENT/01-prodos-framebuffer.conf"
   # Fallback 2: disable all KMS.
-  sed -e 's/^title.*/title    prodos live (fallback — nomodeset)/' \
+  sed -e 's/^title.*/title    HubidubiOS live (fallback — nomodeset)/' \
       -e 's/^\(options .*\)/\1 nomodeset modprobe.blacklist=nouveau,nvidia,nvidia_drm/' \
       "$base_entry" > "$EFIENT/02-prodos-nomodeset.conf"
   if grep -q '^default' "$PROFILE/efiboot/loader/loader.conf" 2>/dev/null; then
