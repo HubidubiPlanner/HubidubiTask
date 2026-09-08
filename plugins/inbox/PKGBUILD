@@ -2,7 +2,7 @@
 pkgname=hubidubios-plugin-inbox
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="hubidubios plugin: GTD capture inbox, append-only"
+pkgdesc="HubidubiOS plugin: GTD capture inbox, append-only"
 arch=('any')
 url="https://gitlab.local/hubidubios"
 license=('MIT')

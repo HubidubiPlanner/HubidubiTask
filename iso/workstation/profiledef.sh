@@ -8,7 +8,7 @@
 iso_name="hubidubios-workstation"
 iso_label="HUBIDUBIOS_$(date +%Y%m)"
 iso_publisher="hubidubios <https://gitlab.local/hubidubios>"
-iso_application="hubidubios workstation live/install medium"
+iso_application="HubidubiOS workstation live/install medium"
 iso_version="$(date +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')

@@ -4,7 +4,7 @@
 pkgname=hubidubios-plugin-tasks
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="hubidubios plugin: project-scoped task lists with contexts and due dates"
+pkgdesc="HubidubiOS plugin: project-scoped task lists with contexts and due dates"
 arch=('any')
 url="https://gitlab.local/hubidubios"
 license=('MIT')

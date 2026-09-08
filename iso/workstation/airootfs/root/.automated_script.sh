@@ -4,5 +4,5 @@
 # via hubidubios-firstboot. Kept tiny so the QEMU smoke test reaches a shell fast.
 if [[ "$(cat /proc/cmdline)" == *"hubidubios.smoke"* ]]; then
   # Non-interactive smoke mode: make the CLI available and exit to a shell.
-  echo "hubidubios live medium (smoke mode)"
+  echo "HubidubiOS live medium (smoke mode)"
 fi

@@ -38,7 +38,7 @@ private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
 fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var text by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("hubidubios", fontWeight = FontWeight.Bold)
+        Text("HubidubiOS", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         StatusDot(state.paired, if (state.paired) "sync paired" else "local only")
         StatusDot(state.inference.connected,

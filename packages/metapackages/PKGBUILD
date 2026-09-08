@@ -9,24 +9,24 @@ url="https://gitlab.local/hubidubios"
 license=('MIT')
 
 package_hubidubios-base() {
-  pkgdesc="hubidubios base: vault CLI, sync, firewall, discovery"
+  pkgdesc="HubidubiOS base: vault CLI, sync, firewall, discovery"
   depends=('hubidubios-vault' 'hubidubios-sync' 'nftables' 'avahi')
 }
 
 package_hubidubios-plugins-default() {
-  pkgdesc="hubidubios default plugin set"
+  pkgdesc="HubidubiOS default plugin set"
   # gtd supersedes the tasks + inbox extraction plugins (Phase 6).
   depends=('hubidubios-plugin-gtd' 'hubidubios-plugin-calendar')
 }
 
 package_hubidubios-workstation() {
-  pkgdesc="hubidubios workstation: holds the vault, runs inference and the agent"
+  pkgdesc="HubidubiOS workstation: holds the vault, runs inference and the agent"
   depends=('hubidubios-base' 'hubidubios-plugin-host' 'hubidubios-plugins-default'
            'hubidubios-agent' 'llama.cpp'
            'radicale' 'syncthing' 'git')
 }
 
 package_hubidubios-thin() {
-  pkgdesc="hubidubios thin client: no local state, no local inference"
+  pkgdesc="HubidubiOS thin client: no local state, no local inference"
   depends=('openssh' 'mosh' 'tmux')
 }

@@ -11,7 +11,7 @@
 
     <application
         android:allowBackup="false"
-        android:label="hubidubios"
+        android:label="HubidubiOS"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.HubidubiOs">

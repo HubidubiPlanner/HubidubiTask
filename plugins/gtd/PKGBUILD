@@ -4,7 +4,7 @@
 pkgname=hubidubios-plugin-gtd
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="hubidubios plugin: Getting Things Done workflow"
+pkgdesc="HubidubiOS plugin: Getting Things Done workflow"
 arch=('any')
 url="https://gitlab.local/hubidubios"
 license=('MIT')

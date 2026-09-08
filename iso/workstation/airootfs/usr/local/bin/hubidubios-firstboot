@@ -52,9 +52,9 @@ for cfg in "$HOME/.config/quickshell"/*/config.* ; do
   [ -f "$cfg" ] || continue
   sed -i '/claude-code/d; /coding-agent/d; /CodingAgent/d' "$cfg" 2>/dev/null || true
 done
-echo "hubidubios: add \`HubidubiOsStatus {}\` (import \"/etc/hubidubios/quickshell\") to the bar."
+echo "HubidubiOS: add \`HubidubiOsStatus {}\` (import \"/etc/hubidubios/quickshell\") to the bar."
 
-echo "hubidubios workstation ready. Vault at $VAULT."
+echo "HubidubiOS workstation ready. Vault at $VAULT."
 echo "Inference: $(hubidubios-agent status 2>/dev/null || echo 'configure [inference] in ~/vault/.hubidubios/config.toml')"
 echo "Pair a phone with:  hubidubios-sync pair"
 echo "Capture anywhere:   Super+Shift+Space"

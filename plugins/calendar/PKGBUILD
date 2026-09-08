@@ -2,7 +2,7 @@
 pkgname=hubidubios-plugin-calendar
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="hubidubios plugin: iCalendar events, shared with Radicale"
+pkgdesc="HubidubiOS plugin: iCalendar events, shared with Radicale"
 arch=('any')
 url="https://gitlab.local/hubidubios"
 license=('MIT')
