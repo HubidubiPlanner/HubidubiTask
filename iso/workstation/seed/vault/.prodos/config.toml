@@ -1,9 +1,0 @@
-# prodos vault config, seeded into the image (Phase: plain prodos ISO).
-# Points the agent at the local selfhostedai-agent OpenAI server by default.
-# Edit endpoint / api_key to taste; PRODOS_MODEL_ENDPOINT overrides at runtime.
-
-[inference]
-endpoint = "http://127.0.0.1:8081/v1/chat/completions"
-model = "local"
-# api_key = ""
-# tls_fingerprint = ""

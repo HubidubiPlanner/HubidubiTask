@@ -1,7 +1,7 @@
 """Platform-independent checks of the bwrap invocation we construct."""
 
 import pytest
-from prodos_plugin_host.sandbox import SandboxError, bwrap_args, resolve_scope
+from hubidubios_plugin_host.sandbox import SandboxError, bwrap_args, resolve_scope
 
 SPEC = {"read": ["vault:calendars"], "write": ["vault:tasks"],
         "network": "none", "timeout": "30s"}

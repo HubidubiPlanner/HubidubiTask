@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command containerized install-and-test of prodos (Phase 8 harness).
+# One-command containerized install-and-test of hubidubios (Phase 8 harness).
 #
 # Builds a cached Arch base image (only when its deps change), then runs the
 # full build → pacman install → test → live-smoke sequence in a throwaway
@@ -15,7 +15,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-IMAGE="prodos-test:base"
+IMAGE="hubidubios-test:base"
 DOCKER="${DOCKER:-docker}"
 
 # The sandbox tests use bwrap, whose user-namespace + mount syscalls are NOT
@@ -24,11 +24,11 @@ DOCKER="${DOCKER:-docker}"
 # natively; x86_64 (and CI) runs the official archlinux, the real target.
 case "$(uname -m)" in
   arm64|aarch64)
-    BASE="${PRODOS_BASE:-menci/archlinuxarm:latest}"
-    PLATFORM="${PRODOS_PLATFORM:-linux/arm64}" ;;
+    BASE="${HUBIDUBIOS_BASE:-menci/archlinuxarm:latest}"
+    PLATFORM="${HUBIDUBIOS_PLATFORM:-linux/arm64}" ;;
   *)
-    BASE="${PRODOS_BASE:-archlinux:latest}"
-    PLATFORM="${PRODOS_PLATFORM:-linux/amd64}" ;;
+    BASE="${HUBIDUBIOS_BASE:-archlinux:latest}"
+    PLATFORM="${HUBIDUBIOS_PLATFORM:-linux/amd64}" ;;
 esac
 
 if ! "$DOCKER" info >/dev/null 2>&1; then

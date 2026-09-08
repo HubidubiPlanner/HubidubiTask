@@ -1,7 +1,7 @@
-# Base image for prodos install-and-test runs (Phase 8 test harness).
+# Base image for hubidubios install-and-test runs (Phase 8 test harness).
 # Prebuilt and cached so the frequent loop only re-runs the test script, not
 # the dependency install. Rebuild only when these deps change:
-#   docker build -f tests/container/Dockerfile.arch -t prodos-test:base .
+#   docker build -f tests/container/Dockerfile.arch -t hubidubios-test:base .
 # Base is arch-specific: amd64 uses the official archlinux (the real workstation
 # target, used in CI); Apple Silicon uses Arch Linux ARM so bwrap runs NATIVELY
 # — bwrap's user-namespace + mount syscalls are not emulated by QEMU or Rosetta,

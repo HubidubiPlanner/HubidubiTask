@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Provision a prodos-thin client (PLAN.md Phase 7).
+# Provision a hubidubios-thin client (PLAN.md Phase 7).
 #
 # Do NOT build an Arch ARM ISO (community-maintained, often stale). Run this on
 # a fresh Raspberry Pi OS Lite or Alpine aarch64 install. The thin client keeps
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 WORKSTATION="${1:?usage: provision.sh <workstation-host> [user]}"
-USER_NAME="${2:-prodos}"
+USER_NAME="${2:-hubidubios}"
 
 if command -v apk >/dev/null 2>&1; then
   # Alpine
@@ -28,16 +28,16 @@ fi
 
 # A tmux-first login that drops the user straight into a session on the
 # workstation over mosh. Discovery via mDNS with a manual-host fallback.
-install -Dm755 /dev/stdin "/home/$USER_NAME/.local/bin/prodos-connect" <<EOF
+install -Dm755 /dev/stdin "/home/$USER_NAME/.local/bin/hubidubios-connect" <<EOF
 #!/usr/bin/env bash
 host="\${1:-$WORKSTATION}"
-exec mosh "\$host" -- tmux new-session -A -s prodos
+exec mosh "\$host" -- tmux new-session -A -s hubidubios
 EOF
 
 cat > "/home/$USER_NAME/.bash_profile" <<'EOF'
 # Thin client: connect to the workstation on login (Ctrl-C to stay local).
-[ -z "$SSH_TTY" ] || exec prodos-connect
+[ -z "$SSH_TTY" ] || exec hubidubios-connect
 EOF
 
-echo "prodos-thin provisioned. On login it connects to $WORKSTATION via mosh+tmux."
+echo "hubidubios-thin provisioned. On login it connects to $WORKSTATION via mosh+tmux."
 echo "Optional desktop streaming: install moonlight-qt and pair with the workstation's GameStream/Sunshine host."

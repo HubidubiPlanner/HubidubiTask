@@ -56,7 +56,7 @@ def main() -> int:
     energy = params.get("energy")
     today = date.today().isoformat()
 
-    vault = Path(os.environ["PRODOS_VAULT"])
+    vault = Path(os.environ["HUBIDUBIOS_VAULT"])
     tasks_dir = vault / "tasks"
     actions = []
     if tasks_dir.exists():

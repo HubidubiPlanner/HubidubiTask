@@ -9,17 +9,17 @@ syntax-checked, not built here.
 ## workstation/ — the x86_64 ISO (Omarchy base, Phase 8)
 
 The workstation base is **Omarchy Quattro** (MIT). Its ISO builder
-`omacom-io/omarchy-iso` is itself an archiso profile, so prodos overlays onto a
+`omacom-io/omarchy-iso` is itself an archiso profile, so hubidubios overlays onto a
 **pinned** checkout of it. `build.sh`:
 
-1. Builds every prodos package (`packages/*` + `plugins/{gtd,calendar}` +
+1. Builds every hubidubios package (`packages/*` + `plugins/{gtd,calendar}` +
    metapackages) into a local signed repo.
-2. Clones/uses a pinned `omarchy-iso` (`OMARCHY_ISO_REF`), injects the prodos
+2. Clones/uses a pinned `omarchy-iso` (`OMARCHY_ISO_REF`), injects the hubidubios
    packages into its offline mirror + package list.
 3. Overlays our `airootfs/` — the **native Quickshell/Hyprland integration**
-   (no browser): `prodos-capture-gui` (Super+Shift+Space), `prodos-next-panel`,
-   the `ProdosStatus.qml` bar widget, `hypr/prodos-keybinds.conf` — plus the
-   hardened `nftables.conf`, the `config/` files, and `prodos-firstboot` (which
+   (no browser): `hubidubios-capture-gui` (Super+Shift+Space), `hubidubios-next-panel`,
+   the `HubidubiOsStatus.qml` bar widget, `hypr/hubidubios-keybinds.conf` — plus the
+   hardened `nftables.conf`, the `config/` files, and `hubidubios-firstboot` (which
    enables the per-user services, prefers **selfhostedai-agent** for inference,
    strips Omarchy's cloud coding-agent widget, and wires the keybinds).
 4. Builds via `omarchy-iso-make` (Docker, reproducible).
@@ -36,7 +36,7 @@ own the whole surface instead of basing on Omarchy.
 Omarchy ships cloud-capable apps; `config/nftables.conf` now sets the **OUTPUT
 policy to drop** with only LAN + DNS + an (opt-in) mirror allowlist, so no app
 can phone home. Inference is the local selfhostedai-agent OpenAI server (loopback
-:8081); `prodos-agent status` shows the connection. See `packages/prodos-agent`.
+:8081); `hubidubios-agent status` shows the connection. See `packages/hubidubios-agent`.
 
 ## thin/ — the aarch64 thin client
 
@@ -56,10 +56,10 @@ sudo iso/thin/provision.sh workstation.lan
 android build + instrumented → packages → ISO → QEMU smoke → publish (on tags).
 
 - `tests/smoke/qemu_smoke.sh` boots the ISO headless, SSHes in over a user-mode
-  forward, and asserts `prodos index rebuild`, `prodos capture`, and
-  `prodos-agent ask` all succeed.
+  forward, and asserts `hubidubios index rebuild`, `hubidubios capture`, and
+  `hubidubios-agent ask` all succeed.
 - `tests/smoke/emulator_pairing.sh` boots the Android emulator, installs the
-  APK, starts `prodos-sync`, and drives the `PairingInstrumentedTest` to assert
+  APK, starts `hubidubios-sync`, and drives the `PairingInstrumentedTest` to assert
   pairing completes end to end.
 
 Publishing (`tools/publish-release.sh`) signs the APK and updates the LAN

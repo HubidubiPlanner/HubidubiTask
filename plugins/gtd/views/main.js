@@ -105,7 +105,7 @@ const VIEWS = {
 };
 
 window.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "prodos-bridge" && event.ports[0]) {
+  if (event.data && event.data.type === "hubidubios-bridge" && event.ports[0]) {
     port = event.ports[0];
     port.onmessage = (e) => {
       const resolve = pending.get(e.data.id);

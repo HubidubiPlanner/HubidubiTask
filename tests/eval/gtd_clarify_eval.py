@@ -11,7 +11,7 @@ comparison against whatever endpoint and labelled set you point it at.
 
 Usage:
     # against the real model on the workstation, with your labelled set:
-    PRODOS_MODEL_ENDPOINT=http://127.0.0.1:8080/v1/chat/completions \
+    HUBIDUBIOS_MODEL_ENDPOINT=http://127.0.0.1:8080/v1/chat/completions \
         python tests/eval/gtd_clarify_eval.py path/to/labels.jsonl
 
     # smoke the harness with the bundled synthetic set (no model needed):
@@ -47,15 +47,15 @@ SYNTHETIC = [
 
 def clarify(text: str) -> dict:
     """Run the gtd-clarify skill on one item; return its proposal."""
-    from prodos_plugin_host.registry import discover
-    from prodos_plugin_host.sandbox import run_skill
-    from prodos_vault.vault import Vault
+    from hubidubios_plugin_host.registry import discover
+    from hubidubios_plugin_host.sandbox import run_skill
+    from hubidubios_vault.vault import Vault
 
     reg = discover([REPO / "plugins"])
     plugin, spec = reg.skill("gtd", "gtd-clarify")
     vault = Vault(REPO / "tests" / "eval" / "_scratch_vault")
     vault.ensure_layout()
-    os.environ.setdefault("PRODOS_SKILL_SANDBOX", "dangerously-none")
+    os.environ.setdefault("HUBIDUBIOS_SKILL_SANDBOX", "dangerously-none")
     result = run_skill(vault, plugin, spec, {"text": text})
     return result["proposal"]
 
@@ -115,7 +115,7 @@ def _run_stub_model(items) -> str:
 
 def main(argv: list[str]) -> int:
     if "--self-test" in argv:
-        os.environ["PRODOS_MODEL_ENDPOINT"] = _run_stub_model(SYNTHETIC)
+        os.environ["HUBIDUBIOS_MODEL_ENDPOINT"] = _run_stub_model(SYNTHETIC)
         items = SYNTHETIC
     else:
         if len(argv) < 2:

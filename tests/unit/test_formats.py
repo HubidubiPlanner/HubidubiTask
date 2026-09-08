@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from prodos_vault.entities import Note
-from prodos_vault.formats import ics, inbox_md, notes_md, tasks_md
+from hubidubios_vault.entities import Note
+from hubidubios_vault.formats import ics, inbox_md, notes_md, tasks_md
 
 MTIME = "2026-08-31T12:00:00Z"
 
 TASK_FILE = """---
-project: prodos
+project: hubidubios
 tags: [dev]
 ---
 
@@ -18,11 +18,11 @@ tags: [dev]
 
 
 def test_task_parse():
-    tasks = tasks_md.parse_file(TASK_FILE, Path("tasks/prodos.md"), MTIME)
+    tasks = tasks_md.parse_file(TASK_FILE, Path("tasks/hubidubios.md"), MTIME)
     assert len(tasks) == 2
     t1, line1 = tasks[0]
     assert t1.id == "t_a1b2"
-    assert t1.project == "prodos"
+    assert t1.project == "hubidubios"
     assert t1.due == "2026-09-05"
     assert t1.context == "@computer"
     assert not t1.done
@@ -102,7 +102,7 @@ def test_slugify():
 def test_ics_roundtrip():
     start = datetime(2026, 9, 3, 14, 0, tzinfo=timezone.utc)
     end = datetime(2026, 9, 3, 15, 0, tzinfo=timezone.utc)
-    text = ics.render_event("Design review", start, end, "abc-123@prodos")
+    text = ics.render_event("Design review", start, end, "abc-123@hubidubios")
     events = ics.parse_file(text, Path("calendars/work/design.ics"), MTIME)
     assert len(events) == 1
     ev = events[0]
@@ -110,7 +110,7 @@ def test_ics_roundtrip():
     assert ev.dtstart == "2026-09-03T14:00:00Z"
     assert ev.dtend == "2026-09-03T15:00:00Z"
     assert ev.calendar == "work"
-    assert ev.uid == "abc-123@prodos"
+    assert ev.uid == "abc-123@hubidubios"
     assert ev.id.startswith("e_")
     # deterministic id from UID
     assert ics.parse_file(text, Path("calendars/work/design.ics"), MTIME)[0].id == ev.id

@@ -21,7 +21,7 @@ def main() -> int:
         print(json.dumps({"error": "empty task text"}))
         return 1
     project = params.get("project") or "inbox"
-    vault = Path(os.environ["PRODOS_VAULT"])
+    vault = Path(os.environ["HUBIDUBIOS_VAULT"])
     path = vault / "tasks" / f"{project}.md"
 
     md = [f"id:{new_id()}"]

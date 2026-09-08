@@ -8,9 +8,9 @@ import ssl
 import threading
 import urllib.request
 
-from prodos_sync import auth, certs
-from prodos_sync.server import serve
-from prodos_vault.formats import tasks_md
+from hubidubios_sync import auth, certs
+from hubidubios_sync.server import serve
+from hubidubios_vault.formats import tasks_md
 
 
 def test_changes_requires_token(sync_server):
@@ -34,7 +34,7 @@ def test_pair_token_is_one_time(sync_server, vault):
 
 def test_pull_changes_with_cursor(sync_server, vault):
     srv, client = sync_server
-    task_id = tasks_md.append_task(vault.tasks_dir / "prodos.md", "sync me",
+    task_id = tasks_md.append_task(vault.tasks_dir / "hubidubios.md", "sync me",
                                    due="2026-09-05")
 
     status, body = client.request("GET", "/v1/changes?since=0")
@@ -52,7 +52,7 @@ def test_pull_changes_with_cursor(sync_server, vault):
     assert body["changes"] == [] and body["cursor"] == cursor
 
     # a vim edit shows up on the next pull
-    with open(vault.tasks_dir / "prodos.md", "a") as f:
+    with open(vault.tasks_dir / "hubidubios.md", "a") as f:
         f.write("- [ ] hand-written  <!-- id:t_hand0001 -->\n")
     status, body = client.request("GET", f"/v1/changes?since={cursor}")
     assert [c["id"] for c in body["changes"]] == ["t_hand0001"]
@@ -128,7 +128,7 @@ def test_push_note_and_inbox_and_event(sync_server, vault):
                   "created": "2026-08-31T18:06:00Z"}},
         {"id": "e_phone001", "type": "event", "op": "upsert",
          "updated": "2026-08-31T18:07:00Z",
-         "data": {"uid": "phone-1@prodos", "summary": "Dentist",
+         "data": {"uid": "phone-1@hubidubios", "summary": "Dentist",
                   "dtstart": "2026-09-02T09:00:00Z",
                   "dtend": "2026-09-02T09:30:00Z", "calendar": "personal"}},
     ]})

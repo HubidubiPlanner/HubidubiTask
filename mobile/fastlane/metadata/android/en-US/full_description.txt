@@ -1,4 +1,4 @@
-prodos mobile is the pocket client for a local-first productivity OS. It keeps
+hubidubios mobile is the pocket client for a local-first productivity OS. It keeps
 a full offline mirror of your vault, syncs only over your own LAN to your own
 workstation, and hosts plugin views. No cloud is ever contacted.
 

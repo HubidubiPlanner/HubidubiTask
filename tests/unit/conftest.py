@@ -1,5 +1,5 @@
 import pytest
-from prodos_vault.vault import Vault
+from hubidubios_vault.vault import Vault
 
 
 @pytest.fixture

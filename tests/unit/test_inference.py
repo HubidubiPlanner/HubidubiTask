@@ -9,8 +9,8 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from prodos_agent import config as agent_config
-from prodos_agent.client import DEFAULT_ENDPOINT, LlamaClient
+from hubidubios_agent import config as agent_config
+from hubidubios_agent.client import DEFAULT_ENDPOINT, LlamaClient
 
 
 class FakeOpenAI:
@@ -110,8 +110,8 @@ def test_complete_round_trip():
 
 
 def test_config_resolution_precedence(vault, monkeypatch):
-    monkeypatch.delenv("PRODOS_MODEL_ENDPOINT", raising=False)
-    monkeypatch.delenv("PRODOS_MODEL_API_KEY", raising=False)
+    monkeypatch.delenv("HUBIDUBIOS_MODEL_ENDPOINT", raising=False)
+    monkeypatch.delenv("HUBIDUBIOS_MODEL_API_KEY", raising=False)
 
     # default (no config, no env)
     assert agent_config.resolve(vault)["endpoint"] == DEFAULT_ENDPOINT
@@ -125,22 +125,22 @@ def test_config_resolution_precedence(vault, monkeypatch):
     assert r["api_key"] == "k"
 
     # env wins over config
-    monkeypatch.setenv("PRODOS_MODEL_ENDPOINT", "http://127.0.0.1:1234/v1/chat/completions")
+    monkeypatch.setenv("HUBIDUBIOS_MODEL_ENDPOINT", "http://127.0.0.1:1234/v1/chat/completions")
     assert agent_config.resolve(vault)["endpoint"].endswith(":1234/v1/chat/completions")
 
 
 def test_status_cli_connected_and_disconnected(vault, monkeypatch, capsys):
-    from prodos_agent import cli
+    from hubidubios_agent import cli
 
-    monkeypatch.setenv("PRODOS_VAULT", str(vault.root))
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault.root))
     with FakeOpenAI(models=("m1",)) as srv:
-        monkeypatch.setenv("PRODOS_MODEL_ENDPOINT", srv.base + "/chat/completions")
+        monkeypatch.setenv("HUBIDUBIOS_MODEL_ENDPOINT", srv.base + "/chat/completions")
         assert cli.main(["status"]) == 0
         assert "connected" in capsys.readouterr().out
         assert cli.main(["status", "--json"]) == 0
         out = json.loads(capsys.readouterr().out)
         assert out["connected"] and out["models"] == ["m1"]
 
-    monkeypatch.setenv("PRODOS_MODEL_ENDPOINT", "http://127.0.0.1:9/v1/chat/completions")
+    monkeypatch.setenv("HUBIDUBIOS_MODEL_ENDPOINT", "http://127.0.0.1:9/v1/chat/completions")
     assert cli.main(["status"]) == 1
     assert "disconnected" in capsys.readouterr().out

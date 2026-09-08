@@ -1,17 +1,17 @@
-# Maintainer: prodos
-pkgname=prodos-plugin-inbox
+# Maintainer: hubidubios
+pkgname=hubidubios-plugin-inbox
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="prodos plugin: GTD capture inbox, append-only"
+pkgdesc="hubidubios plugin: GTD capture inbox, append-only"
 arch=('any')
-url="https://gitlab.local/prodos"
+url="https://gitlab.local/hubidubios"
 license=('MIT')
-depends=('prodos-plugin-host')
-install=prodos-plugin.install
+depends=('hubidubios-plugin-host')
+install=hubidubios-plugin.install
 source=()
 
 package() {
-  local dest="$pkgdir/usr/share/prodos/plugins/inbox"
+  local dest="$pkgdir/usr/share/hubidubios/plugins/inbox"
   local src="$startdir"
   install -d "$dest"
   cp -r "$src/PLUGIN.md" "$src/entities" "$src/skills" "$dest/"

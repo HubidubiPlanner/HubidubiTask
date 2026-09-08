@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.prodos.mobile"
+    namespace = "com.hubidubios.mobile"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.prodos.mobile"
+        applicationId = "com.hubidubios.mobile"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

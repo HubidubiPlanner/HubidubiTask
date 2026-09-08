@@ -9,7 +9,7 @@ skipped; CI runs them in a Linux container (see tests/sandbox/run-in-docker.sh).
 import shutil
 
 import pytest
-from prodos_plugin_host.sandbox import run_skill
+from hubidubios_plugin_host.sandbox import run_skill
 
 pytestmark = pytest.mark.skipif(
     shutil.which("bwrap") is None, reason="bwrap not available (Linux only)")
@@ -76,7 +76,7 @@ def test_write_scope_is_the_only_writable_vault_path(vault, make_skill):
     (vault.tasks_dir / "p.md").write_text("- [ ] x\n")
     result = _run(vault, make_skill, "scoped-write", """
         import os
-        vault = os.environ["PRODOS_VAULT"]
+        vault = os.environ["HUBIDUBIOS_VAULT"]
         outcomes = {}
         for rel in ("tasks/new.md", "notes/hack.md"):
             try:

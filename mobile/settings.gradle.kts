@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "prodos-mobile"
+rootProject.name = "hubidubios-mobile"
 include(":core", ":app")

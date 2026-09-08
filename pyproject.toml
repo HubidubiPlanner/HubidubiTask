@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["packages/prodos-vault", "packages/prodos-sync", "packages/prodos-plugin-host", "packages/prodos-agent"]
+members = ["packages/hubidubios-vault", "packages/hubidubios-sync", "packages/hubidubios-plugin-host", "packages/hubidubios-agent"]
 
 [dependency-groups]
 dev = [

@@ -5,11 +5,11 @@ import sys
 from pathlib import Path
 
 import pytest
-from prodos_plugin_host.manifest import ManifestError
-from prodos_plugin_host.manifest import load as load_manifest
-from prodos_plugin_host.registry import RegistryError, discover, export_entity_types
-from prodos_vault.formats import tasks_md
-from prodos_vault.index import indexer, queries
+from hubidubios_plugin_host.manifest import ManifestError
+from hubidubios_plugin_host.manifest import load as load_manifest
+from hubidubios_plugin_host.registry import RegistryError, discover, export_entity_types
+from hubidubios_vault.formats import tasks_md
+from hubidubios_vault.index import indexer, queries
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 
@@ -104,7 +104,7 @@ def test_duplicate_entity_type_is_fatal(tmp_path):
 def _tree_hash(root: Path) -> dict[str, str]:
     return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in sorted(root.rglob("*"))
-            if p.is_file() and ".prodos" not in p.parts}
+            if p.is_file() and ".hubidubios" not in p.parts}
 
 
 def test_extraction_uninstall_reinstall_cycle(vault, tmp_path):
@@ -144,9 +144,9 @@ def test_extraction_uninstall_reinstall_cycle(vault, tmp_path):
 
 
 def test_cli_refuses_unregistered_type(vault, monkeypatch, capsys):
-    from prodos_vault import cli
+    from hubidubios_vault import cli
 
-    monkeypatch.setenv("PRODOS_VAULT", str(vault.root))
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault.root))
     # registry present but without the task type
     vault.entity_types_path.write_text(json.dumps(
         {"types": {"note": {"path": "notes/", "suffix": ".md"}}}))
@@ -159,9 +159,9 @@ def test_cli_refuses_unregistered_type(vault, monkeypatch, capsys):
 def test_run_skill_refused_without_sandbox_off_linux(vault, monkeypatch):
     if sys.platform == "linux":
         pytest.skip("refusal path is for non-Linux dev machines")
-    from prodos_plugin_host.sandbox import SandboxError, run_skill
+    from hubidubios_plugin_host.sandbox import SandboxError, run_skill
 
-    monkeypatch.delenv("PRODOS_SKILL_SANDBOX", raising=False)
+    monkeypatch.delenv("HUBIDUBIOS_SKILL_SANDBOX", raising=False)
     reg = discover([REPO_PLUGINS])
     plugin, spec = reg.skill("inbox", "capture")
     with pytest.raises(SandboxError, match="bwrap requires Linux"):
@@ -169,9 +169,9 @@ def test_run_skill_refused_without_sandbox_off_linux(vault, monkeypatch):
 
 
 def test_run_skill_dev_mode_capture(vault, monkeypatch):
-    from prodos_plugin_host.sandbox import run_skill
+    from hubidubios_plugin_host.sandbox import run_skill
 
-    monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
+    monkeypatch.setenv("HUBIDUBIOS_SKILL_SANDBOX", "dangerously-none")
     reg = discover([REPO_PLUGINS])
     plugin, spec = reg.skill("inbox", "capture")
     result = run_skill(vault, plugin, spec, {"text": "skill capture works"})
@@ -181,9 +181,9 @@ def test_run_skill_dev_mode_capture(vault, monkeypatch):
 
 
 def test_run_skill_dev_mode_agenda(vault, monkeypatch):
-    from prodos_plugin_host.sandbox import run_skill
+    from hubidubios_plugin_host.sandbox import run_skill
 
-    monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
+    monkeypatch.setenv("HUBIDUBIOS_SKILL_SANDBOX", "dangerously-none")
     from datetime import date
 
     tasks_md.append_task(vault.tasks_dir / "p.md", "due today",

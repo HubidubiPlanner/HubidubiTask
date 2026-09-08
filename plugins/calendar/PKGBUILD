@@ -1,17 +1,17 @@
-# Maintainer: prodos
-pkgname=prodos-plugin-calendar
+# Maintainer: hubidubios
+pkgname=hubidubios-plugin-calendar
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="prodos plugin: iCalendar events, shared with Radicale"
+pkgdesc="hubidubios plugin: iCalendar events, shared with Radicale"
 arch=('any')
-url="https://gitlab.local/prodos"
+url="https://gitlab.local/hubidubios"
 license=('MIT')
-depends=('prodos-plugin-host')
-install=prodos-plugin.install
+depends=('hubidubios-plugin-host')
+install=hubidubios-plugin.install
 source=()
 
 package() {
-  local dest="$pkgdir/usr/share/prodos/plugins/calendar"
+  local dest="$pkgdir/usr/share/hubidubios/plugins/calendar"
   local src="$startdir"
   install -d "$dest"
   cp -r "$src/PLUGIN.md" "$src/entities" "$src/skills" "$dest/"

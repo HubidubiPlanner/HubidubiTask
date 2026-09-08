@@ -1,6 +1,6 @@
 # Containerized install-and-test
 
-The **frequent** end-to-end loop: build the prodos packages, install them the
+The **frequent** end-to-end loop: build the hubidubios packages, install them the
 real way (`pacman -U`), run the full test suite, and drive a live sync + agent
 smoke — all in a throwaway Arch container in ~90s.
 

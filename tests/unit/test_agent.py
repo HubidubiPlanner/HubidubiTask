@@ -2,19 +2,19 @@ import json
 from pathlib import Path
 
 import pytest
-from prodos_agent.client import ScriptedClient
-from prodos_agent.context import run_vault_query
-from prodos_agent.loop import Agent, _parse_action
-from prodos_plugin_host.registry import discover, export_entity_types
-from prodos_vault.formats import tasks_md
-from prodos_vault.index import indexer
+from hubidubios_agent.client import ScriptedClient
+from hubidubios_agent.context import run_vault_query
+from hubidubios_agent.loop import Agent, _parse_action
+from hubidubios_plugin_host.registry import discover, export_entity_types
+from hubidubios_vault.formats import tasks_md
+from hubidubios_vault.index import indexer
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 
 
 @pytest.fixture
 def agent_env(vault, monkeypatch, tmp_path):
-    monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
+    monkeypatch.setenv("HUBIDUBIOS_SKILL_SANDBOX", "dangerously-none")
     # Phase 3 install set (the agent tests use inbox.capture / vault-query).
     reg = discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"})
     export_entity_types(vault, reg)
@@ -133,14 +133,14 @@ def test_skill_error_is_fed_back_not_fatal(agent_env):
     def failing(*a, **k):
         raise RuntimeError("boom")
 
-    from prodos_plugin_host.registry import discover as _d
+    from hubidubios_plugin_host.registry import discover as _d
     reg = _d([REPO_PLUGINS])
     conn = indexer.open_index(vault)
     client = ScriptedClient([
         '{"tool": "inbox.capture", "params": {"text": "x"}}',
         lambda msgs: calls.append(msgs) or '{"answer": "recovered"}',
     ])
-    from prodos_agent.loop import Agent as A
+    from hubidubios_agent.loop import Agent as A
     agent = A(vault, conn, reg, client, sandbox_runner=failing)
     result = agent.run("do it")
     assert result["answer"] == "recovered"

@@ -1,4 +1,4 @@
-from prodos_vault import ids
+from hubidubios_vault import ids
 
 
 def test_prefixes():

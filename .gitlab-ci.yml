@@ -1,10 +1,10 @@
-# prodos CI (PLAN.md Phase 7 + Phase 8).
+# hubidubios CI (PLAN.md Phase 7 + Phase 8).
 #
 # The light jobs (lint, unit, skill sandbox, android build, packages) run on
 # GitLab's shared runners so CI works out of the box. The heavy jobs that the
 # plan wants on a self-hosted LAN runner — the Omarchy ISO build (privileged
 # Docker + loop devices), the QEMU smoke test (KVM), and the Android emulator —
-# are tagged `prodos-workstation` and set `when: manual`, so they only run once
+# are tagged `hubidubios-workstation` and set `when: manual`, so they only run once
 # that runner is registered and someone triggers them.
 #
 # Pipeline: lint -> unit -> sandbox escape -> android build (+manual instrumented)
@@ -62,8 +62,8 @@ sandbox-escape:
     # pacman 7's landlock download sandbox may be blocked by the runner kernel.
     - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed python python-pip bubblewrap
-    - pip install --break-system-packages ./packages/prodos-vault
-        ./packages/prodos-plugin-host pytest pyyaml jsonschema icalendar
+    - pip install --break-system-packages ./packages/hubidubios-vault
+        ./packages/hubidubios-plugin-host pytest pyyaml jsonschema icalendar
     - python -m pytest tests/sandbox -v
 
 # (The Phase-3 view-sandbox suite was retired in Phase 8: plugins are headless
@@ -104,8 +104,8 @@ packages:
         python-hatchling python-wheel
     - useradd -m build && chown -R build .
     - |
-      for p in packages/prodos-vault packages/prodos-plugin-host \
-               packages/prodos-sync packages/prodos-agent \
+      for p in packages/hubidubios-vault packages/hubidubios-plugin-host \
+               packages/hubidubios-sync packages/hubidubios-agent \
                plugins/gtd plugins/calendar packages/metapackages; do
         ( cd "$p" && sudo -u build makepkg -f --nodeps --skipinteg )
       done

@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# hubidubios-add — install hubidubios onto an already-installed Arch system, using the
+# offline hubidubios repo baked into this ISO. Run it ON THE LIVE MEDIUM, right
+# after `archinstall`, with the new system still mounted (default /mnt).
+#
+#   hubidubios-add [target_root] [username]
+#
+# It copies the offline hubidubios repo into the target, installs the hubidubios
+# packages (their Arch deps come from the mirrors), ships the systemd user
+# units + the seed vault, and arranges the vault to seed on the user's first
+# login. The risky partitioning stays with archinstall; this is just glue.
+set -euo pipefail
+
+TARGET="${1:-/mnt}"
+USERNAME="${2:-}"
+REPO_SRC=/usr/share/hubidubios/repo
+SEED_SRC=/usr/share/hubidubios/seed/vault
+
+[ -f "$TARGET/etc/pacman.conf" ] || { echo "No Arch install at $TARGET — run archinstall first and keep it mounted." >&2; exit 1; }
+[ -d "$REPO_SRC" ] || { echo "hubidubios repo missing at $REPO_SRC — is this a hubidubios ISO?" >&2; exit 1; }
+command -v arch-chroot >/dev/null || { echo "arch-chroot not found (run on the hubidubios/Arch live medium)." >&2; exit 1; }
+
+echo "==> Copying the offline hubidubios repo into the target"
+install -d "$TARGET/var/cache/hubidubios-repo"
+cp "$REPO_SRC"/*.pkg.tar.* "$TARGET/var/cache/hubidubios-repo/"
+cp "$REPO_SRC"/hubidubios.db* "$REPO_SRC"/hubidubios.files* "$TARGET/var/cache/hubidubios-repo/" 2>/dev/null || true
+
+if ! grep -q '^\[hubidubios\]' "$TARGET/etc/pacman.conf"; then
+  cat >> "$TARGET/etc/pacman.conf" <<'REPO'
+
+[hubidubios]
+SigLevel = Optional TrustAll
+Server = file:///var/cache/hubidubios-repo
+REPO
+fi
+
+echo "==> Installing hubidubios packages (deps from the Arch mirrors)"
+arch-chroot "$TARGET" pacman -Sy --noconfirm --needed \
+  hubidubios-vault hubidubios-plugin-host hubidubios-sync hubidubios-agent \
+  hubidubios-plugin-gtd hubidubios-plugin-calendar \
+  openssh nftables avahi tmux git vim \
+  nvidia-open nvidia-utils
+
+# NVIDIA: make the INSTALLED system light a Blackwell/RTX 50-series card on its
+# first boot (with no iGPU, this is the only display). nvidia-open + early KMS
+# via the initramfs + modeset — same recipe the live medium uses. Done through
+# modprobe.d so we don't have to touch archinstall's bootloader cmdline.
+echo "==> Wiring the NVIDIA driver into the installed system (early KMS)"
+install -Dm644 /dev/stdin "$TARGET/etc/mkinitcpio.conf.d/nvidia.conf" <<'MKI'
+MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+MKI
+install -Dm644 /dev/stdin "$TARGET/etc/modprobe.d/hubidubios-nvidia.conf" <<'MOD'
+blacklist nouveau
+options nvidia_drm modeset=1
+MOD
+arch-chroot "$TARGET" mkinitcpio -P 2>/dev/null || true
+
+echo "==> Shipping systemd user units, firstboot, and the seed"
+for u in /etc/systemd/user/hubidubios-*.service /etc/systemd/user/vault-*.service /etc/systemd/user/vault-*.timer; do
+  [ -f "$u" ] && install -Dm644 "$u" "$TARGET/etc/systemd/user/$(basename "$u")"
+done
+install -Dm755 /usr/local/bin/hubidubios-firstboot "$TARGET/usr/local/bin/hubidubios-firstboot"
+install -d "$TARGET/usr/share/hubidubios/seed"
+cp -a "$SEED_SRC" "$TARGET/usr/share/hubidubios/seed/"
+
+# Pick the target user (first /home entry if not given).
+[ -n "$USERNAME" ] || USERNAME="$(ls "$TARGET/home" 2>/dev/null | head -1)"
+
+if [ -n "$USERNAME" ] && [ -d "$TARGET/home/$USERNAME" ]; then
+  echo "==> Arranging vault seed + services for $USERNAME"
+  for rc in .bash_profile .zprofile; do
+    prof="$TARGET/home/$USERNAME/$rc"
+    if ! grep -q hubidubios-firstboot "$prof" 2>/dev/null; then
+      cat >> "$prof" <<'HOOK'
+if [ ! -e "$HOME/.hubidubios-seeded" ]; then
+  hubidubios-firstboot || true   # seeds ~/vault, refreshes types, indexes
+  touch "$HOME/.hubidubios-seeded"
+fi
+HOOK
+    fi
+  done
+  uid_gid="$(arch-chroot "$TARGET" id -u "$USERNAME"):$(arch-chroot "$TARGET" id -g "$USERNAME")"
+  chown "$uid_gid" "$TARGET/home/$USERNAME"/.bash_profile "$TARGET/home/$USERNAME"/.zprofile 2>/dev/null || true
+  arch-chroot "$TARGET" systemctl --global enable \
+    hubidubios-sync.service hubidubios-watch.service vault-autocommit.timer 2>/dev/null || true
+else
+  echo "   (no user home found; create a user, then log in — the vault seeds on first login)"
+fi
+arch-chroot "$TARGET" systemctl enable sshd.service avahi-daemon.service 2>/dev/null || true
+
+cat <<DONE
+
+==> hubidubios installed into $TARGET. Reboot into your new system (remove the USB).
+    NVIDIA: the nvidia-open driver + early KMS are already baked into the install,
+    so your graphics card should light up on first boot (no nomodeset needed). If the very
+    first boot is black, pick the fallback boot entry once and it will be fine
+    after the driver's initramfs settles.
+    Inference: point [inference] in ~/vault/.hubidubios/config.toml at your
+    selfhostedai-agent, then 'hubidubios-agent status'.
+DONE

@@ -3,9 +3,9 @@ import threading
 import urllib.request
 
 import pytest
-from prodos_sync import auth
-from prodos_sync.server import serve
-from prodos_vault.vault import Vault
+from hubidubios_sync import auth
+from hubidubios_sync.server import serve
+from hubidubios_vault.vault import Vault
 
 
 @pytest.fixture

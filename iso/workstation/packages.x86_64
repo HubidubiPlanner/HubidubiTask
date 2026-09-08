@@ -1,5 +1,5 @@
-# prodos-workstation package list (PLAN.md Phase 7).
-# base + prodos-workstation metapackage + default plugins. The prodos-* packages
+# hubidubios-workstation package list (PLAN.md Phase 7).
+# base + hubidubios-workstation metapackage + default plugins. The hubidubios-* packages
 # come from the LAN repo declared in pacman.conf; build.sh builds them first.
 
 # --- base live/install system (subset of releng essentials) ---
@@ -19,16 +19,16 @@ vim
 openssh
 git
 
-# --- prodos ---
-prodos-workstation
-prodos-plugins-default
+# --- hubidubios ---
+hubidubios-workstation
+hubidubios-plugins-default
 
-# prodos-workstation already pulls: prodos-base (prodos-vault, prodos-sync,
-# nftables, avahi), prodos-plugin-host, prodos-agent, llama.cpp, radicale,
+# hubidubios-workstation already pulls: hubidubios-base (hubidubios-vault, hubidubios-sync,
+# nftables, avahi), hubidubios-plugin-host, hubidubios-agent, llama.cpp, radicale,
 # syncthing, git. Listed here only for a legible manifest.
-prodos-base
-prodos-plugin-host
-prodos-agent
+hubidubios-base
+hubidubios-plugin-host
+hubidubios-agent
 radicale
 syncthing
 nftables

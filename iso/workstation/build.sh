@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the prodos-workstation ISO on the Omarchy base (PLAN.md Phase 7 +
+# Build the hubidubios-workstation ISO on the Omarchy base (PLAN.md Phase 7 +
 # Phase 8). Must run on Arch with the Omarchy ISO toolchain, privileged
 # (loop devices) — CI/target work, not the macOS dev machine.
 #
@@ -9,16 +9,16 @@
 # `omacom-io/omarchy-iso` is itself an archiso profile (archiso submodule +
 # configs/{airootfs,efiboot,grub,syslinux}, Docker-orchestrated via
 # bin/omarchy-iso-make, with a self-contained offline package mirror). We
-# overlay prodos onto a PINNED checkout of it: build the prodos packages into
+# overlay hubidubios onto a PINNED checkout of it: build the hubidubios packages into
 # the offline mirror, add them to the package list, drop in our airootfs
 # (native Quickshell/Hyprland integration, hardened nftables, systemd units,
-# prodos-firstboot), and build.
+# hubidubios-firstboot), and build.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 OUT="${1:-$HERE/out}"
-PRODOS_REPO="/build/prodos-repo"
+HUBIDUBIOS_REPO="/build/hubidubios-repo"
 
 # Pin the Omarchy ISO builder. Bump deliberately; record the tag in iso/README.
 OMARCHY_ISO_REPO="${OMARCHY_ISO_REPO:-https://github.com/omacom-io/omarchy-iso}"
@@ -30,21 +30,21 @@ if [ -z "$OMARCHY_ISO_REF" ] && [ ! -d "$VENDOR/.git" ]; then
   exit 1
 fi
 
-echo "==> Building prodos packages into $PRODOS_REPO"
-mkdir -p "$PRODOS_REPO"
+echo "==> Building hubidubios packages into $HUBIDUBIOS_REPO"
+mkdir -p "$HUBIDUBIOS_REPO"
 for pkgdir in \
-  "$REPO_ROOT"/packages/prodos-vault \
-  "$REPO_ROOT"/packages/prodos-plugin-host \
-  "$REPO_ROOT"/packages/prodos-sync \
-  "$REPO_ROOT"/packages/prodos-agent \
+  "$REPO_ROOT"/packages/hubidubios-vault \
+  "$REPO_ROOT"/packages/hubidubios-plugin-host \
+  "$REPO_ROOT"/packages/hubidubios-sync \
+  "$REPO_ROOT"/packages/hubidubios-agent \
   "$REPO_ROOT"/plugins/gtd \
   "$REPO_ROOT"/plugins/calendar \
   "$REPO_ROOT"/packages/metapackages
 do
   ( cd "$pkgdir" && makepkg -f --nodeps --skipinteg ) || { echo "makepkg failed in $pkgdir"; exit 1; }
-  cp "$pkgdir"/*.pkg.tar.* "$PRODOS_REPO"/
+  cp "$pkgdir"/*.pkg.tar.* "$HUBIDUBIOS_REPO"/
 done
-repo-add "$PRODOS_REPO/prodos.db.tar.gz" "$PRODOS_REPO"/*.pkg.tar.*
+repo-add "$HUBIDUBIOS_REPO/hubidubios.db.tar.gz" "$HUBIDUBIOS_REPO"/*.pkg.tar.*
 
 echo "==> Preparing the Omarchy ISO profile (pinned)"
 if [ ! -d "$VENDOR/.git" ]; then
@@ -53,19 +53,19 @@ if [ ! -d "$VENDOR/.git" ]; then
   git -C "$VENDOR" submodule update --init --recursive
 fi
 
-# Add prodos to the offline mirror + package list. The exact paths depend on the
+# Add hubidubios to the offline mirror + package list. The exact paths depend on the
 # omarchy-iso layout (builder/ + configs/); these are the overlay points:
 PROFILE="$VENDOR/configs"
-echo "prodos-workstation" >> "$PROFILE/packages.x86_64"
-echo "prodos-plugins-default" >> "$PROFILE/packages.x86_64"
-# Merge the prodos repo into the ISO's offline mirror + pacman.conf.
-cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE"/../builder/offline-mirror/ 2>/dev/null || \
-  cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/var/cache/prodos-repo/" 2>/dev/null || true
+echo "hubidubios-workstation" >> "$PROFILE/packages.x86_64"
+echo "hubidubios-plugins-default" >> "$PROFILE/packages.x86_64"
+# Merge the hubidubios repo into the ISO's offline mirror + pacman.conf.
+cp "$HUBIDUBIOS_REPO"/*.pkg.tar.* "$PROFILE"/../builder/offline-mirror/ 2>/dev/null || \
+  cp "$HUBIDUBIOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/var/cache/hubidubios-repo/" 2>/dev/null || true
 
-echo "==> Overlaying prodos airootfs + configs"
+echo "==> Overlaying hubidubios airootfs + configs"
 cp -r "$HERE/airootfs/." "$PROFILE/airootfs/"
 install -Dm644 "$REPO_ROOT/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"
-install -Dm644 "$REPO_ROOT/config/avahi/prodos.service" "$PROFILE/airootfs/etc/avahi/services/prodos.service"
+install -Dm644 "$REPO_ROOT/config/avahi/hubidubios.service" "$PROFILE/airootfs/etc/avahi/services/hubidubios.service"
 install -Dm644 "$REPO_ROOT/config/radicale/config" "$PROFILE/airootfs/etc/radicale/config"
 for unit in "$REPO_ROOT"/config/systemd/*.service "$REPO_ROOT"/config/systemd/*.timer; do
   install -Dm644 "$unit" "$PROFILE/airootfs/etc/systemd/user/$(basename "$unit")"

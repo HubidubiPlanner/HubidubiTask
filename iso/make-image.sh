@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Generate the prodos ISO image. One command, picks the right path:
+# Generate the hubidubios ISO image. One command, picks the right path:
 #   - native x86_64 Linux  -> build the ISO directly (fast, ~10-15 min)
 #   - Apple Silicon macOS   -> build inside an emulated x86_64 Colima VM (slow)
 #
 # To bake in YOUR stuff, edit iso/workstation/seed/vault/ first (notes, tasks,
-# and .prodos/config.toml for the inference endpoint), then run this.
+# and .hubidubios/config.toml for the inference endpoint), then run this.
 #
 #   iso/make-image.sh
 #

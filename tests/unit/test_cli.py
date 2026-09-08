@@ -1,12 +1,12 @@
 import re
 
 import pytest
-from prodos_vault import cli
+from hubidubios_vault import cli
 
 
 @pytest.fixture
 def run(vault, monkeypatch, capsys):
-    monkeypatch.setenv("PRODOS_VAULT", str(vault.root))
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault.root))
 
     def _run(*argv):
         code = cli.main(list(argv))
@@ -29,7 +29,7 @@ def test_capture_appends_no_index(run, vault):
 
 
 def test_task_add_list_done(run):
-    code, out = run("task", "add", "write docs", "--project", "prodos",
+    code, out = run("task", "add", "write docs", "--project", "hubidubios",
                     "--due", "2026-09-10", "--ctx", "@computer")
     assert code == 0
     task_id = out.strip()

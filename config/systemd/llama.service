@@ -4,7 +4,7 @@
 # the integrated GPU — benchmark both, set the binary/flags accordingly.
 #
 # Bind loopback only: the agent daemon proxies; the LAN reaches inference via
-# prodos-sync, not this port directly. (nftables allows :8080 from the LAN for
+# hubidubios-sync, not this port directly. (nftables allows :8080 from the LAN for
 # power users, but the default is host-local.)
 
 [Unit]

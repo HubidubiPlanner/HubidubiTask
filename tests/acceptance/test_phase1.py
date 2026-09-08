@@ -3,8 +3,8 @@
 - 5,000 entities index in under 10 seconds.
 - Full-text search returns in under 50ms.
 - Deleting index.db and rebuilding produces identical query results.
-- Editing a task in vim appears in `prodos task list` within one second.
-- `prodos capture` completes in under 100ms with no index running.
+- Editing a task in vim appears in `hubidubios task list` within one second.
+- `hubidubios capture` completes in under 100ms with no index running.
 """
 
 import os
@@ -13,13 +13,13 @@ import sys
 import time
 from pathlib import Path
 
-from prodos_vault.index import indexer, queries
+from hubidubios_vault.index import indexer, queries
 
-PRODOS_BIN = Path(sys.executable).parent / "prodos"
+HUBIDUBIOS_BIN = Path(sys.executable).parent / "hubidubios"
 
 
 def _env(vault):
-    return {**os.environ, "PRODOS_VAULT": str(vault.root)}
+    return {**os.environ, "HUBIDUBIOS_VAULT": str(vault.root)}
 
 
 def test_5000_entities_index_under_10s(big_vault):
@@ -66,7 +66,7 @@ def test_rebuild_produces_identical_results(big_vault):
 
 
 def test_vim_edit_visible_within_one_second(vault):
-    subprocess.run([PRODOS_BIN, "index", "rebuild"], env=_env(vault), check=True)
+    subprocess.run([HUBIDUBIOS_BIN, "index", "rebuild"], env=_env(vault), check=True)
     path = vault.tasks_dir / "home.md"
     path.write_text("---\nproject: home\n---\n\n"
                     "- [ ] existing  <!-- id:t_exist001 -->\n")
@@ -74,7 +74,7 @@ def test_vim_edit_visible_within_one_second(vault):
     with open(path, "a") as f:
         f.write("- [ ] added in vim  <!-- id:t_vimedit1 -->\n")
     t0 = time.perf_counter()
-    out = subprocess.run([PRODOS_BIN, "task", "list"], env=_env(vault),
+    out = subprocess.run([HUBIDUBIOS_BIN, "task", "list"], env=_env(vault),
                          capture_output=True, text=True, check=True).stdout
     elapsed = time.perf_counter() - t0
     assert "added in vim" in out
@@ -83,7 +83,7 @@ def test_vim_edit_visible_within_one_second(vault):
 
 def test_watcher_indexes_within_debounce_window(vault):
     indexer.rebuild(vault)
-    proc = subprocess.Popen([PRODOS_BIN, "watch"], env=_env(vault),
+    proc = subprocess.Popen([HUBIDUBIOS_BIN, "watch"], env=_env(vault),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(1.5)  # let the observer start
@@ -111,11 +111,11 @@ def test_watcher_indexes_within_debounce_window(vault):
 
 def test_capture_under_100ms_no_index_running(vault):
     env = _env(vault)
-    subprocess.run([PRODOS_BIN, "capture", "warmup"], env=env, check=True)
+    subprocess.run([HUBIDUBIOS_BIN, "capture", "warmup"], env=env, check=True)
     timings = []
     for i in range(3):
         t0 = time.perf_counter()
-        subprocess.run([PRODOS_BIN, "capture", f"quick thought {i}"],
+        subprocess.run([HUBIDUBIOS_BIN, "capture", f"quick thought {i}"],
                        env=env, check=True)
         timings.append(time.perf_counter() - t0)
     best = min(timings)

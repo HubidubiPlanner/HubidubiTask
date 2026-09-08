@@ -3,7 +3,7 @@
 local model, and NEVER commits. Dependency-free (only /usr under bwrap);
 network: lan lets it reach the llama.cpp endpoint.
 
-Endpoint is PRODOS_MODEL_ENDPOINT (default the local llama.cpp server), so
+Endpoint is HUBIDUBIOS_MODEL_ENDPOINT (default the local llama.cpp server), so
 tests point it at a scripted fake."""
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 
 ENDPOINT = os.environ.get(
-    "PRODOS_MODEL_ENDPOINT", "http://127.0.0.1:8080/v1/chat/completions")
+    "HUBIDUBIOS_MODEL_ENDPOINT", "http://127.0.0.1:8080/v1/chat/completions")
 
 VALID_KINDS = {"next_action", "project", "waiting_for", "someday", "reference", "trash"}
 VALID_ENERGY = {"low", "med", "high"}
@@ -100,7 +100,7 @@ def normalize(obj: dict) -> dict:
 
 def main() -> int:
     params = json.loads(sys.stdin.read())
-    vault = Path(os.environ["PRODOS_VAULT"])
+    vault = Path(os.environ["HUBIDUBIOS_VAULT"])
     text = params.get("text")
     if not text and params.get("inbox_id"):
         text = read_item_text(vault, params["inbox_id"])

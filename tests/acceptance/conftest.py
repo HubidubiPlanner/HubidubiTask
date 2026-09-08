@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from prodos_vault.formats import ics
-from prodos_vault.vault import Vault
+from hubidubios_vault.formats import ics
+from hubidubios_vault.vault import Vault
 
 
 @pytest.fixture
@@ -53,6 +53,6 @@ def big_vault(vault):
         start = base + timedelta(days=n % 60, hours=n % 8)
         (cal / f"event-{n:04d}.ics").write_text(ics.render_event(
             f"Meeting {n} re agenda-{n % 53}", start,
-            start + timedelta(hours=1), f"gen-{n}@prodos-accept"))
+            start + timedelta(hours=1), f"gen-{n}@hubidubios-accept"))
 
     return vault

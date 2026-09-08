@@ -1,20 +1,20 @@
-# Maintainer: prodos
+# Maintainer: hubidubios
 # The GTD workflow plugin supersedes the tasks and inbox extraction plugins —
 # it owns the richer entity model — so it conflicts with them.
-pkgname=prodos-plugin-gtd
+pkgname=hubidubios-plugin-gtd
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="prodos plugin: Getting Things Done workflow"
+pkgdesc="hubidubios plugin: Getting Things Done workflow"
 arch=('any')
-url="https://gitlab.local/prodos"
+url="https://gitlab.local/hubidubios"
 license=('MIT')
-depends=('prodos-plugin-host')
-conflicts=('prodos-plugin-tasks' 'prodos-plugin-inbox')
-install=prodos-plugin.install
+depends=('hubidubios-plugin-host')
+conflicts=('hubidubios-plugin-tasks' 'hubidubios-plugin-inbox')
+install=hubidubios-plugin.install
 source=()
 
 package() {
-  local dest="$pkgdir/usr/share/prodos/plugins/gtd"
+  local dest="$pkgdir/usr/share/hubidubios/plugins/gtd"
   local src="$startdir"
   install -d "$dest"
   cp -r "$src/PLUGIN.md" "$src/entities" "$src/skills" "$src/views" "$dest/"

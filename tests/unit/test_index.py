@@ -2,12 +2,12 @@ import os
 import time
 from datetime import datetime, timezone
 
-from prodos_vault.formats import ics, tasks_md
-from prodos_vault.index import indexer, queries
+from hubidubios_vault.formats import ics, tasks_md
+from hubidubios_vault.index import indexer, queries
 
 
 def _seed(vault):
-    tasks_md.append_task(vault.tasks_dir / "prodos.md", "build the indexer",
+    tasks_md.append_task(vault.tasks_dir / "hubidubios.md", "build the indexer",
                          due="2026-09-02", ctx="@computer")
     tasks_md.append_task(vault.tasks_dir / "home.md", "fix the door")
     (vault.inbox_dir / "2026-08-31.md").write_text(
@@ -34,7 +34,7 @@ def test_index_and_queries(vault):
         "task": 2, "note": 1, "event": 1, "inbox_item": 1}
 
     tasks = queries.task_list(conn)
-    assert [t["project"] for t in tasks] == ["prodos", "home"]  # due first
+    assert [t["project"] for t in tasks] == ["hubidubios", "home"]  # due first
     assert queries.task_list(conn, context="@computer")[0]["text"] == "build the indexer"
 
     hits = queries.search(conn, "sandbox")

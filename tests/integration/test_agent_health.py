@@ -1,4 +1,4 @@
-"""GET /v1/agent/health on prodos-sync (Phase 8): the phone learns whether the
+"""GET /v1/agent/health on hubidubios-sync (Phase 8): the phone learns whether the
 workstation's inference endpoint is reachable, so it can show a native
 connection-status chip. The phone can't reach the loopback-only model directly;
 the workstation probes on its behalf."""
@@ -9,12 +9,12 @@ import urllib.request
 from pathlib import Path
 
 import pytest
-from prodos_agent.client import ScriptedClient
-from prodos_agent.loop import Agent
-from prodos_plugin_host.registry import discover, export_entity_types
-from prodos_sync import auth
-from prodos_sync.server import serve
-from prodos_vault.vault import Vault
+from hubidubios_agent.client import ScriptedClient
+from hubidubios_agent.loop import Agent
+from hubidubios_plugin_host.registry import discover, export_entity_types
+from hubidubios_sync import auth
+from hubidubios_sync.server import serve
+from hubidubios_vault.vault import Vault
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 

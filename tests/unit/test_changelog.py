@@ -1,7 +1,7 @@
 
-from prodos_sync import changelog, db
-from prodos_vault.formats import tasks_md
-from prodos_vault.index import indexer
+from hubidubios_sync import changelog, db
+from hubidubios_vault.formats import tasks_md
+from hubidubios_vault.index import indexer
 
 
 def _conns(vault):

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the plain prodos ISO on an Apple-Silicon Mac by spinning up a real
+# Build the plain hubidubios ISO on an Apple-Silicon Mac by spinning up a real
 # x86_64 Colima VM (QEMU system emulation -> a genuine x86_64 kernel, so
 # mkarchiso's loop/mount/squashfs work; slow but correct). Uses a NAMED Colima
 # profile so your default arm64 Colima (the fast container harness) is untouched.
@@ -8,7 +8,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-PROFILE="${PRODOS_ISO_PROFILE:-isobuild}"
+PROFILE="${HUBIDUBIOS_ISO_PROFILE:-isobuild}"
 
 if ! colima status -p "$PROFILE" >/dev/null 2>&1; then
   echo "==> Starting x86_64 Colima VM (profile: $PROFILE) — this is slow"

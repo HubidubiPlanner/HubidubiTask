@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# First-boot setup for a hubidubios workstation. Idempotent: safe to re-run.
+# Creates the vault skeleton, installs the nftables/radicale/avahi configs
+# shipped in the hubidubios-base package, and enables the per-user services.
+set -euo pipefail
+
+VAULT="${HUBIDUBIOS_VAULT:-$HOME/vault}"
+SEED=/usr/share/hubidubios/seed/vault
+
+# On first run, seed the vault from the image (a starter vault + config baked
+# in at build time). If there is no seed, just create the empty skeleton.
+if [ ! -d "$VAULT" ] && [ -d "$SEED" ]; then
+  mkdir -p "$VAULT"
+  cp -a "$SEED/." "$VAULT/"
+  echo "seeded vault from $SEED"
+else
+  mkdir -p "$VAULT"/{inbox,notes,tasks,calendars,projects,someday,.hubidubios}
+fi
+
+# Register the default plugin set's entity types FIRST (so the index below
+# classifies the seeded files under the GTD types, not the builtin ones).
+if command -v hubidubios-plugins >/dev/null 2>&1; then
+  hubidubios-plugins refresh || true
+fi
+
+# Build the initial index.
+hubidubios index rebuild || true
+
+# Per-user services (sync + watcher + inference). System services (sshd,
+# nftables, avahi) are enabled in the image.
+systemctl --user enable --now hubidubios-sync.service 2>/dev/null || true
+systemctl --user enable --now hubidubios-watch.service 2>/dev/null || true
+systemctl --user enable --now vault-autocommit.timer 2>/dev/null || true
+# selfhostedai-agent is the default inference server (local-only); llama.service is
+# the fallback if selfhostedai-agent is not installed.
+if command -v selfhostedai-agent >/dev/null 2>&1; then
+  systemctl --user enable --now selfhostedai-agent.service 2>/dev/null || true
+else
+  systemctl --user enable --now llama.service 2>/dev/null || true
+fi
+
+# --- Desktop integration (Omarchy / Hyprland / Quickshell), no browser ---
+# Wire the global capture keybind into the user's Hyprland config (idempotent).
+HYPR="$HOME/.config/hypr/hyprland.conf"
+if [ -f "$HYPR" ] && ! grep -q 'hubidubios-keybinds.conf' "$HYPR"; then
+  echo 'source = /etc/hubidubios/hypr/hubidubios-keybinds.conf' >> "$HYPR"
+fi
+
+# Strip Omarchy Quattro's cloud coding-agent widget so nothing points at a
+# cloud API. The nftables egress lockdown is the backstop regardless.
+for cfg in "$HOME/.config/quickshell"/*/config.* ; do
+  [ -f "$cfg" ] || continue
+  sed -i '/claude-code/d; /coding-agent/d; /CodingAgent/d' "$cfg" 2>/dev/null || true
+done
+echo "hubidubios: add \`HubidubiOsStatus {}\` (import \"/etc/hubidubios/quickshell\") to the bar."
+
+echo "hubidubios workstation ready. Vault at $VAULT."
+echo "Inference: $(hubidubios-agent status 2>/dev/null || echo 'configure [inference] in ~/vault/.hubidubios/config.toml')"
+echo "Pair a phone with:  hubidubios-sync pair"
+echo "Capture anywhere:   Super+Shift+Space"

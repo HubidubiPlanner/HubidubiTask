@@ -17,7 +17,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 VENV="$REPO/.venv/bin"
-SCRATCH="${TMPDIR:-/tmp}/prodos-heavy"
+SCRATCH="${TMPDIR:-/tmp}/hubidubios-heavy"
 mkdir -p "$SCRATCH"
 
 step() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
@@ -37,26 +37,26 @@ run_android() {
   "$ADB" install -r "$apk/debug/app-debug.apk" >/dev/null
   "$ADB" install -r "$apk/androidTest/debug/app-debug-androidTest.apk" >/dev/null
 
-  step "android-instrumented: start prodos-sync (TLS) + adb reverse"
-  export PRODOS_VAULT="$SCRATCH/android-vault"; rm -rf "$PRODOS_VAULT"
-  "$VENV/python" -c "from prodos_vault.vault import Vault; import os; Vault(os.environ['PRODOS_VAULT']).ensure_layout()"
-  "$VENV/prodos-sync" serve --bind 127.0.0.1 --port 5233 >"$SCRATCH/sync.log" 2>&1 &
+  step "android-instrumented: start hubidubios-sync (TLS) + adb reverse"
+  export HUBIDUBIOS_VAULT="$SCRATCH/android-vault"; rm -rf "$HUBIDUBIOS_VAULT"
+  "$VENV/python" -c "from hubidubios_vault.vault import Vault; import os; Vault(os.environ['HUBIDUBIOS_VAULT']).ensure_layout()"
+  "$VENV/hubidubios-sync" serve --bind 127.0.0.1 --port 5233 >"$SCRATCH/sync.log" 2>&1 &
   local sync=$!; trap "kill $sync 2>/dev/null; $ADB reverse --remove-all 2>/dev/null || true" RETURN
   sleep 2
   "$ADB" reverse tcp:5233 tcp:5233 >/dev/null
   local pair fp token
-  pair="$("$VENV/prodos-sync" pair)"
+  pair="$("$VENV/hubidubios-sync" pair)"
   token="$(printf '%s\n' "$pair" | awk '/pair token/{print $NF}')"
   fp="$(printf '%s\n' "$pair" | grep -o 'sha256:[0-9a-f]*')"
   ok "server $fp"
 
   step "android-instrumented: drive the pinned-TLS pairing test on device"
   "$ADB" shell am instrument -w \
-    -e class com.prodos.mobile.PairingInstrumentedTest \
+    -e class com.hubidubios.mobile.PairingInstrumentedTest \
     -e host 127.0.0.1 -e port 5233 -e fingerprint "$fp" -e token "$token" \
-    com.prodos.mobile.test/androidx.test.runner.AndroidJUnitRunner | tee "$SCRATCH/instr.log"
+    com.hubidubios.mobile.test/androidx.test.runner.AndroidJUnitRunner | tee "$SCRATCH/instr.log"
   grep -q "OK (1 test)" "$SCRATCH/instr.log" || { warn "instrumented test failed"; return 1; }
-  "$VENV/prodos-sync" devices | grep -q . && ok "device paired on the workstation"
+  "$VENV/hubidubios-sync" devices | grep -q . && ok "device paired on the workstation"
 }
 
 # --------------------------------------------------------------- iso

@@ -1,7 +1,7 @@
 import textwrap
 
 import pytest
-from prodos_vault.vault import Vault
+from hubidubios_vault.vault import Vault
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def make_skill(tmp_path):
 
         (pdir / "PLUGIN.md").write_text(
             "---\n" + yaml.safe_dump(manifest, sort_keys=False) + "---\n")
-        from prodos_plugin_host.registry import discover
+        from hubidubios_plugin_host.registry import discover
 
         reg = discover([tmp_path / "plugins"])
         assert reg.errors == []

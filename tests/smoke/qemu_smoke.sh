@@ -2,10 +2,10 @@
 # QEMU smoke test (PLAN.md Phase 7).
 #
 # Boot the workstation ISO headless, wait for SSH over a user-mode forward, and
-# assert the core prodos commands work end to end. Any non-zero exit fails the
+# assert the core hubidubios commands work end to end. Any non-zero exit fails the
 # pipeline. Runs in CI (needs KVM + qemu); not on the macOS dev machine.
 #
-#   ./qemu_smoke.sh path/to/prodos-workstation.iso
+#   ./qemu_smoke.sh path/to/hubidubios-workstation.iso
 set -euo pipefail
 
 ISO="${1:?usage: qemu_smoke.sh <iso>}"
@@ -23,7 +23,7 @@ qemu-system-x86_64 \
   -cdrom "$ISO" \
   -nic user,hostfwd=tcp::"$SSH_PORT"-:22 \
   -nographic -serial "file:$LOG" \
-  -append "prodos.smoke" &
+  -append "hubidubios.smoke" &
 QEMU_PID=$!
 
 echo "==> Waiting for SSH (up to 5 min)"
@@ -36,13 +36,13 @@ done
 
 run() { ssh "${SSH_OPTS[@]}" root@127.0.0.1 "$@"; }
 
-echo "==> Asserting prodos commands"
-run "prodos index rebuild"
-run "prodos capture 'smoke test item'"
-run "prodos inbox | grep -q 'smoke test item'"
+echo "==> Asserting hubidubios commands"
+run "hubidubios index rebuild"
+run "hubidubios capture 'smoke test item'"
+run "hubidubios inbox | grep -q 'smoke test item'"
 
 echo "==> Asserting the agent answers (model preloaded)"
-# `prodos ask` must return non-empty; the model is resident via llama.service.
-run "prodos-agent ask 'what is in my inbox?' | grep -q ."
+# `hubidubios ask` must return non-empty; the model is resident via llama.service.
+run "hubidubios-agent ask 'what is in my inbox?' | grep -q ."
 
 echo "==> QEMU smoke PASSED"

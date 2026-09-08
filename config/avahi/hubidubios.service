@@ -1,0 +1,19 @@
+<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<!--
+  Advertises _hubidubios._tcp.local for phone/laptop discovery (PLAN.md Phase 2).
+  Install to /etc/avahi/services/hubidubios.service.
+
+  Replace FINGERPRINT with the output of `hubidubios-sync pair` (also printed on
+  `hubidubios-sync serve` startup). mDNS is best-effort: clients always keep
+  manual host entry as a fallback (guest networks, mesh routers, VLANs).
+-->
+<service-group>
+  <name replace-wildcards="yes">hubidubios on %h</name>
+  <service>
+    <type>_hubidubios._tcp</type>
+    <port>5233</port>
+    <txt-record>v=1</txt-record>
+    <txt-record>fp=FINGERPRINT</txt-record>
+  </service>
+</service-group>

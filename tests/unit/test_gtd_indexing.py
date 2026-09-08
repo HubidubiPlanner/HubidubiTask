@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 import pytest
-from prodos_plugin_host.registry import discover, export_entity_types
-from prodos_vault.index import indexer, queries
+from hubidubios_plugin_host.registry import discover, export_entity_types
+from hubidubios_vault.index import indexer, queries
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 

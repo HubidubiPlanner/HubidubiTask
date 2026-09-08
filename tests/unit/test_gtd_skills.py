@@ -9,15 +9,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
-from prodos_plugin_host.registry import discover
-from prodos_plugin_host.sandbox import run_skill
+from hubidubios_plugin_host.registry import discover
+from hubidubios_plugin_host.sandbox import run_skill
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 
 
 @pytest.fixture
 def gtd(monkeypatch):
-    monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
+    monkeypatch.setenv("HUBIDUBIOS_SKILL_SANDBOX", "dangerously-none")
     return discover([REPO_PLUGINS])
 
 
@@ -152,7 +152,7 @@ def test_clarify_proposes_and_does_not_commit(gtd, vault, monkeypatch):
         "context": "@calls", "time_minutes": 5, "energy": "low",
         "delegate_to": None, "reason": "single call"})
     with _FakeModel(model_json) as endpoint:
-        monkeypatch.setenv("PRODOS_MODEL_ENDPOINT", endpoint)
+        monkeypatch.setenv("HUBIDUBIOS_MODEL_ENDPOINT", endpoint)
         res = _run(gtd, vault, "gtd-clarify", {"inbox_id": "i_c1"})
 
     assert res["proposal"]["kind"] == "next_action"
@@ -165,7 +165,7 @@ def test_clarify_proposes_and_does_not_commit(gtd, vault, monkeypatch):
 
 def test_clarify_normalizes_bad_model_output(gtd, vault, monkeypatch):
     with _FakeModel('garbage {"actionable": false, "kind": "weird", "text": "x"} tail') as ep:
-        monkeypatch.setenv("PRODOS_MODEL_ENDPOINT", ep)
+        monkeypatch.setenv("HUBIDUBIOS_MODEL_ENDPOINT", ep)
         res = _run(gtd, vault, "gtd-clarify", {"text": "some reference doc"})
     # invalid kind coerced; non-actionable -> reference
     assert res["proposal"]["kind"] == "reference"

@@ -1,20 +1,20 @@
-"""`prodos next add|list|done` — direct next_action management under the GTD
+"""`hubidubios next add|list|done` — direct next_action management under the GTD
 plugin set (fills the gap where `task add` has no registered type)."""
 
 import json
 from pathlib import Path
 
 import pytest
-from prodos_vault import cli
+from hubidubios_vault import cli
 
 REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
 
 
 @pytest.fixture
 def run(vault, monkeypatch, capsys):
-    monkeypatch.setenv("PRODOS_VAULT", str(vault.root))
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault.root))
     # Install the GTD set so next_action is the registered type (task is not).
-    from prodos_plugin_host.registry import discover, export_entity_types
+    from hubidubios_plugin_host.registry import discover, export_entity_types
     reg = discover([REPO_PLUGINS], names={"gtd", "calendar"})
     export_entity_types(vault, reg)
     vault._registry = None
@@ -38,7 +38,7 @@ def test_next_add_creates_next_action(run, vault):
     assert "ctx:@calls" in content and "time:5" in content and "energy:low" in content
 
     # indexed as next_action, not task
-    from prodos_vault.index import indexer
+    from hubidubios_vault.index import indexer
     conn = indexer.open_index(vault)
     row = conn.execute("SELECT type FROM entities WHERE id=?", (aid,)).fetchone()
     assert row["type"] == "next_action"
@@ -67,7 +67,7 @@ def test_next_list_and_done(run, vault):
 
 def test_next_add_refused_without_gtd(vault, monkeypatch, capsys):
     # No plugins registered -> next_action is not a known type.
-    monkeypatch.setenv("PRODOS_VAULT", str(vault.root))
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault.root))
     vault.entity_types_path.write_text('{"types": {"note": {"path":"notes/","suffix":".md"}}}')
     vault._registry = None
     assert cli.main(["next", "add", "nope"]) == 1
@@ -76,8 +76,8 @@ def test_next_add_refused_without_gtd(vault, monkeypatch, capsys):
 
 def test_task_add_still_works_under_phase3_set(vault, monkeypatch, capsys):
     """Sanity: `task add` remains for the Phase-3 tasks plugin."""
-    monkeypatch.setenv("PRODOS_VAULT", str(vault.root))
-    from prodos_plugin_host.registry import discover, export_entity_types
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault.root))
+    from hubidubios_plugin_host.registry import discover, export_entity_types
     reg = discover([REPO_PLUGINS], names={"tasks", "calendar", "inbox"})
     export_entity_types(vault, reg)
     vault._registry = None

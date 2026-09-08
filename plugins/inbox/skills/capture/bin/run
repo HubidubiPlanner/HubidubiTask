@@ -21,7 +21,7 @@ def main() -> int:
         print(json.dumps({"error": "nothing to capture"}))
         return 1
     now = datetime.now()
-    path = Path(os.environ["PRODOS_VAULT"]) / "inbox" / f"{now:%Y-%m-%d}.md"
+    path = Path(os.environ["HUBIDUBIOS_VAULT"]) / "inbox" / f"{now:%Y-%m-%d}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     item_id = new_id()
     with open(path, "a", encoding="utf-8") as f:

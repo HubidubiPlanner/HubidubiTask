@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Build the PLAIN prodos ISO — a terminal-first Arch live/install image with
-# prodos baked in and a seeded vault. Self-contained: one privileged x86_64
+# Build the PLAIN hubidubios ISO — a terminal-first Arch live/install image with
+# hubidubios baked in and a seeded vault. Self-contained: one privileged x86_64
 # Arch environment, no Docker-in-Docker, no external Omarchy repo.
 #
 # Run on x86_64 Arch Linux as root (a live Arch USB, a VM, WSL2 w/ arch, or a
@@ -13,7 +13,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 OUT="${1:-$HERE/out}"
-PRODOS_REPO=/build/prodos-repo
+HUBIDUBIOS_REPO=/build/hubidubios-repo
 WORK="$(mktemp -d)"
 PROFILE="$WORK/profile"
 
@@ -23,28 +23,28 @@ command -v makepkg   >/dev/null || pacman -Sy --noconfirm --needed base-devel
 # pacman's landlock sandbox is often unavailable in VM/container kernels.
 grep -q '^DisableSandbox' /etc/pacman.conf || sed -i '/^\[options\]/a DisableSandbox' /etc/pacman.conf
 
-echo "==> Building prodos packages"
+echo "==> Building hubidubios packages"
 pacman -Sy --noconfirm --needed base-devel git \
   python-build python-installer python-hatchling python-wheel
 id build &>/dev/null || useradd -m build
 echo 'build ALL=(ALL) NOPASSWD: ALL' >/etc/sudoers.d/build
-install -d -o build "$PRODOS_REPO"
-for p in packages/prodos-vault packages/prodos-plugin-host \
-         packages/prodos-sync packages/prodos-agent \
+install -d -o build "$HUBIDUBIOS_REPO"
+for p in packages/hubidubios-vault packages/hubidubios-plugin-host \
+         packages/hubidubios-sync packages/hubidubios-agent \
          plugins/gtd plugins/calendar; do
   cp -a "$REPO/$p" "/tmp/$(basename "$p")"
   chown -R build "/tmp/$(basename "$p")"
   ( cd "/tmp/$(basename "$p")" && sudo -u build makepkg -f --nodeps --skipinteg )
-  cp "/tmp/$(basename "$p")"/*.pkg.tar.* "$PRODOS_REPO"/
+  cp "/tmp/$(basename "$p")"/*.pkg.tar.* "$HUBIDUBIOS_REPO"/
 done
-repo-add "$PRODOS_REPO/prodos.db.tar.gz" "$PRODOS_REPO"/*.pkg.tar.*
+repo-add "$HUBIDUBIOS_REPO/hubidubios.db.tar.gz" "$HUBIDUBIOS_REPO"/*.pkg.tar.*
 
-echo "==> Assembling the archiso profile (releng + prodos)"
+echo "==> Assembling the archiso profile (releng + hubidubios)"
 cp -r /usr/share/archiso/configs/releng "$PROFILE"
 echo "-> releng copied; branding"
 
 # Branding: make it announce itself as HubidubiOS, not vanilla Arch. (The name
-# is the OS branding; the CLI/packages stay `prodos`.)
+# is the OS branding; the CLI/packages stay `hubidubios`.)
 sed -i \
   -e 's/^iso_name=.*/iso_name="hubidubios"/' \
   -e 's/^iso_label=.*/iso_label="HUBIDUBIOS_$(date +%Y%m)"/' \
@@ -60,16 +60,16 @@ find "$PROFILE"/syslinux "$PROFILE"/efiboot "$PROFILE"/grub -type f 2>/dev/null 
 done
 # The epic-font banner in airootfs/etc/motd greets you at login.
 
-# Append prodos + a usable base to releng's package list (keeps all boot deps).
+# Append hubidubios + a usable base to releng's package list (keeps all boot deps).
 cat >> "$PROFILE/packages.x86_64" <<'PKGS'
 
-# --- prodos ---
-prodos-vault
-prodos-plugin-host
-prodos-sync
-prodos-agent
-prodos-plugin-gtd
-prodos-plugin-calendar
+# --- hubidubios ---
+hubidubios-vault
+hubidubios-plugin-host
+hubidubios-sync
+hubidubios-agent
+hubidubios-plugin-gtd
+hubidubios-plugin-calendar
 openssh
 nftables
 avahi
@@ -83,41 +83,41 @@ git
 vim
 PKGS
 
-# Add the local prodos repo so mkarchiso installs those packages offline.
+# Add the local hubidubios repo so mkarchiso installs those packages offline.
 cat >> "$PROFILE/pacman.conf" <<PACMAN
 
-[prodos]
+[hubidubios]
 SigLevel = Optional TrustAll
-Server = file://$PRODOS_REPO
+Server = file://$HUBIDUBIOS_REPO
 PACMAN
 
-# Overlay our airootfs (prodos-firstboot, services, capture helpers) onto releng.
+# Overlay our airootfs (hubidubios-firstboot, services, capture helpers) onto releng.
 cp -a "$HERE/airootfs/." "$PROFILE/airootfs/"
 # Do NOT auto-enable the firewall on the installer image — a strict ruleset
 # with the wrong LAN subnet would break the installer's own networking.
 rm -f "$PROFILE/airootfs/etc/systemd/system/multi-user.target.wants/nftables.service"
 
-# Bake the seed vault into the image; prodos-firstboot copies it to ~/vault.
-install -d "$PROFILE/airootfs/usr/share/prodos/seed"
-cp -a "$HERE/seed/vault" "$PROFILE/airootfs/usr/share/prodos/seed/"
+# Bake the seed vault into the image; hubidubios-firstboot copies it to ~/vault.
+install -d "$PROFILE/airootfs/usr/share/hubidubios/seed"
+cp -a "$HERE/seed/vault" "$PROFILE/airootfs/usr/share/hubidubios/seed/"
 
-# Bake the offline prodos package repo into the image so `prodos-add` can
-# install prodos onto the disk after archinstall (its Arch deps come from the
-# mirrors; prodos itself installs from this file repo — no cloud).
-echo "-> baking offline prodos repo"
-install -d "$PROFILE/airootfs/usr/share/prodos/repo"
-cp "$PRODOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/usr/share/prodos/repo/"
-cp "$PRODOS_REPO"/prodos.db* "$PRODOS_REPO"/prodos.files* "$PROFILE/airootfs/usr/share/prodos/repo/" 2>/dev/null || true
+# Bake the offline hubidubios package repo into the image so `hubidubios-add` can
+# install hubidubios onto the disk after archinstall (its Arch deps come from the
+# mirrors; hubidubios itself installs from this file repo — no cloud).
+echo "-> baking offline hubidubios repo"
+install -d "$PROFILE/airootfs/usr/share/hubidubios/repo"
+cp "$HUBIDUBIOS_REPO"/*.pkg.tar.* "$PROFILE/airootfs/usr/share/hubidubios/repo/"
+cp "$HUBIDUBIOS_REPO"/hubidubios.db* "$HUBIDUBIOS_REPO"/hubidubios.files* "$PROFILE/airootfs/usr/share/hubidubios/repo/" 2>/dev/null || true
 
 # Guarantee our helper scripts are executable in the image. The exec bit can be
 # lost across the Lima/virtiofs mount, so set it authoritatively via mkarchiso's
 # file_permissions (and chmod the staged copies as a belt-and-suspenders).
-chmod 0755 "$PROFILE"/airootfs/usr/local/bin/prodos-* 2>/dev/null || true
+chmod 0755 "$PROFILE"/airootfs/usr/local/bin/hubidubios-* 2>/dev/null || true
 sed -i '/^file_permissions=(/a\
-  ["/usr/local/bin/prodos-firstboot"]="0:0:755"\
-  ["/usr/local/bin/prodos-capture-gui"]="0:0:755"\
-  ["/usr/local/bin/prodos-next-panel"]="0:0:755"\
-  ["/usr/local/bin/prodos-add"]="0:0:755"' "$PROFILE/profiledef.sh"
+  ["/usr/local/bin/hubidubios-firstboot"]="0:0:755"\
+  ["/usr/local/bin/hubidubios-capture-gui"]="0:0:755"\
+  ["/usr/local/bin/hubidubios-next-panel"]="0:0:755"\
+  ["/usr/local/bin/hubidubios-add"]="0:0:755"' "$PROFILE/profiledef.sh"
 
 # NVIDIA graphics. On a machine whose only GPU is a brand-new NVIDIA card
 # (RTX 50-series/Blackwell) with no iGPU, nouveau can't drive it, AND the bare
@@ -133,11 +133,11 @@ echo "-> configuring NVIDIA driver (nvidia-open, early KMS)"
 # before userspace, and blacklist nouveau at the module level (belt to the
 # kernel-param suspenders below).
 install -Dm644 /dev/stdin "$PROFILE/airootfs/etc/mkinitcpio.conf.d/nvidia.conf" <<'MKI'
-# prodos: pull NVIDIA's KMS-capable modules into the live initramfs so the RTX
+# hubidubios: pull NVIDIA's KMS-capable modules into the live initramfs so the RTX
 # lights up early instead of black-screening on the framebuffer console.
 MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
 MKI
-install -Dm644 /dev/stdin "$PROFILE/airootfs/etc/modprobe.d/prodos-nvidia.conf" <<'MOD'
+install -Dm644 /dev/stdin "$PROFILE/airootfs/etc/modprobe.d/hubidubios-nvidia.conf" <<'MOD'
 blacklist nouveau
 options nvidia_drm modeset=1
 MOD
@@ -148,19 +148,19 @@ if [ -n "${base_entry:-}" ]; then
   # Default: drive the card with nvidia-open + KMS (blacklist nouveau).
   sed -e 's/^title.*/title    HubidubiOS live (NVIDIA driver)/' \
       -e 's/^\(options .*\)/\1 nvidia-drm.modeset=1 modprobe.blacklist=nouveau/' \
-      "$base_entry" > "$EFIENT/00-prodos-nvidia.conf"
+      "$base_entry" > "$EFIENT/00-hubidubios-nvidia.conf"
   # Fallback 1: no nvidia driver, keep the bare framebuffer console, block nouveau.
   sed -e 's/^title.*/title    HubidubiOS live (framebuffer — no nvidia driver)/' \
       -e 's/^\(options .*\)/\1 modprobe.blacklist=nouveau,nvidia,nvidia_drm nouveau.modeset=0/' \
-      "$base_entry" > "$EFIENT/01-prodos-framebuffer.conf"
+      "$base_entry" > "$EFIENT/01-hubidubios-framebuffer.conf"
   # Fallback 2: disable all KMS.
   sed -e 's/^title.*/title    HubidubiOS live (fallback — nomodeset)/' \
       -e 's/^\(options .*\)/\1 nomodeset modprobe.blacklist=nouveau,nvidia,nvidia_drm/' \
-      "$base_entry" > "$EFIENT/02-prodos-nomodeset.conf"
+      "$base_entry" > "$EFIENT/02-hubidubios-nomodeset.conf"
   if grep -q '^default' "$PROFILE/efiboot/loader/loader.conf" 2>/dev/null; then
-    sed -i 's/^default .*/default 00-prodos-nvidia.conf/' "$PROFILE/efiboot/loader/loader.conf"
+    sed -i 's/^default .*/default 00-hubidubios-nvidia.conf/' "$PROFILE/efiboot/loader/loader.conf"
   else
-    echo 'default 00-prodos-nvidia.conf' >> "$PROFILE/efiboot/loader/loader.conf"
+    echo 'default 00-hubidubios-nvidia.conf' >> "$PROFILE/efiboot/loader/loader.conf"
   fi
 else
   echo "   (warning: no base UEFI loader entry found; NVIDIA default not set)" >&2
@@ -168,18 +168,18 @@ fi
 
 # Ship the config files.
 install -Dm644 "$REPO/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"
-install -Dm644 "$REPO/config/avahi/prodos.service" "$PROFILE/airootfs/etc/avahi/services/prodos.service"
-for unit in "$REPO"/config/systemd/prodos-*.service "$REPO"/config/systemd/vault-*.{service,timer}; do
+install -Dm644 "$REPO/config/avahi/hubidubios.service" "$PROFILE/airootfs/etc/avahi/services/hubidubios.service"
+for unit in "$REPO"/config/systemd/hubidubios-*.service "$REPO"/config/systemd/vault-*.{service,timer}; do
   [ -f "$unit" ] && install -Dm644 "$unit" "$PROFILE/airootfs/etc/systemd/user/$(basename "$unit")"
 done
 
 # On the live medium's root autologin, seed the vault + build the index once,
-# so booting the USB drops you into a ready-to-use prodos (great for trying it).
+# so booting the USB drops you into a ready-to-use hubidubios (great for trying it).
 for rc in .zprofile .bash_profile; do
   cat >> "$PROFILE/airootfs/root/$rc" <<'HOOK'
-if [ ! -e /root/.prodos-seeded ]; then
-  prodos-firstboot || true   # seeds ~/vault, refreshes types, indexes
-  touch /root/.prodos-seeded
+if [ ! -e /root/.hubidubios-seeded ]; then
+  hubidubios-firstboot || true   # seeds ~/vault, refreshes types, indexes
+  touch /root/.hubidubios-seeded
 fi
 HOOK
 done

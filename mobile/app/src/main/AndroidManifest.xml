@@ -11,10 +11,10 @@
 
     <application
         android:allowBackup="false"
-        android:label="prodos"
+        android:label="hubidubios"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
-        android:theme="@style/Theme.Prodos">
+        android:theme="@style/Theme.HubidubiOs">
 
         <activity
             android:name=".MainActivity"

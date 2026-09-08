@@ -47,7 +47,7 @@ def main() -> int:
     except ValueError:
         pass
     stale_days = int(params.get("stale_days") or 90)
-    vault = Path(os.environ["PRODOS_VAULT"])
+    vault = Path(os.environ["HUBIDUBIOS_VAULT"])
     today = date.today()
 
     # Inbox: is it empty?

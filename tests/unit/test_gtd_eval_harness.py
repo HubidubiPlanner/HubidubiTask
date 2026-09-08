@@ -9,13 +9,13 @@ EVAL = Path(__file__).parents[1] / "eval"
 
 
 def test_self_test_passes_with_oracle(monkeypatch, tmp_path):
-    monkeypatch.setenv("PRODOS_SKILL_SANDBOX", "dangerously-none")
-    monkeypatch.setenv("PRODOS_VAULT", str(tmp_path / "v"))
+    monkeypatch.setenv("HUBIDUBIOS_SKILL_SANDBOX", "dangerously-none")
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(tmp_path / "v"))
     sys.path.insert(0, str(EVAL))
     import gtd_clarify_eval as ev
 
     endpoint = ev._run_stub_model(ev.SYNTHETIC)
-    monkeypatch.setenv("PRODOS_MODEL_ENDPOINT", endpoint)
+    monkeypatch.setenv("HUBIDUBIOS_MODEL_ENDPOINT", endpoint)
     report = ev.evaluate(ev.SYNTHETIC)
     assert report["rate"] == 1.0
     assert report["passes_threshold"]

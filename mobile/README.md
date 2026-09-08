@@ -1,6 +1,6 @@
-# prodos-mobile
+# hubidubios-mobile
 
-Phase 5 of the prodos plan: a full offline mirror in the pocket, hosting plugin
+Phase 5 of the hubidubios plan: a full offline mirror in the pocket, hosting plugin
 views, syncing only on the LAN. A **hybrid** — Kotlin native shell + WebView UI
 — because the native side owns capabilities a WebView cannot reach.
 
@@ -15,9 +15,9 @@ Keystore, QR pairing, capture widget + share intent) and the pure-Kotlin
   durable outbox, and the sync engine. No Android dependency, so its JUnit
   tests run on the JVM without an emulator — this is where the app's most
   important correctness is proven.
-- **`app/`** — the Android application. UI in `ui/` (Compose): `ProdosApp`
+- **`app/`** — the Android application. UI in `ui/` (Compose): `HubidubiOsApp`
   (nav scaffold), `Screens` (Home/capture, Next, Review, Chat, Settings),
-  `ProdosViewModel`. `net/AgentClient` polls `/v1/agent/health` for the native
+  `HubidubiOsViewModel`. `net/AgentClient` polls `/v1/agent/health` for the native
   inference-status chip and streams `/v1/agent/ask` for online-only chat.
 - **`fastlane/`** — F-Droid metadata (Phase 7 distribution).
 

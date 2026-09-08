@@ -4,10 +4,10 @@ requires-python = ">=3.12"
 
 [manifest]
 members = [
-    "prodos-agent",
-    "prodos-plugin-host",
-    "prodos-sync",
-    "prodos-vault",
+    "hubidubios-agent",
+    "hubidubios-plugin-host",
+    "hubidubios-sync",
+    "hubidubios-vault",
 ]
 
 [manifest.dependency-groups]
@@ -100,63 +100,63 @@ wheels = [
 ]
 
 [[package]]
-name = "prodos-agent"
+name = "hubidubios-agent"
 version = "0.1.0"
-source = { editable = "packages/prodos-agent" }
+source = { editable = "packages/hubidubios-agent" }
 dependencies = [
     { name = "jsonschema" },
-    { name = "prodos-plugin-host" },
-    { name = "prodos-vault" },
+    { name = "hubidubios-plugin-host" },
+    { name = "hubidubios-vault" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "jsonschema", specifier = ">=4.0" },
-    { name = "prodos-plugin-host", editable = "packages/prodos-plugin-host" },
-    { name = "prodos-vault", editable = "packages/prodos-vault" },
+    { name = "hubidubios-plugin-host", editable = "packages/hubidubios-plugin-host" },
+    { name = "hubidubios-vault", editable = "packages/hubidubios-vault" },
 ]
 
 [[package]]
-name = "prodos-plugin-host"
+name = "hubidubios-plugin-host"
 version = "0.1.0"
-source = { editable = "packages/prodos-plugin-host" }
+source = { editable = "packages/hubidubios-plugin-host" }
 dependencies = [
     { name = "jsonschema" },
-    { name = "prodos-vault" },
+    { name = "hubidubios-vault" },
     { name = "pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "jsonschema", specifier = ">=4.0" },
-    { name = "prodos-vault", editable = "packages/prodos-vault" },
+    { name = "hubidubios-vault", editable = "packages/hubidubios-vault" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]
-name = "prodos-sync"
+name = "hubidubios-sync"
 version = "0.1.0"
-source = { editable = "packages/prodos-sync" }
+source = { editable = "packages/hubidubios-sync" }
 dependencies = [
-    { name = "prodos-vault" },
+    { name = "hubidubios-vault" },
 ]
 
 [package.optional-dependencies]
 agent = [
-    { name = "prodos-agent" },
+    { name = "hubidubios-agent" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "prodos-agent", marker = "extra == 'agent'", editable = "packages/prodos-agent" },
-    { name = "prodos-vault", editable = "packages/prodos-vault" },
+    { name = "hubidubios-agent", marker = "extra == 'agent'", editable = "packages/hubidubios-agent" },
+    { name = "hubidubios-vault", editable = "packages/hubidubios-vault" },
 ]
 provides-extras = ["agent"]
 
 [[package]]
-name = "prodos-vault"
+name = "hubidubios-vault"
 version = "0.1.0"
-source = { editable = "packages/prodos-vault" }
+source = { editable = "packages/hubidubios-vault" }
 dependencies = [
     { name = "icalendar" },
     { name = "pyyaml" },

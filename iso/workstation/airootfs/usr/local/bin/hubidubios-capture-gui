@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Native quick-capture for the Omarchy desktop (Phase 8). Bound to a global
+# Hyprland keybind; opens a tiny native prompt and writes straight to the vault
+# via `hubidubios capture`. No browser, no WebView. Capture must never fail, so a
+# missing GUI tool still falls back to a terminal prompt.
+set -euo pipefail
+
+text=""
+if command -v fuzzel >/dev/null 2>&1; then
+  text="$(: | fuzzel --dmenu --prompt 'capture> ' --lines 0 || true)"
+elif command -v wofi >/dev/null 2>&1; then
+  text="$(: | wofi --dmenu --prompt 'capture> ' || true)"
+elif command -v zenity >/dev/null 2>&1; then
+  text="$(zenity --entry --title=hubidubios --text=Capture || true)"
+else
+  # Last resort: a terminal prompt (capture must never fail).
+  read -rp 'capture> ' text || true
+fi
+
+text="$(printf '%s' "$text" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+[ -n "$text" ] && hubidubios capture "$text"

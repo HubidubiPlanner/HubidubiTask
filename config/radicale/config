@@ -1,5 +1,5 @@
 # Radicale for third-party desktop CalDAV clients (PLAN.md Phase 2).
-# The phone app never uses this; it talks to prodos-sync.
+# The phone app never uses this; it talks to hubidubios-sync.
 # Install to /etc/radicale/config.
 #
 # Storage shares the vault's calendars directory with no bridge layer:
