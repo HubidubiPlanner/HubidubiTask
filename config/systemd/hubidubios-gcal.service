@@ -1,0 +1,12 @@
+# User unit: install to ~/.config/systemd/user/. Started by hubidubios-gcal.timer.
+# One-way, read-only pull of the private iCal URLs configured in
+# ~/vault/.hubidubios/config.toml ([calendar].google_ics_urls). A no-op (and no
+# network) when none are configured.
+
+[Unit]
+Description=HubidubiOS one-way Google/iCal calendar pull
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hubidubios calendar pull

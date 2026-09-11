@@ -23,6 +23,10 @@ if command -v hubidubios-plugins >/dev/null 2>&1; then
   hubidubios-plugins refresh || true
 fi
 
+# Upgrade a pre-Phase-9 vault (tasks/, tasks/waiting.md, someday/) to the
+# current/waiting/maybe layout. Idempotent + a no-op on a fresh seeded vault.
+hubidubios migrate-layout || true
+
 # Build the initial index.
 hubidubios index rebuild || true
 
@@ -31,6 +35,8 @@ hubidubios index rebuild || true
 systemctl --user enable --now hubidubios-sync.service 2>/dev/null || true
 systemctl --user enable --now hubidubios-watch.service 2>/dev/null || true
 systemctl --user enable --now vault-autocommit.timer 2>/dev/null || true
+# Google/iCal calendar pull — a no-op until [calendar] URLs are configured.
+systemctl --user enable --now hubidubios-gcal.timer 2>/dev/null || true
 # selfhostedai-agent is the default inference server (local-only); llama.service is
 # the fallback if selfhostedai-agent is not installed.
 if command -v selfhostedai-agent >/dev/null 2>&1; then

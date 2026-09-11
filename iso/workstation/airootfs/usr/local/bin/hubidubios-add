@@ -65,7 +65,8 @@ for lc in "$TARGET/boot/loader/loader.conf" "$TARGET/efi/loader/loader.conf" "$T
 done
 
 echo "==> Shipping systemd user units, firstboot, and the seed"
-for u in /etc/systemd/user/hubidubios-*.service /etc/systemd/user/vault-*.service /etc/systemd/user/vault-*.timer; do
+for u in /etc/systemd/user/hubidubios-*.service /etc/systemd/user/hubidubios-*.timer \
+         /etc/systemd/user/vault-*.service /etc/systemd/user/vault-*.timer; do
   [ -f "$u" ] && install -Dm644 "$u" "$TARGET/etc/systemd/user/$(basename "$u")"
 done
 install -Dm755 /usr/local/bin/hubidubios-firstboot "$TARGET/usr/local/bin/hubidubios-firstboot"
@@ -91,7 +92,8 @@ HOOK
   uid_gid="$(arch-chroot "$TARGET" id -u "$USERNAME"):$(arch-chroot "$TARGET" id -g "$USERNAME")"
   chown "$uid_gid" "$TARGET/home/$USERNAME"/.bash_profile "$TARGET/home/$USERNAME"/.zprofile 2>/dev/null || true
   arch-chroot "$TARGET" systemctl --global enable \
-    hubidubios-sync.service hubidubios-watch.service vault-autocommit.timer 2>/dev/null || true
+    hubidubios-sync.service hubidubios-watch.service vault-autocommit.timer \
+    hubidubios-gcal.timer 2>/dev/null || true
 else
   echo "   (no user home found; create a user, then log in — the vault seeds on first login)"
 fi

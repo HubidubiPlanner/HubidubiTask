@@ -180,7 +180,7 @@ grep -q '^timeout'      "$LOADER" 2>/dev/null && sed -i 's/^timeout.*/timeout 8/
 # Ship the config files.
 install -Dm644 "$REPO/config/nftables.conf" "$PROFILE/airootfs/etc/nftables.conf"
 install -Dm644 "$REPO/config/avahi/hubidubios.service" "$PROFILE/airootfs/etc/avahi/services/hubidubios.service"
-for unit in "$REPO"/config/systemd/hubidubios-*.service "$REPO"/config/systemd/vault-*.{service,timer}; do
+for unit in "$REPO"/config/systemd/hubidubios-*.{service,timer} "$REPO"/config/systemd/vault-*.{service,timer}; do
   [ -f "$unit" ] && install -Dm644 "$unit" "$PROFILE/airootfs/etc/systemd/user/$(basename "$unit")"
 done
 

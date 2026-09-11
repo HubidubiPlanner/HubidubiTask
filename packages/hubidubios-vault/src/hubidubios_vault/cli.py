@@ -323,6 +323,21 @@ def cmd_note_new(vault: Vault, args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- calendar
+
+def cmd_calendar_pull(vault: Vault, args) -> int:
+    """One-way read-only pull of configured Google/iCal URLs into the vault."""
+    from . import calsync
+    from .index import indexer
+
+    res = calsync.pull(vault)
+    if res["fetched"]:
+        indexer.rebuild(vault)
+    print(f"calendar pull: {res['written']} events from {res['fetched']} "
+          f"source(s), {res['pruned']} pruned")
+    return 0
+
+
 # ---------------------------------------------------------------- agenda
 
 def cmd_agenda(vault: Vault, args) -> int:
@@ -480,6 +495,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("title", nargs="+")
     sp.add_argument("--tags", nargs="*")
     sp.set_defaults(func=cmd_note_new)
+
+    cp = sub.add_parser("calendar", help="calendar integration")
+    csub = cp.add_subparsers(dest="calendar_command", required=True)
+    sp = csub.add_parser("pull", help="one-way pull of configured Google/iCal URLs")
+    sp.set_defaults(func=cmd_calendar_pull)
 
     sp = sub.add_parser("agenda", help="events and due tasks")
     sp.add_argument("--days", type=int, default=7)
