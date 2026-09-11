@@ -29,7 +29,30 @@ class Vault:
 
     @property
     def tasks_dir(self) -> Path:
+        # Legacy pre-Phase-9 location; kept for migration only. New next actions
+        # live in current_dir.
         return self.root / "tasks"
+
+    # Phase 9 — state directories in the user's own vocabulary.
+    @property
+    def current_dir(self) -> Path:
+        return self.root / "current"          # next_action
+
+    @property
+    def waiting_dir(self) -> Path:
+        return self.root / "waiting"          # waiting_for (a directory now)
+
+    @property
+    def maybe_dir(self) -> Path:
+        return self.root / "maybe"            # someday
+
+    @property
+    def archive_dir(self) -> Path:
+        return self.root / "archive"          # done/dropped, out of active views
+
+    @property
+    def projects_dir(self) -> Path:
+        return self.root / "projects"
 
     @property
     def calendars_dir(self) -> Path:
@@ -60,8 +83,9 @@ class Vault:
         return self.hubidubios_dir / "entity-types.json"
 
     def ensure_layout(self) -> None:
-        for d in (self.inbox_dir, self.notes_dir, self.tasks_dir,
-                  self.calendars_dir, self.hubidubios_dir):
+        for d in (self.inbox_dir, self.notes_dir, self.current_dir,
+                  self.waiting_dir, self.maybe_dir, self.archive_dir,
+                  self.projects_dir, self.calendars_dir, self.hubidubios_dir):
             d.mkdir(parents=True, exist_ok=True)
 
     def entity_registry(self) -> dict[str, dict]:

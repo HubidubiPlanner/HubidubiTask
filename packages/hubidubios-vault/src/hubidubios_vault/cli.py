@@ -126,7 +126,7 @@ def cmd_next_add(vault: Vault, args) -> int:
         extra["time"] = str(args.time)
     if args.energy:
         extra["energy"] = args.energy
-    path = vault.tasks_dir / f"{args.project}.md"
+    path = vault.current_dir / f"{args.project}.md"
     action_id = tasks_md.append_task(
         path, " ".join(args.text).strip(), due=args.due, ctx=args.ctx, extra=extra)
     conn = indexer.open_index(vault, do_sweep=False)  # write-through
@@ -177,6 +177,126 @@ def cmd_next_done(vault: Vault, args) -> int:
     indexer.index_file(conn, vault, path)
     conn.close()
     print(f"done: {args.id}")
+    return 0
+
+
+# ---------------------------------------------------------------- archive
+
+def cmd_archive(vault: Vault, args) -> int:
+    """Move a done/dropped action out of current/waiting/maybe into
+    archive/YYYY-MM.md — it leaves the active views but stays searchable."""
+    import re
+    from .formats import meta as _meta
+    from .index import indexer
+
+    for base in (vault.current_dir, vault.waiting_dir, vault.maybe_dir):
+        if not base.is_dir():
+            continue
+        for f in sorted(base.rglob("*.md")):
+            lines = f.read_text(encoding="utf-8").split("\n")
+            for i, line in enumerate(lines):
+                if _meta.extract(line)[1].get("id") == args.id:
+                    del lines[i]
+                    f.write_text("\n".join(lines), encoding="utf-8")
+                    done = date.today().isoformat()
+                    arch = re.sub(r"- \[[ xX]\]", "- [x]", line, count=1)
+                    arch = (arch.replace("-->", f"done:{done} from:{base.name} -->", 1)
+                            if "-->" in arch else arch + f"  <!-- done:{done} from:{base.name} -->")
+                    dest = vault.archive_dir / f"{done[:7]}.md"
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    content = ""
+                    if dest.exists():
+                        content = dest.read_text(encoding="utf-8")
+                        if content and not content.endswith("\n"):
+                            content += "\n"
+                    dest.write_text(content + arch + "\n", encoding="utf-8")
+                    conn = indexer.open_index(vault, do_sweep=False)
+                    indexer.index_file(conn, vault, f)
+                    indexer.index_file(conn, vault, dest)
+                    conn.close()
+                    print(f"archived: {args.id} (from {base.name})")
+                    return 0
+    print(f"no active item with id {args.id}", file=sys.stderr)
+    return 1
+
+
+# ---------------------------------------------------------------- projects
+
+def cmd_project_show(vault: Vault, args) -> int:
+    """Show a project and the current/waiting items that reference it."""
+    from pathlib import Path
+
+    from .index import queries
+
+    conn = _open(vault)
+    found = queries.find_entity(conn, args.id)
+    if not found:
+        # allow lookup by slug (file stem) too
+        row = conn.execute(
+            "SELECT data, file FROM entities WHERE type='project'").fetchall()
+        found = next(((json.loads(r["data"]), r["file"]) for r in row
+                     if Path(r["file"]).stem == args.id), None)
+    if not found:
+        print(f"no project {args.id!r}", file=sys.stderr)
+        conn.close()
+        return 1
+    proj, rel = found
+    slug = Path(rel).stem
+    current = queries.task_list(conn, project=slug, include_done=args.all,
+                                type_="next_action")
+    waiting = [w for w in queries.task_list(conn, include_done=args.all,
+                                            type_="waiting_for")
+               if w.get("project") == slug]
+    conn.close()
+    if getattr(args, "json", False):
+        print(json.dumps({"project": proj, "current": current, "waiting": waiting}))
+        return 0
+    print(f"{proj['id']}  {proj.get('title', slug)}  [{proj.get('status') or '—'}]")
+    if proj.get("outcome"):
+        print(f"  outcome: {proj['outcome']}")
+    print(f"  current ({len(current)}):")
+    for a in current:
+        box = "[x]" if a["done"] else "[ ]"
+        print(f"    {box} {a['text']}  {a['id']}")
+    if waiting:
+        print(f"  waiting ({len(waiting)}):")
+        for w in waiting:
+            print(f"    - {w['text']}  {w['id']}")
+    return 0
+
+
+# ---------------------------------------------------------------- migrate
+
+def cmd_migrate_layout(vault: Vault, args) -> int:
+    """One-time move from the pre-Phase-9 layout (tasks/, tasks/waiting.md,
+    someday/) to the user's vocabulary (current/, waiting/, maybe/). Idempotent."""
+    import shutil
+
+    from .index import indexer
+
+    vault.ensure_layout()
+    moved = 0
+
+    def move(src, dst):
+        nonlocal moved
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if src.resolve() == dst.resolve() or dst.exists():
+            return
+        shutil.move(str(src), str(dst))
+        moved += 1
+
+    if vault.tasks_dir.is_dir():
+        for f in list(vault.tasks_dir.glob("*.md")):
+            dst = (vault.waiting_dir / "waiting.md" if f.name == "waiting.md"
+                   else vault.current_dir / f.name)
+            move(f, dst)
+    old_someday = vault.root / "someday"
+    if old_someday.is_dir():
+        for f in list(old_someday.rglob("*.md")):
+            move(f, vault.maybe_dir / f.name)
+
+    n = indexer.rebuild(vault)
+    print(f"migrated {moved} file(s); reindexed {n} entities")
     return 0
 
 
@@ -337,6 +457,22 @@ def build_parser() -> argparse.ArgumentParser:
     sp = xsub.add_parser("done")
     sp.add_argument("id")
     sp.set_defaults(func=cmd_next_done)
+
+    sp = sub.add_parser("archive", help="move a done/dropped item into archive/")
+    sp.add_argument("id")
+    sp.set_defaults(func=cmd_archive)
+
+    pp = sub.add_parser("project", help="inspect projects")
+    psub = pp.add_subparsers(dest="project_command", required=True)
+    sp = psub.add_parser("show", help="show a project and its items")
+    sp.add_argument("id", help="project id (p_…) or slug")
+    sp.add_argument("--all", action="store_true", help="include done items")
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
+    sp.set_defaults(func=cmd_project_show)
+
+    sp = sub.add_parser("migrate-layout",
+                        help="upgrade a pre-Phase-9 vault to current/waiting/maybe")
+    sp.set_defaults(func=cmd_migrate_layout)
 
     np = sub.add_parser("note", help="manage notes")
     nsub = np.add_subparsers(dest="note_command", required=True)

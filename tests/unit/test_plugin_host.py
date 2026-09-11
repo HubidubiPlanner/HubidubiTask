@@ -32,10 +32,11 @@ def test_gtd_install_set_entity_types():
     reg = discover([REPO_PLUGINS], names={"gtd", "calendar"})
     types = reg.entity_types()
     assert sorted(types) == [
-        "event", "inbox_item", "next_action", "note", "project",
+        "archived", "event", "inbox_item", "next_action", "note", "project",
         "someday", "waiting_for"]
     assert types["next_action"]["plugin"] == "gtd"
-    assert types["waiting_for"]["path"] == "tasks/waiting.md"
+    assert types["next_action"]["path"] == "current/"
+    assert types["waiting_for"]["path"] == "waiting/"
 
 
 def test_gtd_conflicts_with_inbox():

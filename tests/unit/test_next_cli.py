@@ -33,7 +33,7 @@ def test_next_add_creates_next_action(run, vault):
     assert code == 0
     aid = out.strip()
     assert aid.startswith("t_")
-    content = (vault.tasks_dir / "clinic.md").read_text()
+    content = (vault.current_dir / "clinic.md").read_text()
     assert "call the vet" in content
     assert "ctx:@calls" in content and "time:5" in content and "energy:low" in content
 

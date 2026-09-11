@@ -58,13 +58,11 @@ def main() -> int:
             inbox_count += sum(1 for ln in f.read_text(encoding="utf-8", errors="replace").split("\n")
                                if re.match(r"^- \d{2}:\d{2} ", ln))
 
-    # Next actions by project key (= source filename stem).
-    tasks_dir = vault / "tasks"
+    # Next actions by project key (= source filename stem in current/).
+    current_dir = vault / "current"
     actions_by_project: dict[str, int] = {}
-    if tasks_dir.exists():
-        for f in sorted(tasks_dir.glob("*.md")):
-            if f.name == "waiting.md":
-                continue
+    if current_dir.exists():
+        for f in sorted(current_dir.glob("*.md")):
             for done, _body, _md in checkbox_lines(f):
                 if not done:
                     actions_by_project[f.stem] = actions_by_project.get(f.stem, 0) + 1
@@ -83,19 +81,21 @@ def main() -> int:
             if actions_by_project.get(key, 0) == 0:
                 stale_projects.append({"project": key, "title": title})
 
-    # Overdue waiting-fors.
+    # Overdue waiting-fors (waiting/ is a directory now).
     overdue_waiting = []
-    for done, body, md in checkbox_lines(tasks_dir / "waiting.md"):
-        due = md.get("due")
-        if not done and due and due < today.isoformat():
-            text = META.sub("", body).strip()
-            overdue_waiting.append({"text": text, "who": md.get("who"), "due": due})
+    waiting_dir = vault / "waiting"
+    for wf in (sorted(waiting_dir.glob("*.md")) if waiting_dir.exists() else []):
+        for done, body, md in checkbox_lines(wf):
+            due = md.get("due")
+            if not done and due and due < today.isoformat():
+                text = META.sub("", body).strip()
+                overdue_waiting.append({"text": text, "who": md.get("who"), "due": due})
 
-    # Someday untouched for stale_days.
-    someday_dir = vault / "someday"
+    # Maybe/someday items untouched for stale_days.
+    maybe_dir = vault / "maybe"
     stale_someday = []
     cutoff = (today - timedelta(days=stale_days)).isoformat()
-    for f in (sorted(someday_dir.glob("*.md")) if someday_dir.exists() else []):
+    for f in (sorted(maybe_dir.glob("*.md")) if maybe_dir.exists() else []):
         for done, body, md in checkbox_lines(f):
             updated = (md.get("updated") or "")[:10]
             if not done and updated and updated < cutoff:

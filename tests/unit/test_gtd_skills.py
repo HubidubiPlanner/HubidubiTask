@@ -29,12 +29,11 @@ def _run(gtd, vault, skill, params):
 # ------------------------------------------------------------ weekly-review
 
 def test_weekly_review_finds_projects_without_next_action(gtd, vault):
-    (vault.tasks_dir / "website.md").write_text(
+    (vault.current_dir / "website.md").write_text(
         "---\nproject: website\n---\n\n- [ ] draft copy  <!-- id:t_a1 ctx:@computer -->\n")
-    (vault.root / "projects").mkdir()
-    (vault.root / "projects" / "website.md").write_text(
+    (vault.projects_dir / "website.md").write_text(
         "---\nid: p_1\ntitle: website\n---\n\nx\n")
-    (vault.root / "projects" / "taxes.md").write_text(
+    (vault.projects_dir / "taxes.md").write_text(
         "---\nid: p_2\ntitle: taxes\n---\n\nx\n")  # no next action
 
     res = _run(gtd, vault, "gtd-weekly-review", {})
@@ -44,10 +43,9 @@ def test_weekly_review_finds_projects_without_next_action(gtd, vault):
 
 
 def test_weekly_review_overdue_waiting_and_stale_someday(gtd, vault):
-    (vault.tasks_dir / "waiting.md").write_text(
+    (vault.waiting_dir / "waiting.md").write_text(
         "- [ ] report  <!-- id:t_w1 who:sam due:2000-01-01 -->\n")
-    (vault.root / "someday").mkdir()
-    (vault.root / "someday" / "someday.md").write_text(
+    (vault.maybe_dir / "maybe.md").write_text(
         "- [ ] sail  <!-- id:t_s1 updated:2000-01-01T00:00:00Z -->\n")
     res = _run(gtd, vault, "gtd-weekly-review", {})
     assert res["overdue_waiting_for"][0]["who"] == "sam"
@@ -57,7 +55,7 @@ def test_weekly_review_overdue_waiting_and_stale_someday(gtd, vault):
 # ------------------------------------------------------------ gtd-next
 
 def test_next_ranks_by_context_and_due(gtd, vault):
-    (vault.tasks_dir / "p.md").write_text(
+    (vault.current_dir / "p.md").write_text(
         "---\nproject: p\n---\n\n"
         "- [ ] overdue thing  <!-- id:t_1 ctx:@computer due:2000-01-01 -->\n"
         "- [ ] later thing  <!-- id:t_2 ctx:@computer due:2999-01-01 -->\n"
@@ -68,7 +66,7 @@ def test_next_ranks_by_context_and_due(gtd, vault):
 
 
 def test_next_energy_filter(gtd, vault):
-    (vault.tasks_dir / "p.md").write_text(
+    (vault.current_dir / "p.md").write_text(
         "---\nproject: p\n---\n\n"
         "- [ ] heavy  <!-- id:t_h ctx:@computer energy:high -->\n"
         "- [ ] light  <!-- id:t_l ctx:@computer energy:low -->\n")
@@ -91,7 +89,7 @@ def test_file_creates_next_action_and_removes_inbox(gtd, vault):
     inbox = (vault.inbox_dir / "2026-08-31.md").read_text()
     assert "i_x1" not in inbox and "i_x2" in inbox
     # next action written to the named project file
-    task_file = (vault.tasks_dir / "admin.md").read_text()
+    task_file = (vault.current_dir / "admin.md").read_text()
     assert "email the accountant" in task_file and "ctx:@computer" in task_file
 
 
@@ -105,7 +103,7 @@ def test_file_project_and_waiting_and_trash(gtd, vault):
     assert list((vault.root / "projects").glob("*.md"))
 
     _run(gtd, vault, "gtd-file", {"inbox_id": "i_w", "kind": "waiting_for", "who": "irs"})
-    assert "who:irs" in (vault.tasks_dir / "waiting.md").read_text()
+    assert "who:irs" in (vault.waiting_dir / "irs.md").read_text()
 
     t = _run(gtd, vault, "gtd-file", {"inbox_id": "i_t", "kind": "trash"})
     assert t["filed"] == "trash"
@@ -160,7 +158,7 @@ def test_clarify_proposes_and_does_not_commit(gtd, vault, monkeypatch):
     assert res["item_text"] == "book the dentist"
     # propose-never-commit: the inbox item is untouched, nothing filed
     assert "i_c1" in (vault.inbox_dir / "2026-08-31.md").read_text()
-    assert not (vault.tasks_dir).exists() or not list(vault.tasks_dir.glob("*.md"))
+    assert not list(vault.current_dir.glob("*.md"))
 
 
 def test_clarify_normalizes_bad_model_output(gtd, vault, monkeypatch):

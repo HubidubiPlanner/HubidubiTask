@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "archived",
+  "type": "object",
+  "required": ["id", "updated", "type", "text"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^t_[a-z2-7]+$"},
+    "updated": {"type": "string"},
+    "type": {"const": "archived"},
+    "text": {"type": "string"},
+    "done": {"type": "boolean"},
+    "done_date": {"type": ["string", "null"]},
+    "from": {"type": ["string", "null"], "description": "state it was archived from"},
+    "project": {"type": ["string", "null"]},
+    "tags": {"type": "array", "items": {"type": "string"}}
+  }
+}

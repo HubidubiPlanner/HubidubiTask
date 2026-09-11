@@ -57,12 +57,10 @@ def main() -> int:
     today = date.today().isoformat()
 
     vault = Path(os.environ["HUBIDUBIOS_VAULT"])
-    tasks_dir = vault / "tasks"
+    current_dir = vault / "current"
     actions = []
-    if tasks_dir.exists():
-        for f in sorted(tasks_dir.glob("*.md")):
-            if f.name == "waiting.md":
-                continue
+    if current_dir.exists():
+        for f in sorted(current_dir.glob("*.md")):
             for line in f.read_text(encoding="utf-8", errors="replace").split("\n"):
                 m = CHECKBOX.match(line)
                 if not m or m.group(1) in ("x", "X"):

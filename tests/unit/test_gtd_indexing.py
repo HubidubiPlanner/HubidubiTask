@@ -1,5 +1,6 @@
-"""Indexing of GTD's multi-type layout: multiple types share tasks/, plus new
-types (project, someday) the core indexer learns via the registry `format`."""
+"""Indexing of GTD's multi-type layout: each state has its own directory
+(current/ waiting/ maybe/ projects/), and the core indexer learns each type via
+the registry `format`."""
 
 import json
 from pathlib import Path
@@ -22,19 +23,17 @@ def gtd_vault(vault):
 
 
 def _seed(v):
-    (v.tasks_dir / "website.md").write_text(
+    (v.current_dir / "website.md").write_text(
         "---\nproject: website\n---\n\n"
         "- [ ] draft the landing copy  <!-- id:t_na000001 ctx:@computer time:30 energy:high -->\n")
-    (v.tasks_dir / "waiting.md").write_text(
+    (v.waiting_dir / "waiting.md").write_text(
         "- [ ] invoice from contractor  <!-- id:t_wf000001 who:sam due:2026-08-01 -->\n")
-    (v.root / "someday").mkdir()
-    (v.root / "someday" / "someday.md").write_text(
+    (v.maybe_dir / "maybe.md").write_text(
         "- [ ] learn the cello  <!-- id:t_sd000001 updated:2020-01-01T00:00:00Z -->\n")
-    (v.root / "projects").mkdir()
-    (v.root / "projects" / "website.md").write_text(
+    (v.projects_dir / "website.md").write_text(
         "---\nid: p_web00001\ntitle: website\nstatus: active\n"
         "updated: 2026-08-31T10:00:00Z\n---\n\nOutcome: ship the site.\n")
-    (v.root / "projects" / "taxes.md").write_text(
+    (v.projects_dir / "taxes.md").write_text(
         "---\nid: p_tax00001\ntitle: taxes\nstatus: active\n"
         "updated: 2026-08-31T10:00:00Z\n---\n\nOutcome: file 2025 taxes.\n")
     (v.inbox_dir / "2026-08-31.md").write_text(
@@ -45,7 +44,7 @@ def test_multi_type_directory_indexing(gtd_vault):
     _seed(gtd_vault)
     conn = indexer.open_index(gtd_vault)
     counts = queries.counts(conn)
-    # tasks/ yields next_action AND waiting_for, distinguished by exact-file path.
+    # current/ -> next_action, waiting/ -> waiting_for (separate directories).
     assert counts["next_action"] == 1
     assert counts["waiting_for"] == 1
     assert counts["someday"] == 1
@@ -67,7 +66,7 @@ def test_waiting_not_misclassified_as_next_action(gtd_vault):
     _seed(gtd_vault)
     conn = indexer.open_index(gtd_vault)
     row = conn.execute("SELECT type FROM entities WHERE id='t_wf000001'").fetchone()
-    assert row["type"] == "waiting_for"  # exact-file spec beats the tasks/ dir spec
+    assert row["type"] == "waiting_for"  # lives in waiting/, distinct from current/
     conn.close()
 
 

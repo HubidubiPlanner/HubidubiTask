@@ -30,6 +30,8 @@ def render_task_line(d: dict, indent: str = "") -> str:
         md["done"] = d["done_date"]
     if d.get("context"):
         md["ctx"] = d["context"]
+    if d.get("who"):
+        md["who"] = d["who"]
     md["updated"] = d["updated"]
     box = "x" if d.get("done") else " "
     return f"{indent}- [{box}] {d['text']}  {_meta.render(md)}"
@@ -63,7 +65,12 @@ def replace_or_remove_line(path: Path, entity_id: str,
 
 # ------------------------------------------------------------- upserts
 
-def upsert_task(vault, d: dict, existing_rel: str | None = None) -> Path:
+def _checkbox_upsert(vault, d: dict, default_path: Path,
+                     existing_rel: str | None, project_header: bool) -> Path:
+    """Update the checkbox line for d in place if we know where it lives, else
+    append it to default_path. Shared by all checkbox-format types (task,
+    next_action, waiting_for, someday, archived) so each lands in its own
+    state directory."""
     if existing_rel:
         path = vault.root / existing_rel
         indent = ""
@@ -75,15 +82,71 @@ def upsert_task(vault, d: dict, existing_rel: str | None = None) -> Path:
                     break
         if replace_or_remove_line(path, d["id"], render_task_line(d, indent)):
             return path
-    path = vault.tasks_dir / f"{d.get('project') or 'inbox'}.md"
+    path = default_path
     if path.exists():
         content = path.read_text(encoding="utf-8")
         if content and not content.endswith("\n"):
             content += "\n"
     else:
         path.parent.mkdir(parents=True, exist_ok=True)
-        content = f"---\nproject: {path.stem}\n---\n\n"
+        content = f"---\nproject: {path.stem}\n---\n\n" if project_header else ""
     path.write_text(content + render_task_line(d) + "\n", encoding="utf-8")
+    return path
+
+
+def upsert_task(vault, d: dict, existing_rel: str | None = None) -> Path:
+    return _checkbox_upsert(
+        vault, d, vault.tasks_dir / f"{d.get('project') or 'inbox'}.md",
+        existing_rel, project_header=True)
+
+
+def upsert_next_action(vault, d: dict, existing_rel: str | None = None) -> Path:
+    return _checkbox_upsert(
+        vault, d, vault.current_dir / f"{d.get('project') or 'inbox'}.md",
+        existing_rel, project_header=True)
+
+
+def upsert_waiting(vault, d: dict, existing_rel: str | None = None) -> Path:
+    slug = re.sub(r"[^a-z0-9]+", "-", (d.get("who") or "").lower()).strip("-")
+    return _checkbox_upsert(
+        vault, d, vault.waiting_dir / f"{slug or 'waiting'}.md",
+        existing_rel, project_header=False)
+
+
+def upsert_someday(vault, d: dict, existing_rel: str | None = None) -> Path:
+    return _checkbox_upsert(
+        vault, d, vault.maybe_dir / "maybe.md", existing_rel, project_header=False)
+
+
+def upsert_archived(vault, d: dict, existing_rel: str | None = None) -> Path:
+    ym = (d.get("done_date") or d["updated"])[:7]
+    return _checkbox_upsert(
+        vault, d, vault.archive_dir / f"{ym}.md", existing_rel, project_header=False)
+
+
+def upsert_project(vault, d: dict, existing_rel: str | None = None) -> Path:
+    """A project is a frontmatter file under projects/. Preserves the body if we
+    are updating one we can find."""
+    if existing_rel:
+        path = vault.root / existing_rel
+    else:
+        slug = re.sub(r"[^a-z0-9]+", "-", (d.get("title") or "project").lower()).strip("-")
+        path = vault.projects_dir / f"{slug or 'project'}.md"
+    fm_lines = [f"id: {d['id']}", f"title: {d.get('title') or ''}"]
+    if d.get("status"):
+        fm_lines.append(f"status: {d['status']}")
+    if d.get("outcome"):
+        fm_lines.append(f"outcome: {d['outcome']}")
+    items = d.get("items") or []
+    fm_lines.append("items: " + ("[]" if not items else ""))
+    for it in items:
+        fm_lines.append(f"  - {it}")
+    if d.get("created"):
+        fm_lines.append(f"created: {d['created']}")
+    fm_lines.append(f"updated: {d['updated']}")
+    body = d.get("body") or f"Outcome: {d.get('title') or ''}\n\n## Next actions\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("---\n" + "\n".join(fm_lines) + "\n---\n\n" + body, encoding="utf-8")
     return path
 
 
@@ -153,11 +216,20 @@ def upsert_event(vault, d: dict, existing_rel: str | None = None) -> Path:
     return path
 
 
+# Checkbox-line types: edits/deletes are line surgery within a shared file.
+_LINE_TYPES = {"task", "inbox_item", "next_action", "waiting_for",
+               "someday", "archived"}
+
 UPSERT = {
     "task": upsert_task,
     "inbox_item": upsert_inbox,
     "note": upsert_note,
     "event": upsert_event,
+    "next_action": upsert_next_action,
+    "waiting_for": upsert_waiting,
+    "someday": upsert_someday,
+    "archived": upsert_archived,
+    "project": upsert_project,
 }
 
 
@@ -171,8 +243,8 @@ def delete(vault, entity_type: str, entity_id: str,
     if not existing_rel:
         return None
     path = vault.root / existing_rel
-    if entity_type in ("task", "inbox_item"):
+    if entity_type in _LINE_TYPES:
         replace_or_remove_line(path, entity_id, None)
-    else:  # note, event: one entity per file
+    else:  # note, event, project: one entity per file
         path.unlink(missing_ok=True)
     return path
