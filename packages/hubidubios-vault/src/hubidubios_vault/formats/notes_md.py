@@ -63,6 +63,11 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> Note | None:
         body=body.strip("\n"),
         tags=[str(t) for t in tags],
         created=_ts(fm["created"]) if fm.get("created") else None,
+        kind=str(fm.get("kind") or "text"),
+        media=str(fm["media"]) if fm.get("media") else None,
+        media_sha256=str(fm["media_sha256"]) if fm.get("media_sha256") else None,
+        media_mime=str(fm["media_mime"]) if fm.get("media_mime") else None,
+        media_bytes=int(fm["media_bytes"]) if fm.get("media_bytes") else None,
     )
 
 
@@ -79,6 +84,16 @@ def render(note: Note) -> str:
     if note.created:
         fm_lines.append(f"created: {note.created}")
     fm_lines.append(f"updated: {note.updated}")
+    if note.kind and note.kind != "text":
+        fm_lines.append(f"kind: {note.kind}")
+    if note.media:
+        fm_lines.append(f"media: {note.media}")
+    if note.media_sha256:
+        fm_lines.append(f"media_sha256: {note.media_sha256}")
+    if note.media_mime:
+        fm_lines.append(f"media_mime: {note.media_mime}")
+    if note.media_bytes:
+        fm_lines.append(f"media_bytes: {note.media_bytes}")
     if note.tags:
         fm_lines.append(f"tags: [{', '.join(note.tags)}]")
     fm_lines.append(_FM_DELIM)

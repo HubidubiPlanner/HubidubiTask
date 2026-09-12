@@ -67,6 +67,11 @@ class Vault:
         return self.hubidubios_dir / "index.db"
 
     @property
+    def blobs_dir(self) -> Path:
+        # Content-addressed staging/cache for media bytes (never git-tracked).
+        return self.hubidubios_dir / "blobs"
+
+    @property
     def config_path(self) -> Path:
         return self.hubidubios_dir / "config.toml"
 

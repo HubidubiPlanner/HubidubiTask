@@ -163,7 +163,25 @@ def upsert_inbox(vault, d: dict, existing_rel: str | None = None) -> Path:
     return path
 
 
+_MIME_EXT = {
+    "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
+    "image/heic": "heic", "image/gif": "gif",
+    "audio/mp4": "m4a", "audio/m4a": "m4a", "audio/aac": "m4a",
+    "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav",
+    "audio/x-wav": "wav", "audio/webm": "webm",
+}
+
+
+def _media_ext(d: dict) -> str:
+    if d.get("media"):
+        suf = Path(d["media"]).suffix.lstrip(".")
+        if suf:
+            return suf
+    return _MIME_EXT.get((d.get("media_mime") or "").lower(), "bin")
+
+
 def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
+    from . import blobs
     from .entities import Note
 
     if existing_rel:
@@ -172,11 +190,30 @@ def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
         stamp = d.get("created") or d["updated"]
         path = (vault.notes_dir / stamp[:4] / stamp[5:7]
                 / f"{notes_md.slugify(d.get('title') or 'untitled')}.md")
+
+    media_rel = d.get("media")
+    if d.get("media_sha256") and not media_rel:
+        # Canonical: the media file sits next to its note .md, same stem.
+        media_rel = str(path.with_suffix("." + _media_ext(d)).relative_to(vault.root))
+
     note = Note(id=d["id"], updated=d["updated"], title=d.get("title") or "",
                 body=d.get("body") or "", tags=d.get("tags") or [],
-                created=d.get("created"))
+                created=d.get("created"), kind=d.get("kind") or "text",
+                media=media_rel, media_sha256=d.get("media_sha256"),
+                media_mime=d.get("media_mime"), media_bytes=d.get("media_bytes"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(notes_md.render(note), encoding="utf-8")
+
+    # Materialize the media file from the staged blob when we have the bytes and
+    # the target is missing or stale. If the blob hasn't arrived yet, the note is
+    # written now and the file is filled in when the blob upload lands.
+    if note.media_sha256 and media_rel:
+        target = vault.root / media_rel
+        staged = blobs.staged_path(vault, note.media_sha256)
+        need = not target.exists() or blobs.sha256_of(target.read_bytes()) != note.media_sha256
+        if need and staged.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(staged.read_bytes())
     return path
 
 

@@ -59,6 +59,14 @@ class Note(Entity):
     body: str = ""
     tags: list[str] = field(default_factory=list)
     created: str | None = None
+    # A note is one of three kinds. text = body only; image/audio carry an
+    # attachment: a plain file in notes/ referenced by relative path + SHA-256,
+    # whose bytes move over the sync blob channel (never inside the entity).
+    kind: str = "text"  # "text" | "image" | "audio"
+    media: str | None = None        # vault-relative path, e.g. notes/2026/09/x.jpg
+    media_sha256: str | None = None
+    media_mime: str | None = None
+    media_bytes: int | None = None
 
     def __post_init__(self):
         self.type = "note"

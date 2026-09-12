@@ -55,8 +55,8 @@ def test_task_done_unknown_id(run):
 def test_note_new_and_search(run, vault):
     code, out = run("note", "new", "Sandbox Design", "--tags", "dev")
     assert code == 0
-    path = out.strip()
-    assert path.endswith("sandbox-design.md")
+    assert out.strip().startswith("n_")          # prints the new note id
+    assert (vault.notes_dir).rglob("sandbox-design.md")
     _, out = run("search", "sandbox")
     assert "[note]" in out and "Sandbox Design" in out
 

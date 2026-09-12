@@ -303,6 +303,10 @@ def cmd_migrate_layout(vault: Vault, args) -> int:
 # ---------------------------------------------------------------- notes
 
 def cmd_note_new(vault: Vault, args) -> int:
+    import mimetypes
+    from pathlib import Path
+
+    from . import blobs
     from .entities import Note, now_rfc3339
     from .formats import notes_md
     from .ids import new_id
@@ -310,16 +314,80 @@ def cmd_note_new(vault: Vault, args) -> int:
     title = " ".join(args.title).strip()
     now = datetime.now()
     slug = notes_md.slugify(title)
-    path = vault.notes_dir / f"{now:%Y}" / f"{now:%m}" / f"{slug}.md"
+    base = vault.notes_dir / f"{now:%Y}" / f"{now:%m}" / slug
+    path = base.with_suffix(".md")
     if path.exists():
         print(f"note exists: {path}", file=sys.stderr)
         return 1
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    kind = args.kind
+    media_rel = media_sha = media_mime = None
+    media_bytes = None
+    if args.media:
+        src = Path(args.media)
+        if not src.is_file():
+            print(f"no such file: {src}", file=sys.stderr)
+            return 1
+        data = src.read_bytes()
+        media_mime = mimetypes.guess_type(str(src))[0] or "application/octet-stream"
+        if kind == "text":
+            kind = ("audio" if media_mime.startswith("audio/")
+                    else "image" if media_mime.startswith("image/") else "text")
+        media_path = base.with_suffix(src.suffix or ".bin")
+        media_path.write_bytes(data)
+        media_rel = str(media_path.relative_to(vault.root))
+        media_sha = blobs.store(vault, data)
+        media_bytes = len(data)
+
     ts = now_rfc3339()
-    note = Note(id=new_id("note"), updated=ts, title=title,
-                tags=args.tags or [], created=ts)
+    note = Note(id=new_id("note"), updated=ts, title=title, tags=args.tags or [],
+                created=ts, kind=kind, media=media_rel, media_sha256=media_sha,
+                media_mime=media_mime, media_bytes=media_bytes)
     path.write_text(notes_md.render(note), encoding="utf-8")
-    print(path)
+    print(note.id)
+    return 0
+
+
+def cmd_note_list(vault: Vault, args) -> int:
+    conn = _open(vault)
+    rows = conn.execute("SELECT data FROM entities WHERE type='note'").fetchall()
+    conn.close()
+    notes = [json.loads(r["data"]) for r in rows]
+    if args.kind:
+        notes = [n for n in notes if (n.get("kind") or "text") == args.kind]
+    notes.sort(key=lambda n: n.get("updated") or "", reverse=True)
+    if getattr(args, "json", False):
+        print(json.dumps(notes))
+        return 0
+    for n in notes:
+        media = f"  {n['media']}" if n.get("media") else ""
+        print(f"{n['id']}  [{n.get('kind') or 'text'}]  {n.get('title', '')}{media}")
+    if not notes:
+        print("no notes")
+    return 0
+
+
+def cmd_note_show(vault: Vault, args) -> int:
+    from .index import queries
+
+    conn = _open(vault)
+    found = queries.find_entity(conn, args.id)
+    conn.close()
+    if not found:
+        print(f"no note {args.id}", file=sys.stderr)
+        return 1
+    n, _rel = found
+    if getattr(args, "json", False):
+        print(json.dumps(n))
+        return 0
+    print(f"{n['id']}  [{n.get('kind') or 'text'}]  {n.get('title', '')}")
+    if n.get("media"):
+        print(f"  media: {vault.root / n['media']}  "
+              f"({n.get('media_mime')}, {n.get('media_bytes')} bytes)")
+    if n.get("body"):
+        print()
+        print(n["body"])
     return 0
 
 
@@ -489,12 +557,22 @@ def build_parser() -> argparse.ArgumentParser:
                         help="upgrade a pre-Phase-9 vault to current/waiting/maybe")
     sp.set_defaults(func=cmd_migrate_layout)
 
-    np = sub.add_parser("note", help="manage notes")
+    np = sub.add_parser("note", help="manage notes (text/image/audio)")
     nsub = np.add_subparsers(dest="note_command", required=True)
     sp = nsub.add_parser("new")
     sp.add_argument("title", nargs="+")
     sp.add_argument("--tags", nargs="*")
+    sp.add_argument("--kind", choices=["text", "image", "audio"], default="text")
+    sp.add_argument("--media", help="attach an image/audio file (kind inferred)")
     sp.set_defaults(func=cmd_note_new)
+    sp = nsub.add_parser("list")
+    sp.add_argument("--kind", choices=["text", "image", "audio"])
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
+    sp.set_defaults(func=cmd_note_list)
+    sp = nsub.add_parser("show")
+    sp.add_argument("id")
+    sp.add_argument("--json", action="store_true", help="machine-readable output")
+    sp.set_defaults(func=cmd_note_show)
 
     cp = sub.add_parser("calendar", help="calendar integration")
     csub = cp.add_subparsers(dest="calendar_command", required=True)

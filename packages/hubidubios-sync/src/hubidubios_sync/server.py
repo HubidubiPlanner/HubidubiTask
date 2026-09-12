@@ -3,6 +3,8 @@
     POST /v1/pair                     one-time token -> device token + id
     GET  /v1/changes?since=<cursor>   entities changed since cursor
     POST /v1/changes                  batch of client-side changes
+    PUT  /v1/blobs/<sha256>           upload media bytes for an image/audio note
+    GET  /v1/blobs/<sha256>           download media bytes by content hash
     GET  /v1/plugins                  installed plugin manifests (Phase 3)
     GET  /v1/plugins/<name>/bundle    signed view bundle (Phase 5)
     POST /v1/agent/ask                proxy to the agent (Phase 4)
@@ -18,6 +20,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+from hubidubios_vault import blobs
 from hubidubios_vault.index import indexer
 
 from . import apply as apply_mod
@@ -91,6 +94,17 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError):
             return None
 
+    def _body_bytes(self) -> bytes:
+        length = int(self.headers.get("Content-Length", 0))
+        return self.rfile.read(length) if length else b""
+
+    def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _device(self) -> str | None:
         header = self.headers.get("Authorization", "")
         if not header.startswith("Bearer "):
@@ -110,10 +124,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._agent_ask()
         self._json(404, {"error": "not found"})
 
+    def do_PUT(self):
+        path = urlparse(self.path).path
+        if path.startswith("/v1/blobs/"):
+            return self._put_blob(path[len("/v1/blobs/"):])
+        self._json(404, {"error": "not found"})
+
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/v1/changes":
             return self._pull_changes(parsed)
+        if parsed.path.startswith("/v1/blobs/"):
+            return self._get_blob(parsed.path[len("/v1/blobs/"):])
         if parsed.path == "/v1/plugins":
             return self._plugins()
         if parsed.path == "/v1/agent/health":
@@ -121,6 +143,50 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path.startswith("/v1/plugins/") and parsed.path.endswith("/bundle"):
             return self._json(404, {"error": "plugin bundles arrive in Phase 5"})
         self._json(404, {"error": "not found"})
+
+    # ------------------------------------------------------------- blobs
+
+    def _put_blob(self, sha: str):
+        """Upload media bytes for an image/audio note, addressed by SHA-256.
+        Verifies the hash, enforces the size cap, and materializes the bytes into
+        any note already referencing them (so blob + note can arrive in any
+        order)."""
+        if not self._device():
+            return self._json(401, {"error": "unauthorized"})
+        data = self._body_bytes()
+        with self.server.lock:
+            try:
+                stored = blobs.store(self.server.vault, data, expected_sha=sha)
+            except blobs.BlobError as e:
+                code = 413 if "too large" in str(e) else 400
+                return self._json(code, {"error": str(e)})
+            self._materialize_into_notes(stored)
+        self._json(200, {"stored": True, "sha256": stored})
+
+    def _get_blob(self, sha: str):
+        if not self._device():
+            return self._json(401, {"error": "unauthorized"})
+        with self.server.lock:
+            data = blobs.get(self.server.vault, sha)
+        if data is None:
+            return self._json(404, {"error": "no such blob"})
+        self._send_bytes(200, "application/octet-stream", data)
+
+    def _materialize_into_notes(self, sha: str) -> None:
+        """If a note already references this blob, fill in its media file."""
+        idx = self.server.index_conn
+        indexer.sweep(idx, self.server.vault)
+        row = idx.execute(
+            "SELECT data FROM entities WHERE type='note' "
+            "AND json_extract(data,'$.media_sha256')=?", (sha,)).fetchone()
+        if not row:
+            return
+        media_rel = json.loads(row["data"]).get("media")
+        staged = blobs.staged_path(self.server.vault, sha)
+        if media_rel and staged.exists():
+            target = self.server.vault.root / media_rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(staged.read_bytes())
 
     def _agent_health(self):
         """Report inference-server reachability so the phone can show a native
