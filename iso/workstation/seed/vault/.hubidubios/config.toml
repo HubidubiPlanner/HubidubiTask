@@ -5,8 +5,17 @@
 [inference]
 endpoint = "http://127.0.0.1:8081/v1/chat/completions"
 model = "local"
+# protocol = "openai"          # default: OpenAI-compatible wire format
 # api_key = ""
 # tls_fingerprint = ""
+
+# To use your selfhostedai-agent over the LAN: its OpenAI server is loopback-only, so
+# HubidubiOS talks to its ENCRYPTED API on :8443 (AES-256-GCM over an ECDH
+# session). Uncomment and point at your box, then: hubidubios-agent status
+# [inference]
+# protocol = "selfhostedai"
+# endpoint = "https://192.168.1.50:8443"
+# model = "fast"
 
 # Google Calendar — one-way, read-only pull into the vault (Phase 9). This is
 # the ONLY sanctioned outbound in an otherwise no-cloud system, and it is OFF
