@@ -34,3 +34,14 @@ data class SyncStateRow(
     @PrimaryKey val key: String,
     val value: String,
 )
+
+/** Durable queue of media blobs to upload (image/audio note bytes). Keyed by
+ *  content hash; the bytes live in a local file until the workstation has them.
+ *  Survives app kill like the outbox. */
+@Entity(tableName = "blob_uploads")
+data class BlobUploadRow(
+    @PrimaryKey val sha256: String,
+    val local_path: String,
+    val mime: String,
+    val note_id: String,
+)

@@ -82,6 +82,23 @@ class PinnedTransport(private val server: PairedServer) : Transport {
         }
     }
 
+    private val octet = "application/octet-stream".toMediaType()
+
+    override fun uploadBlob(sha: String, bytes: ByteArray): Boolean {
+        val req = authed(
+            Request.Builder().url("${server.baseUrl}/v1/blobs/$sha")
+                .put(bytes.toRequestBody(octet))
+        ).build()
+        client.newCall(req).execute().use { resp -> return resp.isSuccessful }
+    }
+
+    override fun downloadBlob(sha: String): ByteArray? {
+        val req = authed(Request.Builder().url("${server.baseUrl}/v1/blobs/$sha")).build()
+        client.newCall(req).execute().use { resp ->
+            return if (resp.isSuccessful) resp.body?.bytes() else null
+        }
+    }
+
     private fun authed(b: Request.Builder) =
         b.header("Authorization", "Bearer ${server.deviceToken}")
 

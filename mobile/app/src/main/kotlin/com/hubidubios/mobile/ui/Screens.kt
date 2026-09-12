@@ -28,40 +28,184 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.media.MediaPlayer
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.hubidubios.core.EntityRecord
+import com.hubidubios.mobile.capture.AudioRecorder
 import com.hubidubios.mobile.pairing.PairingActivity
+import java.io.File
 import kotlinx.coroutines.launch
 
 private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
 
+private fun shortStamp(): String =
+    java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
+
 @Composable
 fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    val context = LocalContext.current
+    var textMode by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("") }
+    var showImageChoice by remember { mutableStateOf(false) }
+    var recording by remember { mutableStateOf(false) }
+    val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
+
+    val pickImage = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (bytes != null) vm.noteImage(bytes, mime, "Photo " + shortStamp())
+        }
+    }
+    val cameraFile = remember { mutableStateOf<File?>(null) }
+    val takePhoto = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()) { ok ->
+        val f = cameraFile.value
+        if (ok && f != null && f.exists())
+            vm.noteImage(f.readBytes(), "image/jpeg", "Photo " + shortStamp())
+    }
+    fun launchCamera() {
+        val f = File(context.cacheDir, "cam_${System.currentTimeMillis()}.jpg")
+        cameraFile.value = f
+        takePhoto.launch(
+            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", f))
+    }
+
+    fun startRecording() {
+        val f = File(context.cacheDir, "rec_${System.currentTimeMillis()}.m4a")
+        runCatching { AudioRecorder(f).also { it.start(); recorder.value = it } }
+            .onSuccess { recording = true }
+    }
+    fun stopRecording() {
+        val f = recorder.value?.stop(); recorder.value = null; recording = false
+        if (f != null) vm.noteAudio(f.readBytes(), "audio/mp4", "Voice memo " + shortStamp())
+    }
+    val micPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("HubidubiOS", fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         StatusDot(state.paired, if (state.paired) "sync paired" else "local only")
-        StatusDot(state.inference.connected,
-            if (state.inference.connected)
-                "inference: " + (state.inference.models.firstOrNull() ?: "connected")
-            else "inference offline")
         Spacer(Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = text, onValueChange = { text = it },
-            label = { Text("Capture") }, modifier = Modifier.fillMaxWidth(),
-        )
-        Button(
-            onClick = { if (text.isNotBlank()) { vm.capture(text.trim()); text = "" } },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        ) { Text("Capture") }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            RoundCaptureButton("Text", Icons.Filled.Edit) { textMode = !textMode; showImageChoice = false }
+            RoundCaptureButton("Image", Icons.Filled.Image) { showImageChoice = !showImageChoice; textMode = false }
+            RoundCaptureButton(if (recording) "Stop" else "Audio", Icons.Filled.Mic) {
+                if (recording) stopRecording()
+                else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED) startRecording()
+                else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+        if (recording) Text("● recording… tap Stop", Modifier.padding(top = 8.dp))
+        if (showImageChoice) {
+            Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = {
+                    showImageChoice = false
+                    pickImage.launch(PickVisualMediaRequest(
+                        ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }) { Text("Gallery") }
+                OutlinedButton(onClick = { showImageChoice = false; launchCamera() }) { Text("Camera") }
+            }
+        }
+        if (textMode) {
+            OutlinedTextField(value = text, onValueChange = { text = it },
+                label = { Text("Text note") },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            Button(onClick = {
+                if (text.isNotBlank()) { vm.noteText(text.trim()); text = ""; textMode = false }
+            }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save note") }
+        }
 
         Spacer(Modifier.height(16.dp))
-        Text("Inbox (${state.inbox.size})", fontWeight = FontWeight.Bold)
+        Text("Notes (${state.notes.size})", fontWeight = FontWeight.Bold)
         LazyColumn(Modifier.fillMaxSize()) {
-            items(state.inbox) { item ->
-                ClarifyRow(item, vm)
+            items(state.notes) { note ->
+                NoteRow(note, vm)
                 Divider()
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoundCaptureButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        FilledIconButton(onClick = onClick, modifier = Modifier.size(72.dp), shape = CircleShape) {
+            Icon(icon, contentDescription = label, modifier = Modifier.size(32.dp))
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(label)
+    }
+}
+
+@Composable
+private fun NoteRow(note: EntityRecord, vm: HubidubiOsViewModel) {
+    val kind = note.fields["kind"] ?: "text"
+    val title = note.fields["title"] ?: "(untitled)"
+    val sha = note.fields["media_sha256"]
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Text(title, fontWeight = FontWeight.Bold)
+        when {
+            kind == "image" && sha != null -> {
+                val bmp = remember(sha) { mutableStateOf<android.graphics.Bitmap?>(null) }
+                LaunchedEffect(sha) {
+                    vm.mediaFile(sha)?.let { bmp.value = BitmapFactory.decodeFile(it.path) }
+                }
+                bmp.value?.let {
+                    Image(it.asImageBitmap(), contentDescription = title,
+                        modifier = Modifier.fillMaxWidth().height(200.dp).padding(top = 4.dp))
+                } ?: Text("image…", Modifier.padding(top = 4.dp))
+            }
+            kind == "audio" && sha != null -> {
+                val scope = rememberCoroutineScope()
+                OutlinedButton(onClick = {
+                    scope.launch {
+                        vm.mediaFile(sha)?.let { f ->
+                            runCatching {
+                                MediaPlayer().apply {
+                                    setDataSource(f.path); prepare(); start()
+                                    setOnCompletionListener { release() }
+                                }
+                            }
+                        }
+                    }
+                }, modifier = Modifier.padding(top = 4.dp)) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = "Play")
+                    Text("  Play")
+                }
+            }
+            else -> note.fields["body"]?.takeIf { it.isNotBlank() }?.let {
+                Text(it, Modifier.padding(top = 4.dp))
             }
         }
     }

@@ -28,6 +28,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val inbox: List<EntityRecord> = emptyList(),
         val nextActions: List<EntityRecord> = emptyList(),
         val staleProjects: List<EntityRecord> = emptyList(),
+        val notes: List<EntityRecord> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -45,6 +46,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 inbox = sync.inbox(),
                 nextActions = sync.nextActions(),
                 staleProjects = sync.projectsWithoutNextAction(),
+                notes = sync.notes(),
                 inference = health(),
             )
         }
@@ -61,6 +63,27 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) { sync().capture(text) }
         refresh()
     }
+
+    // --- media notes: text / image / audio, uploaded to the workstation ---
+
+    fun noteText(title: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteText(title) }
+        refresh()
+    }
+
+    fun noteImage(bytes: ByteArray, mime: String, title: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title) }
+        refresh()
+    }
+
+    fun noteAudio(bytes: ByteArray, mime: String, title: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title) }
+        refresh()
+    }
+
+    /** The local file for a media note's bytes (cached, or fetched on demand). */
+    suspend fun mediaFile(sha: String): java.io.File? =
+        withContext(Dispatchers.IO) { sync().mediaFile(sha) }
 
     fun fileClarify(inboxId: String, kind: String, text: String, context: String?) =
         viewModelScope.launch {

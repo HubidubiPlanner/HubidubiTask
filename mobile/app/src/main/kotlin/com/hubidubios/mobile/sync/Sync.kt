@@ -4,11 +4,15 @@ import android.content.Context
 import com.hubidubios.core.EntityRecord
 import com.hubidubios.core.Outbox
 import com.hubidubios.core.SyncEngine
+import com.hubidubios.mobile.data.BlobUploadDao
+import com.hubidubios.mobile.data.BlobUploadRow
 import com.hubidubios.mobile.data.Database
 import com.hubidubios.mobile.data.RoomLocalStore
 import com.hubidubios.mobile.data.RoomOutboxStore
 import com.hubidubios.mobile.net.PairedServer
 import com.hubidubios.mobile.net.PinnedTransport
+import java.io.File
+import java.security.MessageDigest
 import java.security.SecureRandom
 
 /**
@@ -19,6 +23,9 @@ class Sync private constructor(
     val store: RoomLocalStore,
     val outbox: Outbox,
     private val engine: SyncEngine?,
+    private val transport: PinnedTransport?,
+    private val blobDao: BlobUploadDao,
+    private val blobsDir: File,
 ) {
     fun capture(text: String): String {
         // The never-fail path: append to the outbox, no network, no validation.
@@ -32,10 +39,61 @@ class Sync private constructor(
         return id
     }
 
+    // ---- notes: text / image / audio (each uploaded to the workstation) ----
+
+    /** A plain text note. */
+    fun noteText(title: String, body: String = ""): String {
+        val id = "n_" + randomSuffix()
+        upsert("note", id, hashMapOf("title" to title, "kind" to "text",
+            "body" to body), com.hubidubios.core.nowUtc())
+        return id
+    }
+
+    /** An image or audio note. The bytes are cached locally by content hash and
+     *  queued for upload; the note entity only references them by SHA-256. */
+    fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String): String {
+        val sha = sha256(bytes)
+        blobsDir.mkdirs()
+        val local = File(blobsDir, sha)
+        if (!local.exists()) local.writeBytes(bytes)
+        val id = "n_" + randomSuffix()
+        upsert("note", id, hashMapOf(
+            "title" to title, "kind" to kind, "media_sha256" to sha,
+            "media_mime" to mime, "media_bytes" to bytes.size.toString(),
+        ), com.hubidubios.core.nowUtc())
+        blobDao.add(BlobUploadRow(sha256 = sha, local_path = local.path,
+            mime = mime, note_id = id))
+        uploadPendingBlobs()   // best-effort now; the queue survives if offline
+        return id
+    }
+
+    fun notes(): List<EntityRecord> = store.byType("note")
+
+    /** Local bytes for a media note: the cached file, else downloaded on demand
+     *  from the workstation and cached. Null if unavailable (offline, no blob). */
+    fun mediaFile(sha: String): File? {
+        val local = File(blobsDir, sha)
+        if (local.exists()) return local
+        val bytes = transport?.downloadBlob(sha) ?: return null
+        blobsDir.mkdirs()
+        local.writeBytes(bytes)
+        return local
+    }
+
+    private fun uploadPendingBlobs() {
+        val t = transport ?: return
+        for (row in blobDao.pending()) {
+            val f = File(row.local_path)
+            if (!f.exists()) { blobDao.remove(row.sha256); continue }
+            runCatching { if (t.uploadBlob(row.sha256, f.readBytes())) blobDao.remove(row.sha256) }
+        }
+    }
+
     /** Returns true if a sync cycle ran (a server is paired). */
     fun syncNow(): Boolean {
         val e = engine ?: return false
         e.sync()
+        uploadPendingBlobs()
         return true
     }
 
@@ -109,16 +167,21 @@ class Sync private constructor(
             val store = RoomLocalStore(db)
             val outbox = Outbox(RoomOutboxStore(db))
             val server = PairedServer.load(context)
-            val engine = server?.let {
-                SyncEngine(store, outbox, PinnedTransport(it), deviceIdFor(context))
+            val transport = server?.let { PinnedTransport(it) }
+            val engine = transport?.let {
+                SyncEngine(store, outbox, it, deviceIdFor(context))
             }
-            return Sync(store, outbox, engine)
+            val blobsDir = File(context.filesDir, "blobs")
+            return Sync(store, outbox, engine, transport, db.blobUploads(), blobsDir)
         }
 
         private fun deviceIdFor(context: Context): String =
             com.hubidubios.mobile.security.Keystore.getSecret(context, "device-id") ?: "phone"
     }
 }
+
+private fun sha256(bytes: ByteArray): String =
+    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
 private val ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
 private fun randomSuffix(): String {

@@ -2,6 +2,8 @@ package com.hubidubios.mobile.data
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.hubidubios.mobile.security.Keystore
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
@@ -26,6 +28,20 @@ object Database {
         val factory = SupportOpenHelperFactory(passphrase)
         return Room.databaseBuilder(context, HubidubiOsDatabase::class.java, "hubidubios-mirror.db")
             .openHelperFactory(factory as SupportSQLiteOpenHelper.Factory)
+            .addMigrations(MIGRATION_1_2)
             .build()
+    }
+
+    // v2 adds the durable media-blob upload queue; the mirror + outbox are kept.
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS blob_uploads (" +
+                    "sha256 TEXT NOT NULL PRIMARY KEY, " +
+                    "local_path TEXT NOT NULL, " +
+                    "mime TEXT NOT NULL, " +
+                    "note_id TEXT NOT NULL)"
+            )
+        }
     }
 }

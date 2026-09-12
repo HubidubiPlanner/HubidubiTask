@@ -50,6 +50,11 @@ class InMemoryLocalStore : LocalStore {
 interface Transport {
     fun pull(since: Long): ChangeBatch
     fun push(entries: List<OutboxEntry>): PushResult
+
+    /** Media channel: upload/download image/audio bytes addressed by SHA-256.
+     *  Default no-ops keep test transports (entity-only) compiling. */
+    fun uploadBlob(sha: String, bytes: ByteArray): Boolean = false
+    fun downloadBlob(sha: String): ByteArray? = null
 }
 
 data class PushResult(

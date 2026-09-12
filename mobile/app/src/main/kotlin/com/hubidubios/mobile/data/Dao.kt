@@ -43,13 +43,26 @@ interface SyncStateDao {
     fun set(row: SyncStateRow)
 }
 
+@Dao
+interface BlobUploadDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun add(row: BlobUploadRow)
+
+    @Query("SELECT * FROM blob_uploads")
+    fun pending(): List<BlobUploadRow>
+
+    @Query("DELETE FROM blob_uploads WHERE sha256 = :sha")
+    fun remove(sha: String)
+}
+
 @Database(
-    entities = [EntityRow::class, OutboxRow::class, SyncStateRow::class],
-    version = 1,
+    entities = [EntityRow::class, OutboxRow::class, SyncStateRow::class, BlobUploadRow::class],
+    version = 2,
     exportSchema = false,
 )
 abstract class HubidubiOsDatabase : RoomDatabase() {
     abstract fun entities(): EntityDao
     abstract fun outbox(): OutboxDao
     abstract fun syncState(): SyncStateDao
+    abstract fun blobUploads(): BlobUploadDao
 }
