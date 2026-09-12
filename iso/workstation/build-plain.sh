@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# DEPRECATED: HubidubiOS now ships as an ADD-ON to stock Omarchy (see iso/README.md
+#             and install/). This ISO build path is no longer the delivery model.
 # Build the PLAIN hubidubios ISO — a terminal-first Arch live/install image with
 # hubidubios baked in and a seeded vault. Self-contained: one privileged x86_64
 # Arch environment, no Docker-in-Docker, no external Omarchy repo.

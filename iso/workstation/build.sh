@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# DEPRECATED: HubidubiOS now ships as an ADD-ON to stock Omarchy (see iso/README.md
+#             and install/). This ISO build path is no longer the delivery model.
 # Build the hubidubios-workstation ISO on the Omarchy base (PLAN.md Phase 7 +
 # Phase 8). Must run on Arch with the Omarchy ISO toolchain, privileged
 # (loop devices) — CI/target work, not the macOS dev machine.

@@ -9,8 +9,9 @@ url="https://gitlab.local/hubidubios"
 license=('MIT')
 
 package_hubidubios-base() {
-  pkgdesc="HubidubiOS base: vault CLI, sync, firewall, discovery"
-  depends=('hubidubios-vault' 'hubidubios-sync' 'nftables' 'avahi')
+  pkgdesc="HubidubiOS base: vault CLI, sync, LAN discovery"
+  # No firewall lockdown — HubidubiOS does not restrict the host's networking.
+  depends=('hubidubios-vault' 'hubidubios-sync' 'avahi')
 }
 
 package_hubidubios-plugins-default() {
@@ -20,9 +21,9 @@ package_hubidubios-plugins-default() {
 }
 
 package_hubidubios-workstation() {
-  pkgdesc="HubidubiOS workstation: holds the vault, runs inference and the agent"
+  pkgdesc="HubidubiOS workstation layer for Omarchy: vault, agent, desktop integration"
   depends=('hubidubios-base' 'hubidubios-plugin-host' 'hubidubios-plugins-default'
-           'hubidubios-agent' 'llama.cpp'
+           'hubidubios-agent' 'hubidubios-desktop' 'llama.cpp'
            'radicale' 'syncthing' 'git')
 }
 

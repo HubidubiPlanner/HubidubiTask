@@ -6,37 +6,44 @@ builds need a privileged Linux host (loop devices), QEMU needs KVM. It all runs
 in CI on the self-hosted workstation runner; the files here are authored and
 syntax-checked, not built here.
 
-## workstation/ — the x86_64 ISO (Omarchy base, Phase 8)
+## Delivery model — an ADD-ON to stock Omarchy (current)
 
-The workstation base is **Omarchy Quattro** (MIT). Its ISO builder
-`omacom-io/omarchy-iso` is itself an archiso profile, so hubidubios overlays onto a
-**pinned** checkout of it. `build.sh`:
+HubidubiOS is **Omarchy, unchanged, with our layer added on top** — not a forked
+or rebuilt ISO. The user installs **official Omarchy** (its own ISO, pristine),
+then runs our one-command add-on. Omarchy is never limited or reconfigured; our
+layer is purely additive and reversible.
 
-1. Builds every hubidubios package (`packages/*` + `plugins/{gtd,calendar}` +
-   metapackages) into a local signed repo.
-2. Clones/uses a pinned `omarchy-iso` (`OMARCHY_ISO_REF`), injects the hubidubios
-   packages into its offline mirror + package list.
-3. Overlays our `airootfs/` — the **native Quickshell/Hyprland integration**
-   (no browser): `hubidubios-capture-gui` (Super+Shift+Space), `hubidubios-next-panel`,
-   the `HubidubiOsStatus.qml` bar widget, `hypr/hubidubios-keybinds.conf` — plus the
-   hardened `nftables.conf`, the `config/` files, and `hubidubios-firstboot` (which
-   enables the per-user services, prefers **selfhostedai-agent** for inference,
-   strips Omarchy's cloud coding-agent widget, and wires the keybinds).
-4. Builds via `omarchy-iso-make` (Docker, reproducible).
+1. On any Arch box: `./install/build-repo.sh` builds every hubidubios package
+   (`packages/*` + `plugins/{gtd,calendar}` + `hubidubios-desktop` + metapackages)
+   into a **private local repo** (`./repo/`, `repo-add` db). Never published —
+   consumed by pacman over `file://` only.
+2. On the live Omarchy system: `./install/hubidubios-install [repo-dir]` registers
+   that repo, `pacman -S hubidubios-workstation hubidubios-plugins-default`, runs
+   `hubidubios-firstboot` (seeds `~/vault`, enables our per-user services, APPENDS
+   the Hyprland keybind `source` line, prints the Quickshell import), and copies
+   our MOTD banner. Nothing Omarchy ships is edited or removed.
+3. Remove everything: `pacman -R hubidubios-workstation hubidubios-plugins-default
+   hubidubios-desktop` → pristine Omarchy.
 
-```sh
-OMARCHY_ISO_REF=<tag/commit> sudo iso/workstation/build.sh   # on Arch, privileged
-```
+Our desktop integration ships **inside the `hubidubios-desktop` package**
+(`/etc/hubidubios/{hypr,quickshell}`, the helper bins, per-user systemd units),
+so it reaches the installed system via pacman — the correct seam for an
+Omarchy install (which pacstraps a clean target).
 
-`profiledef.sh` / `packages.x86_64` / `pacman.conf` here remain as the
-alternative **releng-base** path (integration model B) if you ever choose to
-own the whole surface instead of basing on Omarchy.
+**No network restrictions.** The old `nftables` egress lockdown and cloud-widget
+stripping have been removed — HubidubiOS does not limit Omarchy's networking or
+apps. Inference points at the user's selfhostedai OpenAI endpoint via `[inference]` in
+`~/vault/.hubidubios/config.toml` (`tls_fingerprint` pins a self-signed https
+cert); `hubidubios-agent status` shows the connection.
 
-### No-cloud enforcement
-Omarchy ships cloud-capable apps; `config/nftables.conf` now sets the **OUTPUT
-policy to drop** with only LAN + DNS + an (opt-in) mirror allowlist, so no app
-can phone home. Inference is the local selfhostedai-agent OpenAI server (loopback
-:8081); `hubidubios-agent status` shows the connection. See `packages/hubidubios-agent`.
+## DEPRECATED build paths (kept for reference)
+
+`workstation/build.sh` (fork the omarchy-iso toolchain) and
+`workstation/build-plain.sh` (own-the-whole-surface releng console image) are
+**no longer the delivery model** — the add-on above is. `build.sh` is
+architecturally unsound for its goal (it overlays the *installer*, not the
+installed system). `build-plain.sh` still produces a standalone console ISO but
+is out of date after the `hubidubios-desktop` package refactor. Use `install/`.
 
 ## thin/ — the aarch64 thin client
 

@@ -1,0 +1,40 @@
+# Maintainer: hubidubios
+# Desktop integration for HubidubiOS on a stock Omarchy (Hyprland + Quickshell).
+# PURELY ADDITIVE: ships our own files under /etc/hubidubios, our helper bins, and
+# our per-user systemd units. It never owns or overwrites an Omarchy/base file
+# (no /etc/motd, no /etc/os-release, no Hyprland/Quickshell config) — those are
+# wired in additively at first login by hubidubios-firstboot.
+pkgname=hubidubios-desktop
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="HubidubiOS desktop integration for Omarchy/Hyprland/Quickshell (additive)"
+arch=('any')
+url="https://gitlab.local/hubidubios"
+license=('MIT')
+depends=('hubidubios-vault' 'hubidubios-sync' 'hubidubios-agent' 'hubidubios-plugin-host')
+optdepends=('quickshell: HubidubiOS status bar widget'
+            'hyprland: global capture keybind'
+            'fuzzel: capture launcher'
+            'wofi: capture launcher fallback'
+            'zenity: capture launcher fallback')
+source=()
+
+package() {
+  local src="$startdir"
+  # Desktop integration the user imports/sources (Omarchy config untouched).
+  install -Dm644 "$src/etc/hubidubios/hypr/hubidubios-keybinds.conf" \
+    "$pkgdir/etc/hubidubios/hypr/hubidubios-keybinds.conf"
+  install -Dm644 "$src/etc/hubidubios/quickshell/HubidubiOsStatus.qml" \
+    "$pkgdir/etc/hubidubios/quickshell/HubidubiOsStatus.qml"
+  # Helper executables.
+  install -Dm755 "$src/bin/hubidubios-firstboot"   "$pkgdir/usr/local/bin/hubidubios-firstboot"
+  install -Dm755 "$src/bin/hubidubios-capture-gui" "$pkgdir/usr/local/bin/hubidubios-capture-gui"
+  install -Dm755 "$src/bin/hubidubios-next-panel"  "$pkgdir/usr/local/bin/hubidubios-next-panel"
+  # Per-user systemd units, enabled by hubidubios-firstboot on first login.
+  for u in "$src"/systemd/*.service "$src"/systemd/*.timer; do
+    install -Dm644 "$u" "$pkgdir/usr/lib/systemd/user/$(basename "$u")"
+  done
+  # Branding banner as package data; hubidubios-install copies it to /etc/motd
+  # (a runtime action, so the package never conflicts over /etc/motd).
+  install -Dm644 "$src/motd" "$pkgdir/usr/share/hubidubios/motd"
+}

@@ -45,20 +45,14 @@ else
   systemctl --user enable --now llama.service 2>/dev/null || true
 fi
 
-# --- Desktop integration (Omarchy / Hyprland / Quickshell), no browser ---
-# Wire the global capture keybind into the user's Hyprland config (idempotent).
+# --- Desktop integration (Omarchy / Hyprland / Quickshell) — ADDITIVE ONLY ---
+# HubidubiOS is a pure addition on top of stock Omarchy: we only APPEND our
+# keybind source line; we never edit or remove any Omarchy config or widget.
 HYPR="$HOME/.config/hypr/hyprland.conf"
 if [ -f "$HYPR" ] && ! grep -q 'hubidubios-keybinds.conf' "$HYPR"; then
   echo 'source = /etc/hubidubios/hypr/hubidubios-keybinds.conf' >> "$HYPR"
 fi
-
-# Strip Omarchy Quattro's cloud coding-agent widget so nothing points at a
-# cloud API. The nftables egress lockdown is the backstop regardless.
-for cfg in "$HOME/.config/quickshell"/*/config.* ; do
-  [ -f "$cfg" ] || continue
-  sed -i '/claude-code/d; /coding-agent/d; /CodingAgent/d' "$cfg" 2>/dev/null || true
-done
-echo "HubidubiOS: add \`HubidubiOsStatus {}\` (import \"/etc/hubidubios/quickshell\") to the bar."
+echo "HubidubiOS: add \`HubidubiOsStatus {}\` (import \"/etc/hubidubios/quickshell\") to your bar."
 
 echo "HubidubiOS workstation ready. Vault at $VAULT."
 echo "Inference: $(hubidubios-agent status 2>/dev/null || echo 'configure [inference] in ~/vault/.hubidubios/config.toml')"
