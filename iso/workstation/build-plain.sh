@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# DEPRECATED: HubidubiOS now ships as an ADD-ON to stock Omarchy (see iso/README.md
-#             and install/). This ISO build path is no longer the delivery model.
+# NOTE: This builds the STANDALONE CONSOLE image — a self-contained way to test
+#       the HubidubiOS stack (vault, GTD, notes, sync, selfhostedai inference) on real
+#       hardware without a desktop. The PRODUCTION delivery is the add-on to stock
+#       Omarchy (see iso/README.md + install/); this console image is for testing.
 # Build the PLAIN hubidubios ISO — a terminal-first Arch live/install image with
 # hubidubios baked in and a seeded vault. Self-contained: one privileged x86_64
 # Arch environment, no Docker-in-Docker, no external Omarchy repo.
@@ -33,7 +35,7 @@ echo 'build ALL=(ALL) NOPASSWD: ALL' >/etc/sudoers.d/build
 install -d -o build "$HUBIDUBIOS_REPO"
 for p in packages/hubidubios-vault packages/hubidubios-plugin-host \
          packages/hubidubios-sync packages/hubidubios-agent \
-         plugins/gtd plugins/calendar; do
+         plugins/gtd plugins/calendar packages/hubidubios-desktop; do
   cp -a "$REPO/$p" "/tmp/$(basename "$p")"
   chown -R build "/tmp/$(basename "$p")"
   ( cd "/tmp/$(basename "$p")" && sudo -u build makepkg -f --nodeps --skipinteg )
@@ -72,8 +74,8 @@ hubidubios-sync
 hubidubios-agent
 hubidubios-plugin-gtd
 hubidubios-plugin-calendar
+hubidubios-desktop
 openssh
-nftables
 avahi
 # NVIDIA open kernel driver — REQUIRED to light a Blackwell/RTX 50-series card
 # in the live env (nouveau can't drive it, and the bare framebuffer console goes
@@ -115,10 +117,9 @@ cp "$HUBIDUBIOS_REPO"/hubidubios.db* "$HUBIDUBIOS_REPO"/hubidubios.files* "$PROF
 # lost across the Lima/virtiofs mount, so set it authoritatively via mkarchiso's
 # file_permissions (and chmod the staged copies as a belt-and-suspenders).
 chmod 0755 "$PROFILE"/airootfs/usr/local/bin/hubidubios-* 2>/dev/null || true
+# Only hubidubios-add lives in the airootfs now; firstboot/capture-gui/next-panel
+# ship inside the hubidubios-desktop package (installed with correct perms).
 sed -i '/^file_permissions=(/a\
-  ["/usr/local/bin/hubidubios-firstboot"]="0:0:755"\
-  ["/usr/local/bin/hubidubios-capture-gui"]="0:0:755"\
-  ["/usr/local/bin/hubidubios-next-panel"]="0:0:755"\
   ["/usr/local/bin/hubidubios-add"]="0:0:755"' "$PROFILE/profiledef.sh"
 
 # NVIDIA graphics. On a machine whose only GPU is a brand-new NVIDIA card
