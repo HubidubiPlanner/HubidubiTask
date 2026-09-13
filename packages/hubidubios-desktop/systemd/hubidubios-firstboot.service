@@ -1,0 +1,14 @@
+[Unit]
+Description=HubidubiOS first-login setup (seed vault, enable services, wire keybind)
+# Do real work only once: hubidubios-firstboot drops this stamp on success, and
+# this condition then skips the unit on every later login (it still counts as
+# started, so systemd does not retry it). Manual `hubidubios-firstboot` still runs.
+ConditionPathExists=!%h/.local/state/hubidubios/firstboot-done
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/hubidubios-firstboot
+
+[Install]
+WantedBy=default.target

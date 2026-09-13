@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # First-boot setup for a hubidubios workstation. Idempotent: safe to re-run.
-# Creates the vault skeleton, installs the nftables/radicale/avahi configs
-# shipped in the hubidubios-base package, and enables the per-user services.
+# Creates the vault skeleton, seeds/migrates it, and enables the per-user
+# services. Runs automatically once on first login via the user service
+# hubidubios-firstboot.service (guarded by the stamp dropped at the end).
 set -euo pipefail
 
 VAULT="${HUBIDUBIOS_VAULT:-$HOME/vault}"
@@ -31,7 +32,7 @@ hubidubios migrate-layout || true
 hubidubios index rebuild || true
 
 # Per-user services (sync + watcher + inference). System services (sshd,
-# nftables, avahi) are enabled in the image.
+# avahi) are enabled in the image.
 systemctl --user enable --now hubidubios-sync.service 2>/dev/null || true
 systemctl --user enable --now hubidubios-watch.service 2>/dev/null || true
 systemctl --user enable --now vault-autocommit.timer 2>/dev/null || true
@@ -58,3 +59,10 @@ echo "HubidubiOS workstation ready. Vault at $VAULT."
 echo "Inference: $(hubidubios-agent status 2>/dev/null || echo 'configure [inference] in ~/vault/.hubidubios/config.toml')"
 echo "Pair a phone with:  hubidubios-sync pair"
 echo "Capture anywhere:   Super+Shift+Space"
+
+# Drop the completion stamp so the auto-run user service
+# (hubidubios-firstboot.service) skips subsequent logins. Manual re-runs still
+# work — this stamp only gates the automatic first-login trigger.
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hubidubios"
+mkdir -p "$STATE_DIR"
+: > "$STATE_DIR/firstboot-done"

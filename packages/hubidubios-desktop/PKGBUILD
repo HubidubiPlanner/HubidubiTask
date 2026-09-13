@@ -30,10 +30,17 @@ package() {
   install -Dm755 "$src/bin/hubidubios-firstboot"   "$pkgdir/usr/local/bin/hubidubios-firstboot"
   install -Dm755 "$src/bin/hubidubios-capture-gui" "$pkgdir/usr/local/bin/hubidubios-capture-gui"
   install -Dm755 "$src/bin/hubidubios-next-panel"  "$pkgdir/usr/local/bin/hubidubios-next-panel"
-  # Per-user systemd units, enabled by hubidubios-firstboot on first login.
+  # Per-user systemd units. hubidubios-firstboot enables sync/watch/autocommit/
+  # gcal on first login; the units are shipped here so it can.
   for u in "$src"/systemd/*.service "$src"/systemd/*.timer; do
     install -Dm644 "$u" "$pkgdir/usr/lib/systemd/user/$(basename "$u")"
   done
+  # Globally enable the first-login trigger for every user (a package can't run
+  # `systemctl --user enable`, so ship the wants-symlink it would create). The
+  # unit's ConditionPathExists stamp guard makes it a no-op after the first run.
+  install -d "$pkgdir/usr/lib/systemd/user/default.target.wants"
+  ln -sf ../hubidubios-firstboot.service \
+    "$pkgdir/usr/lib/systemd/user/default.target.wants/hubidubios-firstboot.service"
   # Branding banner as package data; hubidubios-install copies it to /etc/motd
   # (a runtime action, so the package never conflicts over /etc/motd).
   install -Dm644 "$src/motd" "$pkgdir/usr/share/hubidubios/motd"
