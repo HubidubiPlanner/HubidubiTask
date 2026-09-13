@@ -6,3 +6,13 @@ dist/
 *.egg-info/
 iso/workstation/out/
 *.iso
+
+# Vendored upstream checkouts for the fork ISO build. Pristine clones with their
+# own .git, restored per iso/workstation/FORK.md; our delta lives in
+# hubidubios-omarchy-iso.patch, so committing these would add ~165MB for nothing.
+iso/workstation/omarchy/
+iso/workstation/omarchy-iso/
+iso/workstation/omarchy-pkgs/
+
+# Build outputs
+*.pkg.tar.zst
