@@ -112,6 +112,14 @@ Your vault is `~/vault`. Everything is plain markdown + media files.
 - The sync server (`hubidubios-sync`) runs as a user service and binds your LAN
   IP automatically. Mint a new pairing token any time with
   `hubidubios-sync pair`.
+- Omarchy's `ufw` denies incoming by default, which would silently drop the
+  phone's connection. `hubidubios-firewall.service` opens **only** port 5233/tcp
+  to the private LAN ranges at boot — every other Omarchy rule is left alone and
+  the firewall stays on. Check it with
+  `sudo ufw status | grep 5233`, or re-run `sudo hubidubios-sync-firewall`.
+- Troubleshooting a phone that can't pair: a **timeout** means packets are being
+  dropped (firewall, or the phone is on a guest network / different subnet);
+  *connection refused* would instead mean nothing is listening.
 
 ---
 

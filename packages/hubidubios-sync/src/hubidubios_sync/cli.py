@@ -13,7 +13,15 @@ def cmd_serve(vault: Vault, args) -> int:
 
     # 'auto' resolves the primary LAN IP so the unit needn't hardcode an address
     # (DHCP-friendly, and pairing then works out of the box).
-    bind = _lan_ip() if args.bind == "auto" else args.bind
+    if args.bind == "auto":
+        bind = _wait_for_lan_ip(args.bind_timeout)
+        if bind is None:
+            print(f"no LAN address after {args.bind_timeout}s — refusing to bind "
+                  f"loopback, where the phone could never reach us "
+                  f"(pass --bind <addr> to override)", file=sys.stderr)
+            return 1
+    else:
+        bind = args.bind
     if bind == "0.0.0.0":
         print("refusing to bind 0.0.0.0 — bind the LAN interface explicitly",
               file=sys.stderr)
@@ -30,6 +38,30 @@ def cmd_serve(vault: Vault, args) -> int:
     finally:
         srv.server_close()
     return 0
+
+
+def _wait_for_lan_ip(timeout: float, _sleep: float = 2.0) -> str | None:
+    """Block until a real LAN address exists, or give up after `timeout`.
+
+    The server runs as a *user* service, so it starts when the session does —
+    which can be before the network has an address. `_lan_ip()` falls back to
+    loopback on failure, and because the address is resolved once at startup the
+    server would then sit on 127.0.0.1 forever, reachable by nothing. The phone
+    sees connections time out while the service looks perfectly healthy.
+
+    Returning None lets the caller exit non-zero so `Restart=on-failure` retries
+    instead of serving where no one can reach us.
+    """
+    import time
+
+    deadline = time.monotonic() + timeout
+    while True:
+        ip = _lan_ip()
+        if ip != "127.0.0.1":
+            return ip
+        if time.monotonic() >= deadline:
+            return None
+        time.sleep(_sleep)
 
 
 def _lan_ip() -> str:
@@ -133,6 +165,9 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--port", type=int, default=5233)
     sp.add_argument("--no-tls", action="store_true",
                     help="plain HTTP, for local development only")
+    sp.add_argument("--bind-timeout", type=float, default=120.0,
+                    help="with --bind auto, seconds to wait for a LAN address "
+                         "before giving up (default: 120)")
     sp.set_defaults(func=cmd_serve)
 
     sp = sub.add_parser("pair", help="mint a one-time pairing token + payload")
