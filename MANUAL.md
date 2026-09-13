@@ -2,27 +2,49 @@
 
 Two devices work together: the **workstation** (your desktop — the hub
 that holds the vault, runs the agent, and serves sync) and the **phone** (the
-Android app — capture on the go, review, media notes). Everything is local; the
-only outbound is the optional one-way Google Calendar pull.
+Android app — capture on the go, review, media notes). It runs on a full
+**Omarchy** base (HubidubiOS is a fork — Omarchy stays 100% intact, our layer is
+an addition). Your vault and media stay on your machines and sync over your LAN;
+inference goes to your own selfhostedai box; the only optional internet touch is the
+one-way Google Calendar pull.
 
 ---
 
 ## One-time setup
 
 ### Workstation (the HubidubiOS box)
-1. Flash `hubidubios-*.iso` (balenaEtcher), boot the UEFI **"HubidubiOS live
-   (NVIDIA driver)"** entry (just press Enter).
-2. `archinstall` → install into free space next to Windows → create your user →
-   finish, **do not reboot**.
-3. `hubidubios-add` → installs HubidubiOS + the NVIDIA driver + seeds your vault
-   + enables the services.
-4. Reboot into HubidubiOS.
+The ISO is a **single installer** — it installs Omarchy *and* the HubidubiOS
+layer in one pass (no separate add-on step).
+1. Flash the ISO to a USB stick, e.g. from macOS:
+   `sudo dd if=hubidubios-<date>-x86_64.iso of=/dev/rdiskN bs=4m status=progress`.
+2. Boot the stick in **UEFI** mode. At the GRUB menu pick **"HubidubiOS"**
+   (or **"HubidubiOS (safe graphics — nomodeset)"** if you get a black screen on
+   a brand-new GPU).
+3. Run the installer through to the end and reboot into HubidubiOS.
+4. **First login — run once:** `hubidubios-firstboot`. This seeds `~/vault`,
+   enables your per-user services (sync, watcher, autocommit, calendar), wires
+   the `Super+Shift+Space` capture keybind into Hyprland, and prints the
+   Quickshell status-widget import line. It's idempotent — safe to re-run.
+5. Point inference at your selfhostedai box in `~/vault/.hubidubios/config.toml`:
+   ```toml
+   [inference]
+   protocol = "selfhostedai"
+   endpoint = "https://<selfhostedai-host>:8443"
+   ```
+   Check it with `hubidubios-agent status`.
 
 ### Phone
 1. Install the HubidubiOS app (the `app-debug.apk`).
-2. On the workstation: `hubidubios-sync pair` → it prints a payload line.
-3. In the app: **Settings → Pair workstation** → paste that line → **Pair**.
+2. On the workstation: `hubidubios-sync pair` → it prints a **QR code**.
+3. In the app: **Settings → Pair workstation → Scan QR** → point the camera at
+   the terminal. It pairs as soon as it reads the code — nothing to type.
    (Both devices must be on the same LAN.)
+
+No camera, or scanning won't focus? `pair` also prints the payload line below
+the QR — paste that whole `{"host":…}` line into the field and tap **Pair**
+(`hubidubios-sync pair --no-qr` prints just the line). Pasting only the short
+one-time token needs the workstation to advertise over mDNS, which it does not
+do yet — so scan, or paste the full line.
 
 ---
 
@@ -68,6 +90,12 @@ Your vault is `~/vault`. Everything is plain markdown + media files.
 - `hubidubios note show <id>` — metadata + the media file's path (open it with
   your image viewer / audio player).
 
+**Ask the agent** (powered by your selfhostedai box — see setup step 5)
+- `hubidubios-agent status` — inference connection status.
+- `hubidubios-agent ask "what's on my plate this week?"` — one-shot question
+  answered over your vault.
+- `hubidubios-agent chat` — interactive session.
+
 **Search & agenda**
 - `hubidubios search <text>` — full-text across everything.
 - `hubidubios agenda [--days N]` — events + due items.
@@ -75,9 +103,10 @@ Your vault is `~/vault`. Everything is plain markdown + media files.
 **Calendar (optional, one-way from Google)**
 1. Put your **private** Google iCal URL in `~/vault/.hubidubios/config.toml`
    under `[calendar] google_ics_urls = ["…basic.ics"]`.
-2. Open the `gcal_hosts` firewall exception in `/etc/nftables.conf`.
-3. `hubidubios calendar pull` (or let `hubidubios-gcal.timer` do it every 15 min)
+2. `hubidubios calendar pull` (or let `hubidubios-gcal.timer` do it every 15 min)
    — events appear in `hubidubios agenda` and sync to the phone.
+   (There's no egress firewall to open — HubidubiOS doesn't restrict the host's
+   networking.)
 
 **Sync**
 - The sync server (`hubidubios-sync`) runs as a user service and binds your LAN
