@@ -1,5 +1,7 @@
 package com.hubidubios.mobile.pairing
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
@@ -7,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.hubidubios.mobile.net.Discovery
 import com.hubidubios.mobile.net.PairedServer
@@ -15,62 +18,85 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Pairing screen. Two inputs, both funnel through [Pairing.redeem]:
- *  - Paste the full payload line printed by `hubidubios-sync pair` — the reliable
- *    path: {host, port, cert_fingerprint, one_time_token}. (Scanning its QR
- *    yields the same JSON.)
+ * Pairing screen. Three inputs, all funnelling through [Pairing.redeem]:
+ *  - **Scan QR** — the primary path. `hubidubios-sync pair` prints the payload as
+ *    a terminal QR; [ScanActivity] decodes it to the same JSON and pairs straight
+ *    away, so nothing has to be typed.
+ *  - Paste the full payload line: {host, port, cert_fingerprint, one_time_token}.
  *  - Paste just the short one-time token: we resolve host/port/fingerprint
  *    from mDNS (_hubidubios._tcp). This only works when the workstation advertises
- *    its real cert fingerprint over mDNS; otherwise paste the full payload.
+ *    its real cert fingerprint over mDNS; otherwise scan, or paste the full payload.
  *
  * Manual entry is always present so pairing works without a camera and on
  * networks where mDNS is blocked.
  */
 class PairingActivity : AppCompatActivity() {
 
+    private lateinit var payload: EditText
+    private lateinit var name: EditText
+    private lateinit var pair: Button
+
+    private val scan = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        val text = res.data?.getStringExtra(ScanActivity.EXTRA_PAYLOAD)
+        if (res.resultCode == Activity.RESULT_OK && !text.isNullOrBlank()) {
+            payload.setText(text)
+            // A scan is an unambiguous "pair with this" — don't make the user
+            // tap again.
+            submit(text)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val help = TextView(this).apply {
             text = "On the workstation run:  hubidubios-sync pair\n" +
-                "Paste the payload line below (or just the one-time token)."
+                "Scan the QR it prints — or paste the payload line below."
         }
-        val payload = EditText(this).apply { hint = "Pairing payload or one-time token" }
-        val name = EditText(this).apply {
+        val scanButton = Button(this).apply { text = "Scan QR" }
+        payload = EditText(this).apply { hint = "Pairing payload or one-time token" }
+        name = EditText(this).apply {
             hint = "Device name"
             setText(Build.MODEL)
         }
-        val pair = Button(this).apply { text = "Pair" }
+        pair = Button(this).apply { text = "Pair" }
 
-        pair.setOnClickListener {
-            val input = payload.text.toString().trim()
-            val deviceName = name.text.toString().ifBlank { "phone" }
-            pair.isEnabled = false
-            Thread {
-                val result = runCatching {
-                    val qr = resolvePayload(input)
-                    val server = Pairing.redeem(qr, deviceName)
-                    PairedServer.save(applicationContext, server)
-                    server
-                }
-                runOnUiThread {
-                    pair.isEnabled = true
-                    result.onSuccess {
-                        Toast.makeText(this, "Paired with ${it.host}", Toast.LENGTH_LONG).show()
-                        finish()
-                    }.onFailure {
-                        Toast.makeText(this, "Pairing failed: ${it.message}", Toast.LENGTH_LONG)
-                            .show()
-                    }
-                }
-            }.start()
+        scanButton.setOnClickListener {
+            scan.launch(Intent(this, ScanActivity::class.java))
         }
+        pair.setOnClickListener { submit(payload.text.toString().trim()) }
 
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pad = (16 * resources.displayMetrics.density).toInt()
             setPadding(pad, pad, pad, pad)
-            addView(help); addView(payload); addView(name); addView(pair)
+            addView(help); addView(scanButton); addView(payload); addView(name); addView(pair)
         })
+    }
+
+    /** Redeem [input] (scanned or typed) against the workstation, off the UI thread. */
+    private fun submit(input: String) {
+        val deviceName = name.text.toString().ifBlank { "phone" }
+        pair.isEnabled = false
+        Thread {
+            val result = runCatching {
+                val qr = resolvePayload(input)
+                val server = Pairing.redeem(qr, deviceName)
+                PairedServer.save(applicationContext, server)
+                server
+            }
+            runOnUiThread {
+                pair.isEnabled = true
+                result.onSuccess {
+                    Toast.makeText(this, "Paired with ${it.host}", Toast.LENGTH_LONG).show()
+                    finish()
+                }.onFailure {
+                    Toast.makeText(this, "Pairing failed: ${it.message}", Toast.LENGTH_LONG)
+                        .show()
+                }
+            }
+        }.start()
     }
 
     /** Full JSON payload -> parse directly. Otherwise treat the text as a bare

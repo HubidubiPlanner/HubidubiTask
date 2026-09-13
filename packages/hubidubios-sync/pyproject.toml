@@ -5,6 +5,10 @@ description = "hubidubios change-feed API: entity-level sync over pinned TLS on 
 requires-python = ">=3.12"
 dependencies = [
     "hubidubios-vault",
+    # `hubidubios-sync pair` renders the pairing payload as a terminal QR the
+    # phone scans. Typing the ~150-char JSON by hand is the worst part of
+    # pairing, so the QR is the primary path — not an optional extra.
+    "qrcode",
 ]
 
 # The agent proxy (/v1/agent/ask) activates only when hubidubios-agent is present;

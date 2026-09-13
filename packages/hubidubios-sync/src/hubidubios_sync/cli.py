@@ -68,13 +68,20 @@ def cmd_pair(vault: Vault, args) -> int:
         "one_time_token": token,
     }
 
+    line = json.dumps(payload, separators=(",", ":"))
     print(f"one-time pair token (valid {auth.PAIR_WINDOW_S // 60} min): {token}")
     print(f"cert fingerprint: {fp}")
     print()
-    print("In the phone app: Settings -> Pair workstation, then paste this line:")
-    print(json.dumps(payload, separators=(",", ":")))
-    if getattr(args, "qr", False):
-        _print_qr(json.dumps(payload, separators=(",", ":")))
+    # Scanning is the primary path: the payload is ~150 chars of JSON and the
+    # workstation is usually a screen you cannot copy/paste off of.
+    if not getattr(args, "no_qr", False):
+        print("In the phone app: Settings -> Pair workstation -> Scan QR, then "
+              "point the camera here:")
+        _print_qr(line)
+        print("...or paste this line instead:")
+    else:
+        print("In the phone app: Settings -> Pair workstation, then paste this line:")
+    print(line)
     print()
     print(f"(Make sure the sync server is reachable: "
           f"hubidubios-sync serve --bind {host} --port {port})")
@@ -82,17 +89,24 @@ def cmd_pair(vault: Vault, args) -> int:
 
 
 def _print_qr(text: str) -> None:
-    """Render a scannable QR in the terminal if the optional 'qrcode' lib is
-    present; otherwise the pasteable payload line above is the fallback."""
-    try:
-        import qrcode  # optional dependency
+    """Render the pairing payload as a scannable QR in the terminal.
 
-        qr = qrcode.QRCode(border=1)
+    'qrcode' is a hard dependency (python-qrcode), but the import is kept
+    defensive so a broken install degrades to the pasteable line rather than
+    taking the whole `pair` command down with it.
+    """
+    try:
+        import qrcode
+
+        qr = qrcode.QRCode(border=2, error_correction=qrcode.constants.ERROR_CORRECT_L)
         qr.add_data(text)
         qr.make(fit=True)
+        # invert=True gives dark-on-light modules, which phone cameras expect
+        # even when the terminal itself is a dark theme.
         qr.print_ascii(invert=True)
-    except Exception:
-        print("(install 'qrcode' for a scannable QR; paste the line above instead)")
+    except Exception as exc:  # pragma: no cover - depends on a broken install
+        print(f"(could not render the QR: {exc}; "
+              f"install python-qrcode — paste the line below instead)")
 
 
 def cmd_devices(vault: Vault, args) -> int:
@@ -126,8 +140,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="LAN address the phone should reach (default: autodetect)")
     sp.add_argument("--port", type=int, default=5233,
                     help="sync server port (default: 5233)")
-    sp.add_argument("--qr", action="store_true",
-                    help="also render a scannable QR (needs the 'qrcode' package)")
+    sp.add_argument("--no-qr", action="store_true",
+                    help="don't render the QR, just print the pasteable payload")
     sp.set_defaults(func=cmd_pair)
 
     sp = sub.add_parser("devices", help="list paired devices")
