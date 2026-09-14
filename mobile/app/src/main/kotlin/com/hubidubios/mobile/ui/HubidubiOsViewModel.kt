@@ -81,6 +81,18 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    // --- the same captures, filed as GTD inbox tasks instead of notes ---
+
+    fun captureImage(bytes: ByteArray, mime: String, text: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().captureMedia("image", bytes, mime, text) }
+        refresh()
+    }
+
+    fun captureAudio(bytes: ByteArray, mime: String, text: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().captureMedia("audio", bytes, mime, text) }
+        refresh()
+    }
+
     /** The local file for a media note's bytes (cached, or fetched on demand). */
     suspend fun mediaFile(sha: String): java.io.File? =
         withContext(Dispatchers.IO) { sync().mediaFile(sha) }

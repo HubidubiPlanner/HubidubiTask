@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
@@ -63,6 +64,18 @@ private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
 private fun shortStamp(): String =
     java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
 
+/** A capture waiting for the user to say whether it is a task or a note.
+ *
+ *  Nothing is filed until that is answered: a photo means different things in
+ *  the inbox ("do something about this") and in notes ("keep this"), and only
+ *  the user knows which. `bytes == null` is a plain text capture. */
+private data class PendingCapture(
+    val kind: String,          // "text" | "image" | "audio"
+    val text: String,
+    val bytes: ByteArray? = null,
+    val mime: String = "",
+)
+
 @Composable
 fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     val context = LocalContext.current
@@ -71,13 +84,15 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var showImageChoice by remember { mutableStateOf(false) }
     var recording by remember { mutableStateOf(false) }
     val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
+    var pending by remember { mutableStateOf<PendingCapture?>(null) }
 
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
             val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            if (bytes != null) vm.noteImage(bytes, mime, "Photo " + shortStamp())
+            if (bytes != null)
+                pending = PendingCapture("image", "Photo " + shortStamp(), bytes, mime)
         }
     }
     val cameraFile = remember { mutableStateOf<File?>(null) }
@@ -85,7 +100,8 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         ActivityResultContracts.TakePicture()) { ok ->
         val f = cameraFile.value
         if (ok && f != null && f.exists())
-            vm.noteImage(f.readBytes(), "image/jpeg", "Photo " + shortStamp())
+            pending = PendingCapture("image", "Photo " + shortStamp(),
+                f.readBytes(), "image/jpeg")
     }
     fun launchCamera() {
         val f = File(context.cacheDir, "cam_${System.currentTimeMillis()}.jpg")
@@ -101,10 +117,50 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     }
     fun stopRecording() {
         val f = recorder.value?.stop(); recorder.value = null; recording = false
-        if (f != null) vm.noteAudio(f.readBytes(), "audio/mp4", "Voice memo " + shortStamp())
+        if (f != null)
+            pending = PendingCapture("audio", "Voice memo " + shortStamp(),
+                f.readBytes(), "audio/mp4")
     }
     val micPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
+
+    // Ask before filing: the same photo is a task ("do something about this") or
+    // a note ("keep this"), and only the user knows which.
+    pending?.let { p ->
+        AlertDialog(
+            onDismissRequest = { pending = null },
+            title = { Text("Task or note?") },
+            text = {
+                Text(
+                    when (p.kind) {
+                        "image" -> "Photo — file it in the inbox to act on, or keep it as a note."
+                        "audio" -> "Voice memo — file it in the inbox to act on, or keep it as a note."
+                        else -> p.text
+                    }
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    when (p.kind) {
+                        "image" -> vm.captureImage(p.bytes!!, p.mime, p.text)
+                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text)
+                        else -> vm.capture(p.text)
+                    }
+                    pending = null
+                }) { Text("Task") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    when (p.kind) {
+                        "image" -> vm.noteImage(p.bytes!!, p.mime, p.text)
+                        "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text)
+                        else -> vm.noteText(p.text)
+                    }
+                    pending = null
+                }) { Text("Note") }
+            },
+        )
+    }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("HubidubiOS", fontWeight = FontWeight.Bold)
@@ -138,8 +194,10 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
                 label = { Text("Text note") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
             Button(onClick = {
-                if (text.isNotBlank()) { vm.noteText(text.trim()); text = ""; textMode = false }
-            }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save note") }
+                if (text.isNotBlank()) {
+                    pending = PendingCapture("text", text.trim()); text = ""; textMode = false
+                }
+            }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save") }
         }
 
         Spacer(Modifier.height(16.dp))

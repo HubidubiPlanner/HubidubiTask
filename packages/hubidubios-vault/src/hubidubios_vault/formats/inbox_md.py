@@ -45,6 +45,11 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> list[tuple[Inb
                     text=item_text.strip(),
                     time=time,
                     date=date,
+                    kind=md.get("kind", "text"),
+                    media=md.get("media"),
+                    media_sha256=md.get("sha"),
+                    media_mime=md.get("mime"),
+                    media_bytes=int(md["bytes"]) if md.get("bytes", "").isdigit() else None,
                 ),
                 lineno,
             )
@@ -52,5 +57,23 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> list[tuple[Inb
     return items
 
 
-def format_item_line(text: str, time_hhmm: str, item_id: str) -> str:
-    return f"- {time_hhmm} {text}  {_meta.render({'id': item_id})}"
+def format_item_line(text: str, time_hhmm: str, item_id: str,
+                     kind: str = "text", media: str | None = None,
+                     media_sha256: str | None = None,
+                     media_mime: str | None = None,
+                     media_bytes: int | None = None) -> str:
+    """One inbox line. Media captures keep `text` as the readable description
+    and carry the attachment in the metadata comment, so the inbox still reads
+    as a plain list in any editor."""
+    meta: dict[str, str] = {"id": item_id}
+    if kind and kind != "text":
+        meta["kind"] = kind
+    if media:
+        meta["media"] = media
+    if media_sha256:
+        meta["sha"] = media_sha256
+    if media_mime:
+        meta["mime"] = media_mime
+    if media_bytes is not None:
+        meta["bytes"] = str(media_bytes)
+    return f"- {time_hhmm} {text}  {_meta.render(meta)}"

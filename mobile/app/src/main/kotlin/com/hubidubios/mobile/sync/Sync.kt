@@ -39,6 +39,33 @@ class Sync private constructor(
         return id
     }
 
+    /** A photo or voice memo captured as a *task*, not a note.
+     *
+     *  The user answers "task or note?" at capture time, so the same media has
+     *  to be able to land in the GTD inbox. Bytes travel the same blob channel
+     *  as a note's; only the entity type differs. */
+    fun captureMedia(kind: String, bytes: ByteArray, mime: String, text: String): String {
+        val sha = sha256(bytes)
+        blobsDir.mkdirs()
+        val local = File(blobsDir, sha)
+        if (!local.exists()) local.writeBytes(bytes)
+        val id = "i_" + randomSuffix()
+        val record = EntityRecord(
+            id = id, type = "inbox_item", updated = com.hubidubios.core.nowUtc(),
+            fields = mapOf(
+                "text" to text, "time" to time(), "date" to date(),
+                "kind" to kind, "media_sha256" to sha, "media_mime" to mime,
+                "media_bytes" to bytes.size.toString(),
+            ),
+        )
+        store.put(record)
+        outbox.enqueueUpsert(record)
+        blobDao.add(BlobUploadRow(sha256 = sha, local_path = local.path,
+            mime = mime, note_id = id))
+        uploadPendingBlobs()   // best-effort now; the queue survives if offline
+        return id
+    }
+
     // ---- notes: text / image / audio (each uploaded to the workstation) ----
 
     /** A plain text note. */

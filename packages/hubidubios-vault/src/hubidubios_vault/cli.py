@@ -39,13 +39,45 @@ def cmd_capture(vault: Vault, args) -> int:
     if not _require_type(vault, "inbox_item", "inbox"):
         return 1
     text = " ".join(args.text).strip()
-    if not text:
+    media = getattr(args, "media", None)
+    if not text and not media:
         print("nothing to capture", file=sys.stderr)
         return 1
     now = datetime.now()
+    item_id = new_id("inbox_item")
+
+    # A capture can be a photo or voice memo rather than typed text. The file is
+    # copied into the vault and content-addressed exactly like a note's media,
+    # so the sync blob channel moves it unchanged.
+    kind, media_rel, media_sha, media_mime, media_len = "text", None, None, None, None
+    if media:
+        import mimetypes
+        from pathlib import Path
+
+        from . import blobs
+
+        src = Path(media)
+        if not src.is_file():
+            print(f"no such file: {src}", file=sys.stderr)
+            return 1
+        data = src.read_bytes()
+        media_mime = mimetypes.guess_type(str(src))[0] or "application/octet-stream"
+        kind = ("audio" if media_mime.startswith("audio/")
+                else "image" if media_mime.startswith("image/") else "text")
+        dest = vault.inbox_dir / "media" / f"{item_id}{src.suffix or '.bin'}"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+        media_rel = str(dest.relative_to(vault.root))
+        media_sha = blobs.store(vault, data)
+        media_len = len(data)
+        if not text:
+            text = f"{kind.capitalize()} capture"
+
     path = vault.inbox_dir / f"{now:%Y-%m-%d}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
-    line = format_item_line(text, f"{now:%H:%M}", new_id("inbox_item"))
+    line = format_item_line(text, f"{now:%H:%M}", item_id, kind=kind,
+                            media=media_rel, media_sha256=media_sha,
+                            media_mime=media_mime, media_bytes=media_len)
     with open(path, "a", encoding="utf-8") as f:
         f.write(line + "\n")
     return 0
@@ -499,7 +531,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", required=True)
 
     sp = sub.add_parser("capture", help="append to today's GTD inbox")
-    sp.add_argument("text", nargs="+")
+    sp.add_argument("text", nargs="*", default=[])
+    sp.add_argument("--media", default=None,
+                    help="attach a photo or voice memo (kind inferred from the file)")
     sp.set_defaults(func=cmd_capture)
 
     tp = sub.add_parser("task", help="manage tasks")

@@ -77,6 +77,16 @@ class InboxItem(Entity):
     text: str = ""
     time: str = ""  # HH:MM, local capture time
     date: str = ""  # YYYY-MM-DD, from the inbox filename
+    # A capture from the phone may be a photo or a voice memo rather than typed
+    # text. The attachment is handled exactly like a note's: a plain file in the
+    # vault referenced by relative path + SHA-256, whose bytes travel over the
+    # sync blob channel and never inside the entity. `text` stays the human
+    # description, so the inbox is still readable and clarifiable as a list.
+    kind: str = "text"  # "text" | "image" | "audio"
+    media: str | None = None        # vault-relative path, e.g. inbox/media/x.jpg
+    media_sha256: str | None = None
+    media_mime: str | None = None
+    media_bytes: int | None = None
 
     def __post_init__(self):
         self.type = "inbox_item"

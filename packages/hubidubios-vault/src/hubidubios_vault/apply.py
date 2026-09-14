@@ -39,6 +39,19 @@ def render_task_line(d: dict, indent: str = "") -> str:
 
 def render_inbox_line(d: dict) -> str:
     md = {"id": d["id"]}
+    # A capture from the phone may be a photo or voice memo. Without these the
+    # attachment reference is silently dropped on write-back and the uploaded
+    # blob can never be matched to its item.
+    if (d.get("kind") or "text") != "text":
+        md["kind"] = d["kind"]
+    if d.get("media"):
+        md["media"] = d["media"]
+    if d.get("media_sha256"):
+        md["sha"] = d["media_sha256"]
+    if d.get("media_mime"):
+        md["mime"] = d["media_mime"]
+    if d.get("media_bytes") is not None:
+        md["bytes"] = str(d["media_bytes"])
     if d.get("updated"):
         md["updated"] = d["updated"]
     return f"- {d.get('time') or '00:00'} {d['text']}  {_meta.render(md)}"
@@ -151,16 +164,47 @@ def upsert_project(vault, d: dict, existing_rel: str | None = None) -> Path:
 
 
 def upsert_inbox(vault, d: dict, existing_rel: str | None = None) -> Path:
+    # The phone sends only the content hash — it has no idea where the vault
+    # keeps files — so derive the canonical location here, exactly as a note
+    # does. Without this a media capture has a sha but no path, and the bytes
+    # are never materialized.
+    d = dict(d)
+    if d.get("media_sha256") and not d.get("media"):
+        d["media"] = str((vault.inbox_dir / "media"
+                          / f"{d['id']}.{_media_ext(d)}").relative_to(vault.root))
+
     if existing_rel:
         path = vault.root / existing_rel
         if replace_or_remove_line(path, d["id"], render_inbox_line(d)):
+            _materialize_inbox_media(vault, d)
             return path
     date = d.get("date") or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     path = vault.inbox_dir / f"{date}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(render_inbox_line(d) + "\n")
+    _materialize_inbox_media(vault, d)
     return path
+
+
+def _materialize_inbox_media(vault, d: dict) -> None:
+    """Copy the staged blob into the vault when the bytes are already here.
+
+    The blob upload and the entity can arrive in either order: if the blob is
+    still missing the item is written now and the file is filled in when the
+    upload lands (see the sync server's blob handler).
+    """
+    from . import blobs
+
+    sha, media_rel = d.get("media_sha256"), d.get("media")
+    if not sha or not media_rel:
+        return
+    target = vault.root / media_rel
+    staged = blobs.staged_path(vault, sha)
+    need = not target.exists() or blobs.sha256_of(target.read_bytes()) != sha
+    if need and staged.exists():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(staged.read_bytes())
 
 
 _MIME_EXT = {

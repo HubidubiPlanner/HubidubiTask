@@ -160,7 +160,7 @@ class Handler(BaseHTTPRequestHandler):
             except blobs.BlobError as e:
                 code = 413 if "too large" in str(e) else 400
                 return self._json(code, {"error": str(e)})
-            self._materialize_into_notes(stored)
+            self._materialize_blob(stored)
         self._json(200, {"stored": True, "sha256": stored})
 
     def _get_blob(self, sha: str):
@@ -172,21 +172,32 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(404, {"error": "no such blob"})
         self._send_bytes(200, "application/octet-stream", data)
 
-    def _materialize_into_notes(self, sha: str) -> None:
-        """If a note already references this blob, fill in its media file."""
+    def _materialize_blob(self, sha: str) -> None:
+        """Fill in the media file of any entity already referencing this blob.
+
+        A phone capture is either a note or an inbox item ("task or note?" is
+        asked at capture time), and both carry media the same way, so both must
+        be materialized — otherwise a photo captured as a task uploads its bytes
+        and then has no file in the vault.
+        """
         idx = self.server.index_conn
         indexer.sweep(idx, self.server.vault)
-        row = idx.execute(
-            "SELECT data FROM entities WHERE type='note' "
-            "AND json_extract(data,'$.media_sha256')=?", (sha,)).fetchone()
-        if not row:
+        rows = idx.execute(
+            "SELECT data FROM entities WHERE type IN ('note','inbox_item') "
+            "AND json_extract(data,'$.media_sha256')=?", (sha,)).fetchall()
+        if not rows:
             return
-        media_rel = json.loads(row["data"]).get("media")
         staged = blobs.staged_path(self.server.vault, sha)
-        if media_rel and staged.exists():
+        if not staged.exists():
+            return
+        data = staged.read_bytes()
+        for row in rows:
+            media_rel = json.loads(row["data"]).get("media")
+            if not media_rel:
+                continue
             target = self.server.vault.root / media_rel
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(staged.read_bytes())
+            target.write_bytes(data)
 
     def _agent_health(self):
         """Report inference-server reachability so the phone can show a native

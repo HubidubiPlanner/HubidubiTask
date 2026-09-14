@@ -10,8 +10,13 @@ import re
 _COMMENT_RE = re.compile(r"<!--\s*(.*?)\s*-->")
 _PAIR_RE = re.compile(r"([a-z]+):(\S+)")
 
-# Canonical key order for serialization.
-_KEY_ORDER = ["id", "due", "done", "ctx", "updated"]
+# Canonical key order for serialization. The media keys let an inbox capture
+# carry a photo or voice memo: the bytes live in the vault as a file (moved over
+# the sync blob channel), and the line only references them. Keys stay short and
+# lowercase because _PAIR_RE only matches [a-z]+ and values may not contain
+# whitespace.
+_KEY_ORDER = ["id", "due", "done", "ctx", "kind", "media", "sha", "mime",
+              "bytes", "updated"]
 
 
 def extract(line: str) -> tuple[str, dict[str, str]]:
