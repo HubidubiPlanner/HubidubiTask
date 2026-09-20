@@ -45,6 +45,54 @@ class AgentClient(private val server: PairedServer) {
         }
     }
 
+    /** The inference settings the workstation holds. `apiKeySet` only reports
+     *  whether a key exists — the workstation never sends the secret itself. */
+    data class AgentConfig(
+        val protocol: String, val endpoint: String,
+        val model: String?, val tlsFingerprint: String?, val apiKeySet: Boolean,
+    )
+
+    fun config(): AgentConfig? {
+        val req = Request.Builder()
+            .url("${server.baseUrl}/v1/agent/config")
+            .header("Authorization", "Bearer ${server.deviceToken}")
+            .build()
+        return try {
+            client.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return null
+                val o = JSONObject(resp.body!!.string())
+                fun str(k: String) = if (o.isNull(k)) null else o.optString(k)
+                AgentConfig(
+                    protocol = str("protocol") ?: "openai",
+                    endpoint = str("endpoint") ?: "",
+                    model = str("model"),
+                    tlsFingerprint = str("tls_fingerprint"),
+                    apiKeySet = o.optBoolean("api_key_set", false),
+                )
+            }
+        } catch (e: Exception) { null }
+    }
+
+    /** Point the workstation's agent at an inference server.
+     *  Returns null on success, or a message explaining the refusal. */
+    fun setConfig(endpoint: String, protocol: String, model: String?): String? {
+        val payload = JSONObject()
+            .put("endpoint", endpoint)
+            .put("protocol", protocol)
+        if (!model.isNullOrBlank()) payload.put("model", model)
+        val req = Request.Builder()
+            .url("${server.baseUrl}/v1/agent/config")
+            .header("Authorization", "Bearer ${server.deviceToken}")
+            .post(payload.toString().toRequestBody(json)).build()
+        return try {
+            client.newCall(req).execute().use { resp ->
+                val text = resp.body?.string().orEmpty()
+                if (resp.isSuccessful) null
+                else JSONObject(text).optString("error", "failed (${resp.code})")
+            }
+        } catch (e: Exception) { e.message ?: "could not reach the workstation" }
+    }
+
     /** Blocking read of the NDJSON stream; returns the final answer text, or an
      *  error string. Chat is online-only, so callers gate on health() first. */
     fun ask(query: String): String {

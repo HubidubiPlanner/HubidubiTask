@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -33,6 +34,7 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
         Surface {
             val nav = rememberNavController()
             val dests = listOf(
+                Dest("projects", "Projects") { Icon(Icons.Filled.AccountTree, null) },
                 Dest("home", "Home") { Icon(Icons.Filled.Add, null) },
                 Dest("next", "Next") { Icon(Icons.Filled.CheckCircle, null) },
                 Dest("review", "Review") { Icon(Icons.Filled.Refresh, null) },
@@ -49,7 +51,7 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                                 selected = route == d.route,
                                 onClick = {
                                     nav.navigate(d.route) {
-                                        popUpTo("home"); launchSingleTop = true
+                                        popUpTo("projects"); launchSingleTop = true
                                     }
                                 },
                                 icon = d.icon,
@@ -60,7 +62,8 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                 }
             ) { pad ->
                 val state by vm.state.collectAsStateWithLifecycle()
-                NavHost(nav, startDestination = "home", modifier = Modifier.padding(pad)) {
+                NavHost(nav, startDestination = "projects", modifier = Modifier.padding(pad)) {
+                    composable("projects") { ProjectsScreen(state, vm) }
                     composable("home") { HomeScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }
                     composable("review") { ReviewScreen(state, vm) }

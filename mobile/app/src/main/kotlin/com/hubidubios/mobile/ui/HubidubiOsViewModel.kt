@@ -29,6 +29,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val nextActions: List<EntityRecord> = emptyList(),
         val staleProjects: List<EntityRecord> = emptyList(),
         val notes: List<EntityRecord> = emptyList(),
+        val projects: List<EntityRecord> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -47,6 +48,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 nextActions = sync.nextActions(),
                 staleProjects = sync.projectsWithoutNextAction(),
                 notes = sync.notes(),
+                projects = sync.projects(),
                 inference = health(),
             )
         }
@@ -58,6 +60,20 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
             ?: return AgentClient.Health(false, null, emptyList())
         return AgentClient(server).health()
     }
+
+    /** The inference settings held by the workstation, for the settings form. */
+    suspend fun agentConfig(): AgentClient.AgentConfig? = withContext(Dispatchers.IO) {
+        PairedServer.load(getApplication())?.let { AgentClient(it).config() }
+    }
+
+    /** Point the agent at an inference server. Returns null on success. */
+    suspend fun setAgentConfig(endpoint: String, protocol: String, model: String?): String? =
+        withContext(Dispatchers.IO) {
+            val server = PairedServer.load(getApplication())
+                ?: return@withContext "pair with a workstation first"
+            AgentClient(server).setConfig(endpoint.trim(), protocol, model)
+                ?: run { refresh(); null }
+        }
 
     fun capture(text: String) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().capture(text) }
@@ -104,6 +120,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
             }
             refresh()
         }
+
+    /** Re-nest an item in the Projects tree. */
+    fun move(id: String, parentId: String?) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().moveTo(id, parentId) }
+        refresh()
+    }
 
     fun markDone(id: String) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().markDone(id) }

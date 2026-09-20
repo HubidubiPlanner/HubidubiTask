@@ -32,6 +32,10 @@ def render_task_line(d: dict, indent: str = "") -> str:
         md["ctx"] = d["context"]
     if d.get("who"):
         md["who"] = d["who"]
+    if d.get("parent"):
+        # Nesting is explicit rather than inferred from indentation: indentation
+        # is cosmetic and does not survive a user reordering lines by hand.
+        md["parent"] = d["parent"]
     md["updated"] = d["updated"]
     box = "x" if d.get("done") else " "
     return f"{indent}- [{box}] {d['text']}  {_meta.render(md)}"
@@ -150,6 +154,8 @@ def upsert_project(vault, d: dict, existing_rel: str | None = None) -> Path:
         fm_lines.append(f"status: {d['status']}")
     if d.get("outcome"):
         fm_lines.append(f"outcome: {d['outcome']}")
+    if d.get("parent"):
+        fm_lines.append(f"parent: {d['parent']}")
     items = d.get("items") or []
     fm_lines.append("items: " + ("[]" if not items else ""))
     for it in items:

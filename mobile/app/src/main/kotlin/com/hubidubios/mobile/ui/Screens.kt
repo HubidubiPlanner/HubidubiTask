@@ -11,7 +11,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
@@ -56,6 +63,7 @@ import androidx.core.content.FileProvider
 import com.hubidubios.core.EntityRecord
 import com.hubidubios.mobile.capture.AudioRecorder
 import com.hubidubios.mobile.pairing.PairingActivity
+import com.hubidubios.mobile.tree.ProjectTree
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -230,41 +238,62 @@ private fun RoundCaptureButton(
 private fun NoteRow(note: EntityRecord, vm: HubidubiOsViewModel) {
     val kind = note.fields["kind"] ?: "text"
     val title = note.fields["title"] ?: "(untitled)"
+    val body = note.fields["body"].orEmpty()
     val sha = note.fields["media_sha256"]
+    // Text is the point of this app; a photo or voice memo is an attachment on
+    // an item, not the item itself. So the words lead and the attachment is a
+    // chip you open deliberately — never a 200dp image shoving the note off
+    // the screen.
+    var open by remember(note.id) { mutableStateOf(false) }
+
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(title, fontWeight = FontWeight.Bold)
-        when {
-            kind == "image" && sha != null -> {
-                val bmp = remember(sha) { mutableStateOf<android.graphics.Bitmap?>(null) }
-                LaunchedEffect(sha) {
-                    vm.mediaFile(sha)?.let { bmp.value = BitmapFactory.decodeFile(it.path) }
-                }
-                bmp.value?.let {
-                    Image(it.asImageBitmap(), contentDescription = title,
-                        modifier = Modifier.fillMaxWidth().height(200.dp).padding(top = 4.dp))
-                } ?: Text("image…", Modifier.padding(top = 4.dp))
+        if (body.isNotBlank()) {
+            Text(body, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp))
+        }
+        if (sha != null && kind != "text") {
+            val label = if (kind == "image") "Photo" else "Voice memo"
+            TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
+                Icon(Icons.Filled.AttachFile, contentDescription = null,
+                    modifier = Modifier.size(16.dp))
+                Text("  $label", style = MaterialTheme.typography.bodySmall)
             }
-            kind == "audio" && sha != null -> {
-                val scope = rememberCoroutineScope()
-                OutlinedButton(onClick = {
-                    scope.launch {
-                        vm.mediaFile(sha)?.let { f ->
-                            runCatching {
-                                MediaPlayer().apply {
-                                    setDataSource(f.path); prepare(); start()
-                                    setOnCompletionListener { release() }
-                                }
-                            }
+            if (open) AttachmentPreview(kind, sha, title, vm)
+        }
+    }
+}
+
+/** The attachment itself, shown only once the user asks for it. */
+@Composable
+private fun AttachmentPreview(
+    kind: String, sha: String, title: String, vm: HubidubiOsViewModel,
+) {
+    if (kind == "image") {
+        val bmp = remember(sha) { mutableStateOf<android.graphics.Bitmap?>(null) }
+        LaunchedEffect(sha) {
+            vm.mediaFile(sha)?.let { bmp.value = BitmapFactory.decodeFile(it.path) }
+        }
+        bmp.value?.let {
+            Image(it.asImageBitmap(), contentDescription = title,
+                modifier = Modifier.fillMaxWidth().height(200.dp).padding(top = 4.dp))
+        } ?: Text("loading…", Modifier.padding(top = 4.dp))
+    } else {
+        val scope = rememberCoroutineScope()
+        OutlinedButton(onClick = {
+            scope.launch {
+                vm.mediaFile(sha)?.let { f ->
+                    runCatching {
+                        MediaPlayer().apply {
+                            setDataSource(f.path); prepare(); start()
+                            setOnCompletionListener { release() }
                         }
                     }
-                }, modifier = Modifier.padding(top = 4.dp)) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = "Play")
-                    Text("  Play")
                 }
             }
-            else -> note.fields["body"]?.takeIf { it.isNotBlank() }?.let {
-                Text(it, Modifier.padding(top = 4.dp))
-            }
+        }, modifier = Modifier.padding(top = 4.dp)) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = "Play")
+            Text("  Play")
         }
     }
 }
@@ -367,21 +396,39 @@ fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
 @Composable
 fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     val context = LocalContext.current
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    val scope = rememberCoroutineScope()
+
+    // The inference endpoint lives on the workstation (it holds the URL and the
+    // pinned certificate), so the phone edits it through the sync API rather
+    // than keeping a second copy that could drift.
+    var endpoint by remember { mutableStateOf("") }
+    var protocol by remember { mutableStateOf("selfhostedai") }
+    var model by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(state.paired) {
+        if (state.paired && !loaded) {
+            vm.agentConfig()?.let {
+                endpoint = it.endpoint
+                protocol = it.protocol
+                model = it.model.orEmpty()
+            }
+            loaded = true
+        }
+    }
+
+    Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("Settings", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         StatusDot(state.paired, if (state.paired) "Paired with workstation" else "Not paired")
         StatusDot(state.inference.connected,
-            "Inference: " + (state.inference.server ?: "unknown"))
+            "Inference: " + (state.inference.server ?: "not configured"))
         Spacer(Modifier.height(16.dp))
 
-        // Pair / re-pair with a workstation. This is the entry point the UI was
-        // missing: it launches the pairing screen (paste the payload from
-        // `hubidubios-sync pair`, or scan its QR).
         Button(
-            onClick = {
-                context.startActivity(Intent(context, PairingActivity::class.java))
-            },
+            onClick = { context.startActivity(Intent(context, PairingActivity::class.java)) },
             modifier = Modifier.fillMaxWidth(),
         ) { Text(if (state.paired) "Re-pair workstation" else "Pair workstation") }
 
@@ -392,10 +439,139 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             modifier = Modifier.fillMaxWidth(),
         ) { Text(if (state.syncing) "Syncing…" else "Sync now") }
 
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "On the workstation run:  hubidubios-sync pair\n" +
-                "Then paste the payload line here, or scan its QR.",
+        Spacer(Modifier.height(24.dp))
+        Divider()
+        Spacer(Modifier.height(16.dp))
+        Text("Agent server", fontWeight = FontWeight.Bold)
+        Text("Where the workstation sends questions and captures for summarising.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
+
+        OutlinedTextField(
+            value = endpoint, onValueChange = { endpoint = it; message = null },
+            label = { Text("Server address") },
+            placeholder = { Text("https://192.168.1.50:8443") },
+            singleLine = true, enabled = state.paired,
+            modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = protocol == "selfhostedai",
+                onClick = { protocol = "selfhostedai"; message = null },
+                label = { Text("selfhostedai (encrypted)") })
+            FilterChip(selected = protocol == "openai",
+                onClick = { protocol = "openai"; message = null },
+                label = { Text("OpenAI-compatible") })
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = model, onValueChange = { model = it; message = null },
+            label = { Text("Model (optional)") },
+            singleLine = true, enabled = state.paired,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = {
+                saving = true; message = null
+                scope.launch {
+                    val err = vm.setAgentConfig(endpoint, protocol, model.ifBlank { null })
+                    message = err ?: "Saved — checking connection…"
+                    saving = false
+                }
+            },
+            enabled = state.paired && !saving && endpoint.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(if (saving) "Saving…" else "Save agent server") }
+
+        message?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp))
+        }
+        if (!state.paired) {
+            Text("Pair with a workstation first — it is the workstation that talks "
+                + "to the agent server.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp))
+        }
+    }
+}
+
+@Composable
+fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    // Projects and their actions are one tree: a project contains sub-projects
+    // and actions, to any depth. The shape and the move rules live in
+    // ProjectTree so they are testable without driving the UI.
+    val records = remember(state.projects, state.nextActions) {
+        state.projects + state.nextActions
+    }
+    var collapsed by remember { mutableStateOf(setOf<String>()) }
+    var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
+    val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
+
+    moving?.let { node ->
+        val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
+        AlertDialog(
+            onDismissRequest = { moving = null },
+            title = { Text("Move \"${node.title}\"") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    targets.forEach { (id, label) ->
+                        TextButton(onClick = { vm.move(node.id, id); moving = null }) {
+                            Text(if (id == null) label else "→  $label")
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { moving = null }) { Text("Cancel") } },
+        )
+    }
+
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Projects", fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        if (nodes.isEmpty()) {
+            Text("No projects yet. Clarify an inbox item into a project to start one.",
+                style = MaterialTheme.typography.bodySmall)
+            return@Column
+        }
+        LazyColumn(Modifier.fillMaxSize()) {
+            items(nodes, key = { it.id }) { node ->
+                Row(
+                    Modifier.fillMaxWidth().padding(
+                        start = (node.depth * 16).dp, top = 6.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (node.hasChildren) {
+                        TextButton(
+                            onClick = {
+                                collapsed = if (node.id in collapsed) collapsed - node.id
+                                            else collapsed + node.id
+                            },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.size(28.dp),
+                        ) { Text(if (node.id in collapsed) "▸" else "▾") }
+                    } else {
+                        Spacer(Modifier.size(28.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            node.title,
+                            fontWeight = if (node.isProject) FontWeight.Bold else FontWeight.Normal,
+                            style = if (node.isProject) MaterialTheme.typography.bodyLarge
+                                    else MaterialTheme.typography.bodyMedium,
+                        )
+                        if (node.isProject) {
+                            node.record.fields["status"]?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    TextButton(onClick = { moving = node }) { Text("Move") }
+                }
+                Divider()
+            }
+        }
     }
 }

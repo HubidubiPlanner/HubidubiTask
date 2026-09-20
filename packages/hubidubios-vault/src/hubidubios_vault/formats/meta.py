@@ -16,7 +16,7 @@ _PAIR_RE = re.compile(r"([a-z]+):(\S+)")
 # lowercase because _PAIR_RE only matches [a-z]+ and values may not contain
 # whitespace.
 _KEY_ORDER = ["id", "due", "done", "ctx", "kind", "media", "sha", "mime",
-              "bytes", "updated"]
+              "bytes", "parent", "updated"]
 
 
 def extract(line: str) -> tuple[str, dict[str, str]]:

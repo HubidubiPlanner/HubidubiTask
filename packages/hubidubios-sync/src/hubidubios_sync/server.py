@@ -8,6 +8,8 @@
     GET  /v1/plugins                  installed plugin manifests (Phase 3)
     GET  /v1/plugins/<name>/bundle    signed view bundle (Phase 5)
     POST /v1/agent/ask                proxy to the agent (Phase 4)
+    GET  /v1/agent/config             inference settings (secrets redacted)
+    POST /v1/agent/config             point the agent at an inference server
 
 Bind to the LAN interface explicitly, never 0.0.0.0. Plain stdlib server:
 one JSON request/response at a time is exactly the load a LAN of personal
@@ -122,6 +124,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._push_changes()
         if path == "/v1/agent/ask":
             return self._agent_ask()
+        if path == "/v1/agent/config":
+            return self._set_agent_config()
         self._json(404, {"error": "not found"})
 
     def do_PUT(self):
@@ -140,6 +144,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._plugins()
         if parsed.path == "/v1/agent/health":
             return self._agent_health()
+        if parsed.path == "/v1/agent/config":
+            return self._get_agent_config()
         if parsed.path.startswith("/v1/plugins/") and parsed.path.endswith("/bundle"):
             return self._json(404, {"error": "plugin bundles arrive in Phase 5"})
         self._json(404, {"error": "not found"})
@@ -210,6 +216,51 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"connected": False, "server": None,
                                     "models": [], "error": "agent not installed"})
         self._json(200, agent.client.health())
+
+    # --------------------------------------------------- inference config
+
+    # The phone cannot reach the model itself (it is the workstation that holds
+    # the endpoint and the pinned certificate), so pointing HubidubiOS at an
+    # inference server has to be done here. Exposing it over sync is what makes
+    # that possible from the phone instead of by hand-editing config.toml.
+
+    _AGENT_KEYS = ("protocol", "endpoint", "model", "tls_fingerprint")
+
+    def _get_agent_config(self):
+        if not self._device():
+            return self._json(401, {"error": "unauthorized"})
+        section = (self.server.vault.config().get("inference") or {})
+        out = {k: section.get(k) for k in self._AGENT_KEYS}
+        # Never hand a secret back to a device; report only whether one is set.
+        out["api_key_set"] = bool(section.get("api_key"))
+        return self._json(200, out)
+
+    def _set_agent_config(self):
+        if not self._device():
+            return self._json(401, {"error": "unauthorized"})
+        body = self._body()
+        if body is None:
+            return self._json(400, {"error": "invalid body"})
+        endpoint = str(body.get("endpoint") or "").strip()
+        if not endpoint.startswith(("http://", "https://")):
+            return self._json(400, {"error": "endpoint must start with http:// or https://"})
+        protocol = str(body.get("protocol") or "openai").strip().lower()
+        if protocol not in ("openai", "selfhostedai"):
+            return self._json(400, {"error": "protocol must be 'openai' or 'selfhostedai'"})
+
+        from hubidubios_vault.config_edit import set_section
+
+        section = dict(self.server.vault.config().get("inference") or {})
+        section.update({k: (str(body[k]).strip() or None) for k in self._AGENT_KEYS
+                        if k in body})
+        section["endpoint"], section["protocol"] = endpoint, protocol
+        with self.server.lock:
+            set_section(self.server.vault.config_path, "inference",
+                        {k: v for k, v in section.items() if v})
+        # A new endpoint means the cached client is pointing at the old one.
+        self.server._agent = None
+        self.server._agent_built = False
+        return self._json(200, {"saved": True, "endpoint": endpoint, "protocol": protocol})
 
     def _pair(self):
         body = self._body()

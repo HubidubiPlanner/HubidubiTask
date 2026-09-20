@@ -2,19 +2,87 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "next_action",
   "type": "object",
-  "required": ["id", "updated", "type", "text", "done"],
+  "required": [
+    "id",
+    "updated",
+    "type",
+    "text",
+    "done"
+  ],
   "properties": {
-    "id": {"type": "string", "pattern": "^t_[a-z2-7]+$"},
-    "updated": {"type": "string"},
-    "type": {"const": "next_action"},
-    "text": {"type": "string"},
-    "done": {"type": "boolean"},
-    "project": {"type": ["string", "null"]},
-    "context": {"type": ["string", "null"], "pattern": "^@"},
-    "due": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-    "done_date": {"type": ["string", "null"]},
-    "time": {"type": ["string", "null"], "description": "minutes estimate"},
-    "energy": {"type": ["string", "null"], "enum": ["low", "med", "high", null]},
-    "tags": {"type": "array", "items": {"type": "string"}}
+    "id": {
+      "type": "string",
+      "pattern": "^t_[a-z2-7]+$"
+    },
+    "updated": {
+      "type": "string"
+    },
+    "type": {
+      "const": "next_action"
+    },
+    "text": {
+      "type": "string"
+    },
+    "done": {
+      "type": "boolean"
+    },
+    "project": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "context": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^@"
+    },
+    "due": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "done_date": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "time": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "minutes estimate"
+    },
+    "energy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "low",
+        "med",
+        "high",
+        null
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parent": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "id of the containing project or item; absent means top level"
+    }
   }
 }

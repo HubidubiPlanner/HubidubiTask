@@ -182,6 +182,20 @@ class Sync private constructor(
         outbox.enqueueUpsert(updated)
     }
 
+    /** Re-nest an item under [parentId] (null = top level).
+     *
+     *  Only the parent pointer changes; the item keeps its text, state and any
+     *  attachment, so moving something around the tree can never lose content. */
+    fun moveTo(id: String, parentId: String?): Boolean {
+        val rec = store.get(id) ?: return false
+        val fields = rec.fields.toMutableMap()
+        if (parentId.isNullOrBlank()) fields.remove("parent") else fields["parent"] = parentId
+        val updated = rec.copy(updated = com.hubidubios.core.nowUtc(), fields = fields)
+        store.put(updated)
+        outbox.enqueueUpsert(updated)
+        return true
+    }
+
     private fun upsert(type: String, id: String, fields: Map<String, String?>, now: String) {
         val rec = EntityRecord(id = id, type = type, updated = now, fields = fields)
         store.put(rec)
