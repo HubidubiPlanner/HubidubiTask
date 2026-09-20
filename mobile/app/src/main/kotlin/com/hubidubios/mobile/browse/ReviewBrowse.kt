@@ -47,6 +47,28 @@ object ReviewBrowse {
     }
 
     /**
+     * The question put to the agent about one item.
+     *
+     * Reviewing a task and reviewing a note are different jobs: a task needs a
+     * judgement about whether it is still the right next step, a note needs its
+     * substance pulled out. Asking one generic question would answer neither
+     * well. The item's own text is quoted so the agent works from what is in
+     * the vault rather than from the title alone.
+     */
+    fun analysisPrompt(record: EntityRecord): String {
+        val label = labelOf(record)
+        val body = record.fields["body"].orEmpty()
+        val content = if (body.isBlank()) label else "$label\n\n$body"
+        return when (record.type) {
+            "note" -> "Summarise this note in two sentences, then list any " +
+                "commitments, dates or next actions hiding in it.\n\n$content"
+            else -> "This is an item from my GTD list. Say in one sentence what " +
+                "it is really about, then give the single next physical action " +
+                "for it, and flag it if it looks stale or already done.\n\n$content"
+        }
+    }
+
+    /**
      * What the screen shows: the recent few until the user types, then matches.
      * Search is not capped at [limit] — a deliberate query should show
      * everything it found, unlike the pre-typing peek at recent activity.

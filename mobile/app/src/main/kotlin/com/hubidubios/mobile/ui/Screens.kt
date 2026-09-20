@@ -361,6 +361,10 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
 fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var kind by remember { mutableStateOf(ReviewBrowse.Kind.ITEMS) }
     var query by remember { mutableStateOf("") }
+    var selected by remember { mutableStateOf<EntityRecord?>(null) }
+    var analysis by remember { mutableStateOf<String?>(null) }
+    var analyzing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val pool = remember(kind, state.inbox, state.nextActions, state.notes) {
         ReviewBrowse.pool(kind, state.inbox, state.nextActions, state.notes)
@@ -403,14 +407,61 @@ fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         }
         LazyColumn(Modifier.weight(1f, fill = false)) {
             items(results, key = { it.id }) { rec ->
-                if (kind == ReviewBrowse.Kind.NOTES) {
-                    NoteRow(rec, vm)
-                } else {
-                    Text(ReviewBrowse.labelOf(rec),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                Box(Modifier.fillMaxWidth().clickable {
+                    selected = rec; analysis = null
+                }) {
+                    if (kind == ReviewBrowse.Kind.NOTES) {
+                        NoteRow(rec, vm)
+                    } else {
+                        Text(ReviewBrowse.labelOf(rec),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
+                    }
                 }
-                Divider()
             }
+        }
+
+        selected?.let { rec ->
+            AlertDialog(
+                onDismissRequest = { selected = null; analysis = null },
+                title = { Text(ReviewBrowse.labelOf(rec),
+                    style = MaterialTheme.typography.titleSmall) },
+                text = {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        rec.fields["body"]?.takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(12.dp))
+                        }
+                        when {
+                            analyzing -> Text("Analysing…",
+                                style = MaterialTheme.typography.bodySmall)
+                            analysis != null -> Text(analysis!!,
+                                style = MaterialTheme.typography.bodyMedium)
+                            // Say why the button is dead rather than leaving the
+                            // user tapping a greyed-out control.
+                            !state.inference.connected -> Text(
+                                "Agent not connected. Set the server in Settings.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = state.inference.connected && !analyzing,
+                        onClick = {
+                            analyzing = true; analysis = null
+                            scope.launch {
+                                analysis = vm.ask(ReviewBrowse.analysisPrompt(rec))
+                                analyzing = false
+                            }
+                        },
+                    ) { Text(if (analysis == null) "Analyse" else "Again") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { selected = null; analysis = null }) { Text("Close") }
+                },
+            )
         }
 
         // The defining GTD failure still deserves to be called out, but it is
