@@ -30,6 +30,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val staleProjects: List<EntityRecord> = emptyList(),
         val notes: List<EntityRecord> = emptyList(),
         val projects: List<EntityRecord> = emptyList(),
+        /** Host of the paired workstation, to propose a default endpoint. */
+        val workstationHost: String? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -50,6 +52,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 notes = sync.notes(),
                 projects = sync.projects(),
                 inference = health(),
+                workstationHost = PairedServer.load(getApplication())?.host,
             )
         }
         _state.value = s

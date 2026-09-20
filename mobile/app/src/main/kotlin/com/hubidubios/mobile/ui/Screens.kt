@@ -512,7 +512,11 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     // The inference endpoint lives on the workstation (it holds the URL and the
     // pinned certificate), so the phone edits it through the sync API rather
     // than keeping a second copy that could drift.
-    var endpoint by remember { mutableStateOf("") }
+    // Everything is proposed, nothing demanded: the form arrives filled in and
+    // Save works on arrival. The agent usually runs on the same box the phone
+    // already pairs with, so that host is the obvious opening guess.
+    val defaultEndpoint = state.workstationHost?.let { "https://$it:8443" }.orEmpty()
+    var endpoint by remember(defaultEndpoint) { mutableStateOf(defaultEndpoint) }
     var protocol by remember { mutableStateOf("selfhostedai") }
     // The default is filled in rather than hinted at: an empty box reads as
     // "you must supply this", which is exactly what it is not.
@@ -529,7 +533,7 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     LaunchedEffect(state.paired) {
         if (state.paired && !loaded) {
             vm.agentConfig()?.let {
-                endpoint = it.endpoint
+                if (it.endpoint.isNotBlank()) endpoint = it.endpoint
                 protocol = it.protocol
                 // An unset model on the workstation means "use the default",
                 // so show the default rather than an empty box.
@@ -572,6 +576,14 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             value = endpoint, onValueChange = { endpoint = it; message = null },
             label = { Text("Server address") },
             placeholder = { Text("https://192.168.1.50:8443") },
+            supportingText = {
+                Text(
+                    if (endpoint == defaultEndpoint && defaultEndpoint.isNotBlank())
+                        "Proposed: your workstation. Change it if the agent runs elsewhere."
+                    else "",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            },
             singleLine = true, enabled = state.paired,
             modifier = Modifier.fillMaxWidth(),
         )
