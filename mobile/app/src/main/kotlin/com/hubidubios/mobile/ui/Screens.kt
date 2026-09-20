@@ -617,7 +617,17 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                 saving = true; message = null
                 scope.launch {
                     val err = vm.setAgentConfig(endpoint, protocol, model.ifBlank { null })
-                    message = err ?: "Saved — checking connection…"
+                    message = if (err != null) err else {
+                        // Saving is not the same as working. Writing an address
+                        // nothing answers on looks identical to writing a good
+                        // one until something later fails, so probe it now and
+                        // say plainly which happened.
+                        message = "Saved — checking…"
+                        val h = vm.checkInference()
+                        if (h.connected) "Connected to ${h.server ?: endpoint}"
+                        else "Saved, but nothing answered at $endpoint — check " +
+                            "the address and that the agent is running there."
+                    }
                     saving = false
                 }
             },

@@ -69,6 +69,9 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         PairedServer.load(getApplication())?.let { AgentClient(it).config() }
     }
 
+    /** Re-probe the inference server and report what came back. */
+    suspend fun checkInference(): AgentClient.Health = withContext(Dispatchers.IO) { health() }
+
     /** Point the agent at an inference server. Returns null on success. */
     suspend fun setAgentConfig(endpoint: String, protocol: String, model: String?): String? =
         withContext(Dispatchers.IO) {
