@@ -90,8 +90,18 @@ class AgentClient(private val server: PairedServer) {
         return try {
             client.newCall(req).execute().use { resp ->
                 val text = resp.body?.string().orEmpty()
-                if (resp.isSuccessful) null
-                else JSONObject(text).optString("error", "failed (${resp.code})")
+                when {
+                    resp.isSuccessful -> null
+                    // The sync server answers an unknown route with a bare
+                    // "not found", which explains nothing. It means this
+                    // workstation predates the setting, not that the server is
+                    // unreachable or the address wrong.
+                    resp.code == 404 ->
+                        "This workstation is too old to set the agent server " +
+                            "from the phone — update HubidubiOS on it."
+                    resp.code == 401 -> "Not authorised — re-pair with the workstation."
+                    else -> JSONObject(text).optString("error", "failed (${resp.code})")
+                }
             }
         } catch (e: Exception) { e.message ?: "could not reach the workstation" }
     }

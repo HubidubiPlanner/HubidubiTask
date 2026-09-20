@@ -514,10 +514,14 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     // than keeping a second copy that could drift.
     var endpoint by remember { mutableStateOf("") }
     var protocol by remember { mutableStateOf("selfhostedai") }
-    var model by remember { mutableStateOf("") }
-    // Leaving the model blank is the normal case: the workstation already picks
-    // a sensible one per protocol, so the field is a override, not a setup step.
+    // The default is filled in rather than hinted at: an empty box reads as
+    // "you must supply this", which is exactly what it is not.
     val defaultModel = if (protocol == "selfhostedai") "fast" else "local"
+    var model by remember { mutableStateOf(defaultModel) }
+    // Switching protocol swaps the default, unless the user typed their own.
+    LaunchedEffect(protocol) {
+        if (model.isBlank() || model == "fast" || model == "local") model = defaultModel
+    }
     var loaded by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -527,7 +531,10 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             vm.agentConfig()?.let {
                 endpoint = it.endpoint
                 protocol = it.protocol
-                model = it.model.orEmpty()
+                // An unset model on the workstation means "use the default",
+                // so show the default rather than an empty box.
+                model = it.model?.takeIf { m -> m.isNotBlank() }
+                    ?: if (it.protocol == "selfhostedai") "fast" else "local"
             }
             loaded = true
         }
@@ -584,8 +591,8 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             placeholder = { Text(defaultModel) },
             supportingText = {
                 Text(
-                    if (model.isBlank()) "Using the default: $defaultModel"
-                    else "Overriding the default ($defaultModel)",
+                    if (model == defaultModel) "Default for this protocol"
+                    else "Custom — the default is $defaultModel",
                     style = MaterialTheme.typography.labelSmall,
                 )
             },

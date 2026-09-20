@@ -16,3 +16,4 @@ iso/workstation/omarchy-pkgs/
 
 # Build outputs
 *.pkg.tar.zst
+dist-update/
