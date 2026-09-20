@@ -182,6 +182,19 @@ class Sync private constructor(
         outbox.enqueueUpsert(updated)
     }
 
+    /** Create a project, optionally nested under [parentId].
+     *
+     *  Returns its id so the caller can reveal it in the tree. */
+    fun createProject(title: String, parentId: String? = null): String {
+        val id = "p_" + randomSuffix()
+        val fields = HashMap<String, String?>()
+        fields["title"] = title.trim()
+        fields["status"] = "active"
+        if (!parentId.isNullOrBlank()) fields["parent"] = parentId
+        upsert("project", id, fields, com.hubidubios.core.nowUtc())
+        return id
+    }
+
     /** Re-nest an item under [parentId] (null = top level).
      *
      *  Only the parent pointer changes; the item keeps its text, state and any

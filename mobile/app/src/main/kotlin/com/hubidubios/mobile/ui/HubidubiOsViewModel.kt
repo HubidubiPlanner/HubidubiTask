@@ -121,6 +121,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
             refresh()
         }
 
+    /** Create a project, optionally as a child of [parentId]. */
+    fun createProject(title: String, parentId: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().createProject(title, parentId) }
+        refresh()
+    }
+
     /** Re-nest an item in the Projects tree. */
     fun move(id: String, parentId: String?) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().moveTo(id, parentId) }

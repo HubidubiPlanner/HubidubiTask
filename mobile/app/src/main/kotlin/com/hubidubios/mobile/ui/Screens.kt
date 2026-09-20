@@ -62,6 +62,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.hubidubios.core.EntityRecord
 import com.hubidubios.mobile.capture.AudioRecorder
+import com.hubidubios.mobile.browse.ReviewBrowse
 import com.hubidubios.mobile.pairing.PairingActivity
 import com.hubidubios.mobile.tree.ProjectTree
 import java.io.File
@@ -241,26 +242,32 @@ private fun NoteRow(note: EntityRecord, vm: HubidubiOsViewModel) {
     val body = note.fields["body"].orEmpty()
     val sha = note.fields["media_sha256"]
     // Text is the point of this app; a photo or voice memo is an attachment on
-    // an item, not the item itself. So the words lead and the attachment is a
-    // chip you open deliberately — never a 200dp image shoving the note off
-    // the screen.
+    // an item, not the item itself. The chip sits beside the title rather than
+    // under it, so the attachment reads as a property of the note and the body
+    // stays the next thing the eye reaches.
     var open by remember(note.id) { mutableStateOf(false) }
+    val attached = sha != null && kind != "text"
 
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(title, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, false))
+            if (attached) {
+                TextButton(
+                    onClick = { open = !open },
+                    contentPadding = PaddingValues(start = 8.dp, end = 0.dp),
+                ) {
+                    Icon(Icons.Filled.AttachFile, contentDescription = null,
+                        modifier = Modifier.size(16.dp))
+                    Text(if (kind == "image") " Photo" else " Voice memo",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
         if (body.isNotBlank()) {
             Text(body, maxLines = 3, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 2.dp))
         }
-        if (sha != null && kind != "text") {
-            val label = if (kind == "image") "Photo" else "Voice memo"
-            TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
-                Icon(Icons.Filled.AttachFile, contentDescription = null,
-                    modifier = Modifier.size(16.dp))
-                Text("  $label", style = MaterialTheme.typography.bodySmall)
-            }
-            if (open) AttachmentPreview(kind, sha, title, vm)
-        }
+        if (attached && open) AttachmentPreview(kind, sha!!, title, vm)
     }
 }
 
@@ -347,19 +354,67 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
 
 @Composable
 fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    var kind by remember { mutableStateOf(ReviewBrowse.Kind.ITEMS) }
+    var query by remember { mutableStateOf("") }
+
+    val pool = remember(kind, state.inbox, state.nextActions, state.notes) {
+        ReviewBrowse.pool(kind, state.inbox, state.nextActions, state.notes)
+    }
+    val results = remember(pool, query) { ReviewBrowse.results(pool, query) }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Weekly review", fontWeight = FontWeight.Bold)
+        Text("Review", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Text("Inbox: ${state.inbox.size} to process")
+        Text("Inbox: ${state.inbox.size} to process",
+            style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = kind == ReviewBrowse.Kind.ITEMS,
+                onClick = { kind = ReviewBrowse.Kind.ITEMS }, label = { Text("Items") })
+            FilterChip(selected = kind == ReviewBrowse.Kind.NOTES,
+                onClick = { kind = ReviewBrowse.Kind.NOTES }, label = { Text("Notes") })
+        }
+
         Spacer(Modifier.height(8.dp))
-        Text("Projects with no next action", fontWeight = FontWeight.Bold)
-        if (state.staleProjects.isEmpty()) {
-            Text("none — good")
-        } else {
-            LazyColumn {
-                items(state.staleProjects) { p ->
-                    Text("⚠ ${p.text()}", modifier = Modifier.padding(vertical = 6.dp))
+        OutlinedTextField(
+            value = query, onValueChange = { query = it },
+            label = { Text("Search") }, singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (query.isBlank()) "Recently modified" else "${results.size} found",
+            fontWeight = FontWeight.Bold,
+        )
+        if (results.isEmpty()) {
+            Text(
+                if (query.isBlank()) "Nothing here yet."
+                else "No ${if (kind == ReviewBrowse.Kind.NOTES) "notes" else "items"} match.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        LazyColumn(Modifier.weight(1f, fill = false)) {
+            items(results, key = { it.id }) { rec ->
+                if (kind == ReviewBrowse.Kind.NOTES) {
+                    NoteRow(rec, vm)
+                } else {
+                    Text(ReviewBrowse.labelOf(rec),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
                 }
+                Divider()
+            }
+        }
+
+        // The defining GTD failure still deserves to be called out, but it is
+        // no longer the only thing this screen does.
+        if (state.staleProjects.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text("Projects with no next action", fontWeight = FontWeight.Bold)
+            state.staleProjects.take(5).forEach { p ->
+                Text("⚠ ${p.text()}", modifier = Modifier.padding(vertical = 4.dp))
             }
         }
     }
@@ -507,6 +562,9 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     }
     var collapsed by remember { mutableStateOf(setOf<String>()) }
     var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
+    // null = not creating; "" = creating at top level; an id = creating a child.
+    var creatingUnder by remember { mutableStateOf<String?>(null) }
+    var newTitle by remember { mutableStateOf("") }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
 
     moving?.let { node ->
@@ -528,11 +586,44 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         )
     }
 
+    creatingUnder?.let { parent ->
+        val parentTitle = records.firstOrNull { it.id == parent }?.fields?.get("title")
+        AlertDialog(
+            onDismissRequest = { creatingUnder = null; newTitle = "" },
+            title = { Text(if (parentTitle != null) "New project in \"$parentTitle\"" else "New project") },
+            text = {
+                OutlinedTextField(
+                    value = newTitle, onValueChange = { newTitle = it },
+                    label = { Text("Project name") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        vm.createProject(newTitle, parent.ifBlank { null })
+                        // Reveal the new child rather than leaving it hidden
+                        // inside a collapsed parent.
+                        if (parent.isNotBlank()) collapsed = collapsed - parent
+                        creatingUnder = null; newTitle = ""
+                    },
+                    enabled = newTitle.isNotBlank(),
+                ) { Text("Create") }
+            },
+            dismissButton = {
+                TextButton(onClick = { creatingUnder = null; newTitle = "" }) { Text("Cancel") }
+            },
+        )
+    }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Projects", fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Projects", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Button(onClick = { creatingUnder = "" }) { Text("New project") }
+        }
         Spacer(Modifier.height(8.dp))
         if (nodes.isEmpty()) {
-            Text("No projects yet. Clarify an inbox item into a project to start one.",
+            Text("No projects yet. Tap New project, or clarify an inbox item into one.",
                 style = MaterialTheme.typography.bodySmall)
             return@Column
         }
@@ -568,7 +659,14 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                             }
                         }
                     }
-                    TextButton(onClick = { moving = node }) { Text("Move") }
+                    // Only a project can contain things, so only a project
+                    // offers "add a sub-project".
+                    if (node.isProject) {
+                        TextButton(onClick = { creatingUnder = node.id },
+                            contentPadding = PaddingValues(horizontal = 6.dp)) { Text("＋") }
+                    }
+                    TextButton(onClick = { moving = node },
+                        contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Move") }
                 }
                 Divider()
             }
