@@ -79,7 +79,10 @@ class AgentClient(private val server: PairedServer) {
         val payload = JSONObject()
             .put("endpoint", endpoint)
             .put("protocol", protocol)
-        if (!model.isNullOrBlank()) payload.put("model", model)
+        // Always sent, blank included: an empty model means "use the
+        // workstation's default", and omitting the key would instead leave a
+        // previously-set override in place with no way to clear it.
+        payload.put("model", model.orEmpty())
         val req = Request.Builder()
             .url("${server.baseUrl}/v1/agent/config")
             .header("Authorization", "Bearer ${server.deviceToken}")

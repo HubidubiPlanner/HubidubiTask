@@ -92,3 +92,26 @@ def test_saving_invalidates_the_cached_agent(vault):
     h._set_agent_config()
 
     assert h.server._agent is None and h.server._agent_built is False
+
+
+def test_clearing_the_model_falls_back_to_the_default(vault):
+    """Blank means "use the workstation's default", not "keep what was there"."""
+    vault.config_path.parent.mkdir(parents=True, exist_ok=True)
+    vault.config_path.write_text(
+        '[inference]\nendpoint = "https://h:8443"\nmodel = "some-override"\n',
+        encoding="utf-8")
+    h = _Handler(vault, {"endpoint": "https://h:8443", "protocol": "selfhostedai", "model": ""})
+
+    h._set_agent_config()
+
+    assert h.sent[0] == 200, h.sent
+    assert "model" not in tomllib.loads(vault.config_path.read_text())["inference"]
+
+
+def test_a_model_override_is_persisted(vault):
+    h = _Handler(vault, {"endpoint": "https://h:8443", "protocol": "selfhostedai",
+                         "model": "qwen3-vl"})
+
+    h._set_agent_config()
+
+    assert tomllib.loads(vault.config_path.read_text())["inference"]["model"] == "qwen3-vl"

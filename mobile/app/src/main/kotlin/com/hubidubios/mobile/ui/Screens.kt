@@ -13,8 +13,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
@@ -459,6 +464,9 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var endpoint by remember { mutableStateOf("") }
     var protocol by remember { mutableStateOf("selfhostedai") }
     var model by remember { mutableStateOf("") }
+    // Leaving the model blank is the normal case: the workstation already picks
+    // a sensible one per protocol, so the field is a override, not a setup step.
+    val defaultModel = if (protocol == "selfhostedai") "fast" else "local"
     var loaded by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -521,7 +529,15 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = model, onValueChange = { model = it; message = null },
-            label = { Text("Model (optional)") },
+            label = { Text("Model") },
+            placeholder = { Text(defaultModel) },
+            supportingText = {
+                Text(
+                    if (model.isBlank()) "Using the default: $defaultModel"
+                    else "Overriding the default ($defaultModel)",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            },
             singleLine = true, enabled = state.paired,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -570,12 +586,24 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
         AlertDialog(
             onDismissRequest = { moving = null },
-            title = { Text("File \"${node.title}\" under") },
+            title = { Text(node.title, style = MaterialTheme.typography.titleSmall) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
+                    val current = node.record.fields["parent"]
                     targets.forEach { (id, label) ->
-                        TextButton(onClick = { vm.move(node.id, id); moving = null }) {
-                            Text(if (id == null) label else "→  $label")
+                        val here = id == current || (id == null && current.isNullOrBlank())
+                        TextButton(
+                            onClick = { vm.move(node.id, id); moving = null },
+                            enabled = !here,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                if (here) "$label  ·  here" else label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (here) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }
@@ -610,8 +638,13 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Projects", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Button(onClick = { creating = true }) { Text("New project") }
+            Text("Projects", style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f))
+            TextButton(onClick = { creating = true }) {
+                Icon(Icons.Filled.Add, contentDescription = null,
+                    modifier = Modifier.size(18.dp))
+                Text(" New", style = MaterialTheme.typography.labelLarge)
+            }
         }
         Spacer(Modifier.height(8.dp))
         if (nodes.isEmpty()) {
@@ -621,44 +654,61 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         }
         LazyColumn(Modifier.fillMaxSize()) {
             items(nodes, key = { it.id }) { node ->
-                Row(
-                    Modifier.fillMaxWidth().padding(
-                        start = (node.depth * 20).dp, top = 6.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (node.isProject && node.hasChildren) {
-                        TextButton(
-                            onClick = {
+                if (node.isProject) {
+                    // Projects carry the accent colour: scanning the list, the
+                    // containers should separate from their contents at a glance
+                    // without needing rules or boxes.
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clickable(enabled = node.hasChildren) {
                                 collapsed = if (node.id in collapsed) collapsed - node.id
                                             else collapsed + node.id
-                            },
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.size(28.dp),
-                        ) { Text(if (node.id in collapsed) "▸" else "▾") }
-                    } else {
-                        Spacer(Modifier.size(28.dp))
-                    }
-                    Column(Modifier.weight(1f)) {
+                            }
+                            .padding(top = 18.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (!node.hasChildren) "" else if (node.id in collapsed) "▸" else "▾",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.width(18.dp),
+                        )
                         Text(
                             node.title,
-                            fontWeight = if (node.isProject) FontWeight.Bold else FontWeight.Normal,
-                            style = if (node.isProject) MaterialTheme.typography.bodyLarge
-                                    else MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f),
                         )
-                        // Say which kind of item this is; a project's contents
-                        // are a mix of reference material and actions.
-                        if (!node.isProject) {
-                            Text(if (node.isNote) "note" else "task",
-                                style = MaterialTheme.typography.bodySmall)
+                    }
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .padding(start = (node.depth * 18).dp, top = 4.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Spacer(Modifier.width(18.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(node.title, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                if (node.isNote) "note" else "task",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(
+                            onClick = { moving = node },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.SwapHoriz,
+                                contentDescription = "Move to another project",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
                         }
                     }
-                    // Projects are containers and never move; only items do.
-                    if (!node.isProject) {
-                        TextButton(onClick = { moving = node },
-                            contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Move") }
-                    }
                 }
-                Divider()
             }
         }
     }
