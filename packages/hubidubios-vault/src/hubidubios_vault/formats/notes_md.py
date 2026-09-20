@@ -68,6 +68,7 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> Note | None:
         media_sha256=str(fm["media_sha256"]) if fm.get("media_sha256") else None,
         media_mime=str(fm["media_mime"]) if fm.get("media_mime") else None,
         media_bytes=int(fm["media_bytes"]) if fm.get("media_bytes") else None,
+        parent=str(fm["parent"]) if fm.get("parent") else None,
     )
 
 
@@ -94,6 +95,8 @@ def render(note: Note) -> str:
         fm_lines.append(f"media_mime: {note.media_mime}")
     if note.media_bytes:
         fm_lines.append(f"media_bytes: {note.media_bytes}")
+    if note.parent:
+        fm_lines.append(f"parent: {note.parent}")
     if note.tags:
         fm_lines.append(f"tags: [{', '.join(note.tags)}]")
     fm_lines.append(_FM_DELIM)

@@ -250,7 +250,8 @@ def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
                 body=d.get("body") or "", tags=d.get("tags") or [],
                 created=d.get("created"), kind=d.get("kind") or "text",
                 media=media_rel, media_sha256=d.get("media_sha256"),
-                media_mime=d.get("media_mime"), media_bytes=d.get("media_bytes"))
+                media_mime=d.get("media_mime"), media_bytes=d.get("media_bytes"),
+                parent=d.get("parent"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(notes_md.render(note), encoding="utf-8")
 

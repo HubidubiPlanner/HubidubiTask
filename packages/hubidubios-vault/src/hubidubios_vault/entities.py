@@ -67,6 +67,9 @@ class Note(Entity):
     media_sha256: str | None = None
     media_mime: str | None = None
     media_bytes: int | None = None
+    # The project this note belongs to, if any. Projects are flat containers of
+    # notes and tasks; a note without a parent sits at the top level.
+    parent: str | None = None
 
     def __post_init__(self):
         self.type = "note"

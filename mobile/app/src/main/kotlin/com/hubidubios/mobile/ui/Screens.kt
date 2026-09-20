@@ -554,16 +554,15 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
 @Composable
 fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
-    // Projects and their actions are one tree: a project contains sub-projects
-    // and actions, to any depth. The shape and the move rules live in
-    // ProjectTree so they are testable without driving the UI.
-    val records = remember(state.projects, state.nextActions) {
-        state.projects + state.nextActions
+    // A project is a flat container holding its items — notes and tasks alike.
+    // The shape and move rules live in ProjectTree so they are testable without
+    // driving the UI.
+    val records = remember(state.projects, state.nextActions, state.notes) {
+        state.projects + state.nextActions + state.notes
     }
     var collapsed by remember { mutableStateOf(setOf<String>()) }
     var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
-    // null = not creating; "" = creating at top level; an id = creating a child.
-    var creatingUnder by remember { mutableStateOf<String?>(null) }
+    var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
 
@@ -571,7 +570,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
         AlertDialog(
             onDismissRequest = { moving = null },
-            title = { Text("Move \"${node.title}\"") },
+            title = { Text("File \"${node.title}\" under") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     targets.forEach { (id, label) ->
@@ -586,11 +585,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         )
     }
 
-    creatingUnder?.let { parent ->
-        val parentTitle = records.firstOrNull { it.id == parent }?.fields?.get("title")
+    if (creating) {
         AlertDialog(
-            onDismissRequest = { creatingUnder = null; newTitle = "" },
-            title = { Text(if (parentTitle != null) "New project in \"$parentTitle\"" else "New project") },
+            onDismissRequest = { creating = false; newTitle = "" },
+            title = { Text("New project") },
             text = {
                 OutlinedTextField(
                     value = newTitle, onValueChange = { newTitle = it },
@@ -600,18 +598,12 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        vm.createProject(newTitle, parent.ifBlank { null })
-                        // Reveal the new child rather than leaving it hidden
-                        // inside a collapsed parent.
-                        if (parent.isNotBlank()) collapsed = collapsed - parent
-                        creatingUnder = null; newTitle = ""
-                    },
+                    onClick = { vm.createProject(newTitle); creating = false; newTitle = "" },
                     enabled = newTitle.isNotBlank(),
                 ) { Text("Create") }
             },
             dismissButton = {
-                TextButton(onClick = { creatingUnder = null; newTitle = "" }) { Text("Cancel") }
+                TextButton(onClick = { creating = false; newTitle = "" }) { Text("Cancel") }
             },
         )
     }
@@ -619,11 +611,11 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("Projects", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Button(onClick = { creatingUnder = "" }) { Text("New project") }
+            Button(onClick = { creating = true }) { Text("New project") }
         }
         Spacer(Modifier.height(8.dp))
         if (nodes.isEmpty()) {
-            Text("No projects yet. Tap New project, or clarify an inbox item into one.",
+            Text("No projects yet. Tap New project, then file notes and tasks into it.",
                 style = MaterialTheme.typography.bodySmall)
             return@Column
         }
@@ -631,10 +623,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             items(nodes, key = { it.id }) { node ->
                 Row(
                     Modifier.fillMaxWidth().padding(
-                        start = (node.depth * 16).dp, top = 6.dp, bottom = 6.dp),
+                        start = (node.depth * 20).dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (node.hasChildren) {
+                    if (node.isProject && node.hasChildren) {
                         TextButton(
                             onClick = {
                                 collapsed = if (node.id in collapsed) collapsed - node.id
@@ -653,20 +645,18 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                             style = if (node.isProject) MaterialTheme.typography.bodyLarge
                                     else MaterialTheme.typography.bodyMedium,
                         )
-                        if (node.isProject) {
-                            node.record.fields["status"]?.let {
-                                Text(it, style = MaterialTheme.typography.bodySmall)
-                            }
+                        // Say which kind of item this is; a project's contents
+                        // are a mix of reference material and actions.
+                        if (!node.isProject) {
+                            Text(if (node.isNote) "note" else "task",
+                                style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    // Only a project can contain things, so only a project
-                    // offers "add a sub-project".
-                    if (node.isProject) {
-                        TextButton(onClick = { creatingUnder = node.id },
-                            contentPadding = PaddingValues(horizontal = 6.dp)) { Text("＋") }
+                    // Projects are containers and never move; only items do.
+                    if (!node.isProject) {
+                        TextButton(onClick = { moving = node },
+                            contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Move") }
                     }
-                    TextButton(onClick = { moving = node },
-                        contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Move") }
                 }
                 Divider()
             }

@@ -8,63 +8,80 @@ import org.junit.Test
 
 class ProjectTreeTest {
 
-    private fun project(id: String, title: String, parent: String? = null) =
-        EntityRecord(id, "project", "2026-09-20T10:00:00Z",
+    private fun project(id: String, title: String) =
+        EntityRecord(id, "project", "2026-09-20T10:00:00Z", mapOf("title" to title))
+
+    private fun task(id: String, text: String, parent: String? = null,
+                     project: String? = null) =
+        EntityRecord(id, "next_action", "2026-09-20T10:00:00Z",
+            buildMap {
+                put("text", text); put("done", "false")
+                if (parent != null) put("parent", parent)
+                if (project != null) put("project", project)
+            })
+
+    private fun note(id: String, title: String, parent: String? = null) =
+        EntityRecord(id, "note", "2026-09-20T10:00:00Z",
             buildMap {
                 put("title", title)
                 if (parent != null) put("parent", parent)
             })
 
-    private fun action(id: String, text: String, parent: String? = null,
-                       project: String? = null, done: Boolean = false) =
-        EntityRecord(id, "next_action", "2026-09-20T10:00:00Z",
-            buildMap {
-                put("text", text); put("done", done.toString())
-                if (parent != null) put("parent", parent)
-                if (project != null) put("project", project)
-            })
-
     @Test
-    fun `nests children under their parent`() {
+    fun `a project holds both notes and tasks`() {
         val records = listOf(
-            project("p_site", "Website"),
-            action("t_a", "draft copy", parent = "p_site"),
+            project("p_house", "House"),
+            task("t_a", "call roofer", parent = "p_house"),
+            note("n_a", "Roof quote", parent = "p_house"),
         )
 
         val tree = ProjectTree.build(records)
 
-        assertEquals(listOf("p_site" to 0, "t_a" to 1), tree.map { it.id to it.depth })
-        assertTrue("parent should report having children", tree[0].hasChildren)
+        assertEquals(listOf("p_house" to 0, "n_a" to 1, "t_a" to 1),
+            tree.map { it.id to it.depth })
     }
 
     @Test
-    fun `nests sub-projects to arbitrary depth`() {
+    fun `projects never nest inside one another`() {
+        // Even if something sets a parent on a project, it stays top level:
+        // projects are containers, not contents.
         val records = listOf(
-            project("p_root", "Root"),
-            project("p_mid", "Mid", parent = "p_root"),
-            action("t_leaf", "leaf task", parent = "p_mid"),
+            project("p_a", "A"),
+            EntityRecord("p_b", "project", "2026-09-20T10:00:00Z",
+                mapOf("title" to "B", "parent" to "p_a")),
         )
 
-        assertEquals(listOf(0, 1, 2), ProjectTree.build(records).map { it.depth })
+        val tree = ProjectTree.build(records)
+
+        assertEquals(listOf(0, 0), tree.map { it.depth })
     }
 
     @Test
-    fun `legacy actions filed by project slug still appear under the project`() {
-        // Pre-existing items have no parent field, only the slug of the file
-        // they were filed in; without the fallback they would all jump to top level.
+    fun `items with no project sit at the top level, after the projects`() {
+        val records = listOf(
+            project("p_house", "House"),
+            task("t_loose", "buy milk"),
+        )
+
+        val tree = ProjectTree.build(records)
+
+        assertEquals(listOf("p_house" to 0, "t_loose" to 0), tree.map { it.id to it.depth })
+    }
+
+    @Test
+    fun `legacy tasks filed by project slug still appear under the project`() {
         val records = listOf(
             project("p_site", "My Website"),
-            action("t_a", "old task", project = "my-website"),
+            task("t_a", "old task", project = "my-website"),
         )
 
-        val tree = ProjectTree.build(records)
-
-        assertEquals(listOf("p_site" to 0, "t_a" to 1), tree.map { it.id to it.depth })
+        assertEquals(listOf("p_site" to 0, "t_a" to 1),
+            ProjectTree.build(records).map { it.id to it.depth })
     }
 
     @Test
-    fun `an item whose parent no longer exists is shown, not dropped`() {
-        val records = listOf(action("t_orphan", "orphan", parent = "p_deleted"))
+    fun `an item whose project was deleted is shown, not dropped`() {
+        val records = listOf(task("t_orphan", "orphan", parent = "p_gone"))
 
         val tree = ProjectTree.build(records)
 
@@ -73,93 +90,76 @@ class ProjectTreeTest {
     }
 
     @Test
-    fun `a parent cycle cannot hang the tree`() {
+    fun `collapsing a project hides its items`() {
         val records = listOf(
-            project("p_a", "A", parent = "p_b"),
-            project("p_b", "B", parent = "p_a"),
+            project("p_house", "House"),
+            task("t_a", "call roofer", parent = "p_house"),
         )
 
-        val tree = ProjectTree.build(records)
+        val tree = ProjectTree.build(records, collapsed = setOf("p_house"))
 
-        assertEquals("every record should appear exactly once", 2, tree.size)
+        assertEquals(listOf("p_house"), tree.map { it.id })
+        assertTrue("it still shows as having children", tree[0].hasChildren)
     }
 
     @Test
-    fun `collapsing a node hides its whole subtree`() {
+    fun `notes sort before tasks within a project`() {
         val records = listOf(
-            project("p_root", "Root"),
-            project("p_mid", "Mid", parent = "p_root"),
-            action("t_leaf", "leaf", parent = "p_mid"),
+            project("p_house", "House"),
+            task("t_a", "aaa task", parent = "p_house"),
+            note("n_z", "zzz note", parent = "p_house"),
         )
 
-        val tree = ProjectTree.build(records, collapsed = setOf("p_root"))
-
-        assertEquals(listOf("p_root"), tree.map { it.id })
+        assertEquals(listOf("p_house", "n_z", "t_a"), ProjectTree.build(records).map { it.id })
     }
 
     @Test
-    fun `projects sort before actions at the same level`() {
-        val records = listOf(
-            project("p_root", "Root"),
-            action("t_a", "aaa first alphabetically", parent = "p_root"),
-            project("p_sub", "zzz last alphabetically", parent = "p_root"),
-        )
+    fun `projects are listed alphabetically`() {
+        val records = listOf(project("p_z", "Zebra"), project("p_a", "Apple"))
 
-        val ids = ProjectTree.build(records).map { it.id }
-
-        assertEquals(listOf("p_root", "p_sub", "t_a"), ids)
+        assertEquals(listOf("p_a", "p_z"), ProjectTree.build(records).map { it.id })
     }
 
     @Test
-    fun `a node cannot be moved into its own subtree`() {
+    fun `an item can move to another project or out of one`() {
         val records = listOf(
-            project("p_root", "Root"),
-            project("p_child", "Child", parent = "p_root"),
+            project("p_a", "A"), project("p_b", "B"),
+            task("t_x", "task", parent = "p_a"),
         )
 
-        assertFalse("moving a parent under its child would detach the branch",
-            ProjectTree.canMove("p_root", "p_child", records))
-        assertFalse(ProjectTree.canMove("p_root", "p_root", records))
-    }
-
-    @Test
-    fun `a node can be moved to top level or another project`() {
-        val records = listOf(
-            project("p_a", "A"),
-            project("p_b", "B"),
-            action("t_x", "task", parent = "p_a"),
-        )
-
-        assertTrue(ProjectTree.canMove("t_x", null, records))
         assertTrue(ProjectTree.canMove("t_x", "p_b", records))
+        assertTrue(ProjectTree.canMove("t_x", null, records))
     }
 
     @Test
-    fun `an action cannot become a container`() {
-        // Actions live as lines inside a project's file; one nested under
-        // another would have nowhere of its own to live.
+    fun `a project cannot be moved at all`() {
+        val records = listOf(project("p_a", "A"), project("p_b", "B"))
+
+        assertFalse(ProjectTree.canMove("p_a", "p_b", records))
+        assertTrue("and it is offered no destinations",
+            ProjectTree.moveTargets("p_a", records).isEmpty())
+    }
+
+    @Test
+    fun `an item cannot be filed under another item`() {
         val records = listOf(
             project("p_a", "A"),
-            action("t_x", "x", parent = "p_a"),
-            action("t_y", "y", parent = "p_a"),
+            task("t_x", "x", parent = "p_a"),
+            note("n_y", "y", parent = "p_a"),
         )
 
-        assertFalse(ProjectTree.canMove("t_x", "t_y", records))
+        assertFalse(ProjectTree.canMove("t_x", "n_y", records))
     }
 
     @Test
-    fun `move targets exclude the node and its descendants`() {
+    fun `move targets are every project plus no project`() {
         val records = listOf(
-            project("p_root", "Root"),
-            project("p_child", "Child", parent = "p_root"),
-            project("p_other", "Other"),
+            project("p_a", "A"), project("p_b", "B"),
+            note("n_x", "note", parent = "p_a"),
         )
 
-        val ids = ProjectTree.moveTargets("p_root", records).map { it.first }
+        val ids = ProjectTree.moveTargets("n_x", records).map { it.first }
 
-        assertTrue("top level must always be offered", ids.contains(null))
-        assertTrue(ids.contains("p_other"))
-        assertFalse("its own child is not a legal destination", ids.contains("p_child"))
-        assertFalse(ids.contains("p_root"))
+        assertEquals(listOf(null, "p_a", "p_b"), ids)
     }
 }

@@ -32,17 +32,16 @@ def test_action_parent_round_trips(tmp_path):
     assert d["text"] == "draft the spec", "parent metadata leaked into the text"
 
 
-def test_project_parent_round_trips(tmp_path):
-    v = _vault(tmp_path)
+def test_note_parent_round_trips(tmp_path):
+    """A project holds notes as well as tasks, so a note carries a parent too."""
+    from hubidubios_vault.entities import Note
+    from hubidubios_vault.formats import notes_md
 
-    path = apply.upsert_project(v, {
-        "id": "p_child", "type": "project", "updated": "2026-09-20T10:00:00Z",
-        "title": "Redesign", "parent": "p_site",
-    })
+    text = notes_md.render(Note(id="n_1", updated="2026-09-20T10:00:00Z",
+                                title="Roof quote", parent="p_house"))
+    back = notes_md.parse_file(text, tmp_path / "n.md", "2026-09-20T10:00:00Z")
 
-    (d, _), = generic.parse_frontmatter(path.read_text(), path,
-                                        "2026-09-20T10:00:00Z", "project")
-    assert d["parent"] == "p_site", "sub-project lost its parent"
+    assert back.parent == "p_house", "a note lost the project holding it"
 
 
 def test_top_level_items_carry_no_parent(tmp_path):
