@@ -296,7 +296,9 @@ private fun AnalysisSheet(
             busy = true
             text = vm.ask(ReviewBrowse.analysisPrompt(record), plain = true)
             busy = false
-            text?.let { vm.setReview(record.id, it) }
+            // Only a real answer is kept. An explanation of why there is none
+            // is worth showing and not worth remembering.
+            text?.takeIf { !it.startsWith("error:") }?.let { vm.setReview(record.id, it) }
         }
     }
 
@@ -333,7 +335,9 @@ private fun AnalysisSheet(
         if (busy && text == null && connected) {
             text = vm.ask(ReviewBrowse.analysisPrompt(record), plain = true)
             busy = false
-            text?.let { vm.setReview(record.id, it) }
+            // Only a real answer is kept. An explanation of why there is none
+            // is worth showing and not worth remembering.
+            text?.takeIf { !it.startsWith("error:") }?.let { vm.setReview(record.id, it) }
         }
     }
 }

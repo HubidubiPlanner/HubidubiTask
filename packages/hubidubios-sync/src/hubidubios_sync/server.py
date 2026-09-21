@@ -18,6 +18,7 @@ devices produces, and it keeps the no-dependencies discipline.
 
 import json
 import ssl
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -74,8 +75,12 @@ class Handler(BaseHTTPRequestHandler):
     server: SyncServer
     protocol_version = "HTTP/1.1"
 
-    def log_message(self, fmt, *args):  # quiet; agent.log comes in Phase 4
-        pass
+    def log_message(self, fmt, *args):
+        # One line per request to stderr, which systemd puts in the journal:
+        #   journalctl --user -u hubidubios-sync -f
+        # Silence here meant a failing request left no trace anywhere at all.
+        sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
+        sys.stderr.flush()
 
     # ------------------------------------------------------------ plumbing
 
@@ -206,21 +211,41 @@ class Handler(BaseHTTPRequestHandler):
             target.write_bytes(data)
 
     def _agent_plain(self, agent, query: str):
-        """One completion, plain text in and out. No tools, no JSON contract."""
+        """One completion, plain text in and out. No tools, no JSON contract.
+
+        Everything here is logged to agent.log: this path has no tool trace to
+        look at afterwards, so without it a bad answer leaves nothing to debug
+        — which is exactly the state it was in.
+        """
+        from hubidubios_agent.log import log_event
         from hubidubios_agent.loop import strip_reasoning
 
         system = ("You are the user's assistant. Answer in plain prose. "
                   "Be concise and concrete. Do not use JSON, markdown fences, "
                   "or tool calls.")
+        log_event({"event": "ask_plain", "query": query[:2000]})
         try:
             with self.server.lock:
                 text = agent.client.complete([
                     {"role": "system", "content": system},
                     {"role": "user", "content": query},
-                ])
+                ], json_mode=False)
         except Exception as e:
+            log_event({"event": "ask_plain_failed", "error": str(e)})
             return self._json(502, {"error": str(e)})
-        return self._json(200, {"answer": strip_reasoning(text)})
+
+        answer = strip_reasoning(text)
+        log_event({"event": "answer_plain", "raw_chars": len(text),
+                   "answer_chars": len(answer), "raw": text[:4000]})
+        if not answer.strip():
+            # The model replied, but all of it was reasoning. Returning 200 with
+            # an empty string left the phone showing a blank sheet and no reason
+            # for it; say what happened instead.
+            return self._json(502, {
+                "error": "the model returned only reasoning, no answer "
+                         f"({len(text)} characters of it). Try again, or give "
+                         "it a shorter item."})
+        return self._json(200, {"answer": answer})
 
     def _agent_health(self):
         """Report inference-server reachability so the phone can show a native

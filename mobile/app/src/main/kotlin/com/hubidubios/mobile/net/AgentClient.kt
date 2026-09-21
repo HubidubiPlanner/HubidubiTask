@@ -147,9 +147,18 @@ class AgentClient(private val server: PairedServer) {
             patientClient.newCall(req).execute().use { resp ->
                 if (plain) {
                     val o = JSONObject(resp.body!!.string())
-                    val text = o.optString("answer").ifBlank { o.optString("error") }
-                    android.util.Log.i(TAG, "plain answer (${text.length} chars)")
-                    return if (text.isBlank()) "(the model returned nothing)" else text
+                    val answer = o.optString("answer")
+                    if (answer.isNotBlank()) {
+                        android.util.Log.i(TAG, "plain answer (${answer.length} chars)")
+                        return answer
+                    }
+                    // Failures are prefixed so a caller can tell an answer from
+                    // an explanation: a review is stored on the item, and
+                    // keeping "error: ..." as the agent's opinion of a note is
+                    // worse than having no review at all.
+                    val err = o.optString("error").ifBlank { "the model returned nothing" }
+                    android.util.Log.w(TAG, "plain ask failed: $err")
+                    return "error: $err"
                 }
                 var answer = ""
                 resp.body!!.source().use { src ->
