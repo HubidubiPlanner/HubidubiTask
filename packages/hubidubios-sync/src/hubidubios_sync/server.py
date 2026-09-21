@@ -220,32 +220,41 @@ class Handler(BaseHTTPRequestHandler):
         from hubidubios_agent.log import log_event
         from hubidubios_agent.loop import strip_reasoning
 
+        from hubidubios_agent.config import language_instruction
+
         system = ("You are the user's assistant. Answer in plain prose. "
                   "Be concise and concrete. Do not use JSON, markdown fences, "
-                  "or tool calls.")
+                  "or tool calls. " + language_instruction(self.server.vault))
+        messages = [{"role": "system", "content": system},
+                    {"role": "user", "content": query}]
         log_event({"event": "ask_plain", "query": query[:2000]})
-        try:
-            with self.server.lock:
-                text = agent.client.complete([
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": query},
-                ], json_mode=False)
-        except Exception as e:
-            log_event({"event": "ask_plain_failed", "error": str(e)})
-            return self._json(502, {"error": str(e)})
 
-        answer = strip_reasoning(text)
-        log_event({"event": "answer_plain", "raw_chars": len(text),
-                   "answer_chars": len(answer), "raw": text[:4000]})
-        if not answer.strip():
-            # The model replied, but all of it was reasoning. Returning 200 with
-            # an empty string left the phone showing a blank sheet and no reason
-            # for it; say what happened instead.
-            return self._json(502, {
-                "error": "the model returned only reasoning, no answer "
-                         f"({len(text)} characters of it). Try again, or give "
-                         "it a shorter item."})
-        return self._json(200, {"answer": answer})
+        # One retry. A cold generation on this server can spend its whole budget
+        # reasoning and stop before it answers; asking again straight afterwards
+        # answered every time it was tried. Two silent minutes are still better
+        # than a blank sheet, and the wait is visible on the phone.
+        text = answer = ""
+        for attempt in (1, 2):
+            try:
+                with self.server.lock:
+                    text = agent.client.complete(messages, json_mode=False)
+            except Exception as e:
+                log_event({"event": "ask_plain_failed", "attempt": attempt,
+                           "error": str(e)})
+                return self._json(502, {"error": str(e)})
+            answer = strip_reasoning(text).strip()
+            log_event({"event": "answer_plain", "attempt": attempt,
+                       "raw_chars": len(text), "answer_chars": len(answer),
+                       "raw": text[:4000]})
+            if answer:
+                return self._json(200, {"answer": answer})
+
+        # Twice, and both times the model talked itself out of answering.
+        return self._json(502, {
+            "error": "the model spent its whole reply reasoning and never "
+                     f"answered, twice ({len(text)} characters of it). Try a "
+                     "shorter item, or check the persona on the inference "
+                     "server."})
 
     def _agent_health(self):
         """Report inference-server reachability so the phone can show a native

@@ -14,10 +14,17 @@ def test_a_closed_block_is_removed():
         == "The quote covers gutters."
 
 
-def test_an_unterminated_block_keeps_what_follows():
-    """A truncated reply must not come back empty — that reads as a dead model."""
-    assert strip_reasoning("<think>still going, the answer is 42") == \
-        "still going, the answer is 42"
+def test_an_unterminated_block_has_no_answer_in_it():
+    """Measured against the live server: a short note produced 10,477 characters
+    of an unterminated <think>, all of it the model talking to itself. Keeping
+    what follows the tag — as this used to — hands the user that monologue and
+    calls it a review. There is nothing in there to salvage."""
+    assert strip_reasoning("<think>still going, the answer is 4") == ""
+
+
+def test_an_answer_before_the_thinking_survives():
+    assert strip_reasoning("The quote covers gutters. <think>now, was that right") \
+        == "The quote covers gutters."
 
 
 def test_other_reasoning_tags_are_handled():

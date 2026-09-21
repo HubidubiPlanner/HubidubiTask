@@ -61,7 +61,28 @@ def test_prose_is_not_asked_for_as_json(log_to_tmp):
         "asked a model for prose and for a JSON object in the same breath"
 
 
-def test_a_reply_that_is_all_reasoning_is_an_error_not_a_blank(log_to_tmp):
+def test_a_reply_that_is_all_reasoning_is_retried(log_to_tmp):
+    # Measured: a cold generation can stop mid-thought with no answer, and the
+    # same prompt asked again answers in seconds.
+    class _Flaky:
+        def __init__(self):
+            self.n = 0
+
+        def complete(self, messages, json_mode=True):
+            self.n += 1
+            return "<think>still going" if self.n == 1 else "It is about the roof."
+
+    agent = MagicMock()
+    agent.client = _Flaky()
+    h = _Handler()
+
+    h._agent_plain(agent, "review this")
+
+    assert agent.client.n == 2
+    assert h.sent == (200, {"answer": "It is about the roof."})
+
+
+def test_reasoning_twice_over_is_an_error_not_a_blank(log_to_tmp):
     h = _Handler()
     h._agent_plain(_agent("<think>" + "thinking " * 50 + "</think>"), "review this")
 
@@ -105,3 +126,34 @@ def test_a_failure_is_logged_too(log_to_tmp):
 
     events = [json.loads(line) for line in log_to_tmp.read_text().splitlines()]
     assert [e["event"] for e in events] == ["ask_plain", "ask_plain_failed"]
+
+
+def test_the_reply_language_is_pinned(log_to_tmp, tmp_path):
+    from hubidubios_vault.vault import Vault
+
+    v = Vault(tmp_path / "v")
+    v.ensure_layout()
+    v.config_path.write_text('[inference]\nlanguage = "pl"\n')
+    h = _Handler()
+    h.server.vault = v
+    agent = _agent("Notatka dotyczy dachu.")
+
+    h._agent_plain(agent, "podsumuj")
+
+    system = agent.client.calls[0]["messages"][0]["content"]
+    assert "po polsku" in system, \
+        "the assistant answers in whatever language the note happened to be in"
+
+
+def test_matching_the_material_is_the_default(log_to_tmp, tmp_path):
+    from hubidubios_vault.vault import Vault
+
+    v = Vault(tmp_path / "v2")
+    v.ensure_layout()
+    h = _Handler()
+    h.server.vault = v
+    agent = _agent("It is about the roof.")
+
+    h._agent_plain(agent, "review")
+
+    assert "same language as the material" in agent.client.calls[0]["messages"][0]["content"]
