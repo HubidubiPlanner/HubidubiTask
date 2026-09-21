@@ -35,7 +35,7 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
             val nav = rememberNavController()
             val dests = listOf(
                 Dest("projects", "Projects") { Icon(Icons.Filled.AccountTree, null) },
-                Dest("home", "Home") { Icon(Icons.Filled.Add, null) },
+                Dest("home", "Items") { Icon(Icons.Filled.Add, null) },
                 Dest("next", "Next") { Icon(Icons.Filled.CheckCircle, null) },
                 Dest("chat", "Chat") { Icon(Icons.Filled.Chat, null) },
                 Dest("settings", "Settings") { Icon(Icons.Filled.Settings, null) },

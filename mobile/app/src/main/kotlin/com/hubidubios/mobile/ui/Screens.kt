@@ -353,38 +353,72 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
 
     // Ask before filing: the same photo is a task ("do something about this") or
-    // a note ("keep this"), and only the user knows which.
+    // a note ("keep this"), and only the user knows which. A date is offered at
+    // the same moment — it is the one fact you still have in mind at capture
+    // time and the thing that decides whether the item ever resurfaces.
+    var captureDue by remember { mutableStateOf<String?>(null) }
+    var pickingDate by remember { mutableStateOf(false) }
+
+    if (pickingDate) {
+        val dateState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { pickingDate = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    dateState.selectedDateMillis?.let { ms ->
+                        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        captureDue = fmt.format(java.util.Date(ms))
+                    }
+                    pickingDate = false
+                }) { Text("Set") }
+            },
+            dismissButton = {
+                TextButton(onClick = { captureDue = null; pickingDate = false }) {
+                    Text("No date")
+                }
+            },
+        ) { DatePicker(state = dateState) }
+    }
+
     pending?.let { p ->
         AlertDialog(
             onDismissRequest = { pending = null },
             title = { Text("Task or note?") },
             text = {
-                Text(
-                    when (p.kind) {
-                        "image" -> "Photo — file it in the inbox to act on, or keep it as a note."
-                        "audio" -> "Voice memo — file it in the inbox to act on, or keep it as a note."
-                        else -> p.text
+                Column {
+                    Text(
+                        when (p.kind) {
+                            "image" -> "Photo — act on it, or keep it as a note."
+                            "audio" -> "Voice memo — act on it, or keep it as a note."
+                            else -> p.text
+                        }
+                    )
+                    TextButton(onClick = { pickingDate = true },
+                        contentPadding = PaddingValues(0.dp)) {
+                        Text(captureDue?.let { "Due $it" } ?: "Add a date",
+                            style = MaterialTheme.typography.labelLarge)
                     }
-                )
+                }
             },
             confirmButton = {
                 Button(onClick = {
                     when (p.kind) {
-                        "image" -> vm.captureImage(p.bytes!!, p.mime, p.text)
-                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text)
-                        else -> vm.capture(p.text)
+                        "image" -> vm.captureImage(p.bytes!!, p.mime, p.text, captureDue)
+                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text, captureDue)
+                        else -> vm.capture(p.text, captureDue)
                     }
-                    pending = null
+                    pending = null; captureDue = null
                 }) { Text("Task") }
             },
             dismissButton = {
                 OutlinedButton(onClick = {
                     when (p.kind) {
-                        "image" -> vm.noteImage(p.bytes!!, p.mime, p.text)
-                        "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text)
-                        else -> vm.noteText(p.text)
+                        "image" -> vm.noteImage(p.bytes!!, p.mime, p.text, captureDue)
+                        "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text, captureDue)
+                        else -> vm.noteText(p.text, captureDue)
                     }
-                    pending = null
+                    pending = null; captureDue = null
                 }) { Text("Note") }
             },
         )
@@ -428,17 +462,12 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save") }
         }
 
-        Spacer(Modifier.height(16.dp))
-        Text("Notes (${state.notes.size})", fontWeight = FontWeight.Bold)
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(state.notes) { note ->
-                Box(Modifier.fillMaxWidth().combinedClickable(
-                    onClick = {}, onLongClick = { menuFor = note })) {
-                    NoteRow(note, vm)
-                }
-                Divider()
-            }
-        }
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "Captures land in Projects; dated ones show up in Next.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

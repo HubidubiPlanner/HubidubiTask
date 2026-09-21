@@ -84,37 +84,37 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 ?: run { refresh(); null }
         }
 
-    fun capture(text: String) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().capture(text) }
+    fun capture(text: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().capture(text, due) }
         refresh()
     }
 
     // --- media notes: text / image / audio, uploaded to the workstation ---
 
-    fun noteText(title: String) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteText(title) }
+    fun noteText(title: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteText(title, due = due) }
         refresh()
     }
 
-    fun noteImage(bytes: ByteArray, mime: String, title: String) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title) }
+    fun noteImage(bytes: ByteArray, mime: String, title: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title, due) }
         refresh()
     }
 
-    fun noteAudio(bytes: ByteArray, mime: String, title: String) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title) }
+    fun noteAudio(bytes: ByteArray, mime: String, title: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title, due) }
         refresh()
     }
 
     // --- the same captures, filed as GTD inbox tasks instead of notes ---
 
-    fun captureImage(bytes: ByteArray, mime: String, text: String) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().captureMedia("image", bytes, mime, text) }
+    fun captureImage(bytes: ByteArray, mime: String, text: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().captureMedia("image", bytes, mime, text, due) }
         refresh()
     }
 
-    fun captureAudio(bytes: ByteArray, mime: String, text: String) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().captureMedia("audio", bytes, mime, text) }
+    fun captureAudio(bytes: ByteArray, mime: String, text: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().captureMedia("audio", bytes, mime, text, due) }
         refresh()
     }
 

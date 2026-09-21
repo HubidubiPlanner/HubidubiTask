@@ -27,12 +27,15 @@ class Sync private constructor(
     private val blobDao: BlobUploadDao,
     private val blobsDir: File,
 ) {
-    fun capture(text: String): String {
+    fun capture(text: String, due: String? = null): String {
         // The never-fail path: append to the outbox, no network, no validation.
         val id = "i_" + randomSuffix()
         val record = EntityRecord(
             id = id, type = "inbox_item", updated = com.hubidubios.core.nowUtc(),
-            fields = mapOf("text" to text, "time" to time(), "date" to date()),
+            fields = buildMap {
+                put("text", text); put("time", time()); put("date", date())
+                if (!due.isNullOrBlank()) put("due", due)
+            },
         )
         store.put(record)
         outbox.enqueueUpsert(record)
@@ -44,7 +47,8 @@ class Sync private constructor(
      *  The user answers "task or note?" at capture time, so the same media has
      *  to be able to land in the GTD inbox. Bytes travel the same blob channel
      *  as a note's; only the entity type differs. */
-    fun captureMedia(kind: String, bytes: ByteArray, mime: String, text: String): String {
+    fun captureMedia(kind: String, bytes: ByteArray, mime: String, text: String,
+                     due: String? = null): String {
         val sha = sha256(bytes)
         blobsDir.mkdirs()
         val local = File(blobsDir, sha)
@@ -52,11 +56,12 @@ class Sync private constructor(
         val id = "i_" + randomSuffix()
         val record = EntityRecord(
             id = id, type = "inbox_item", updated = com.hubidubios.core.nowUtc(),
-            fields = mapOf(
-                "text" to text, "time" to time(), "date" to date(),
-                "kind" to kind, "media_sha256" to sha, "media_mime" to mime,
-                "media_bytes" to bytes.size.toString(),
-            ),
+            fields = buildMap {
+                put("text", text); put("time", time()); put("date", date())
+                put("kind", kind); put("media_sha256", sha); put("media_mime", mime)
+                put("media_bytes", bytes.size.toString())
+                if (!due.isNullOrBlank()) put("due", due)
+            },
         )
         store.put(record)
         outbox.enqueueUpsert(record)
@@ -69,25 +74,28 @@ class Sync private constructor(
     // ---- notes: text / image / audio (each uploaded to the workstation) ----
 
     /** A plain text note. */
-    fun noteText(title: String, body: String = ""): String {
+    fun noteText(title: String, body: String = "", due: String? = null): String {
         val id = "n_" + randomSuffix()
-        upsert("note", id, hashMapOf("title" to title, "kind" to "text",
-            "body" to body), com.hubidubios.core.nowUtc())
+        val f = hashMapOf<String, String?>("title" to title, "kind" to "text", "body" to body)
+        if (!due.isNullOrBlank()) f["due"] = due
+        upsert("note", id, f, com.hubidubios.core.nowUtc())
         return id
     }
 
     /** An image or audio note. The bytes are cached locally by content hash and
      *  queued for upload; the note entity only references them by SHA-256. */
-    fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String): String {
+    fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String,
+                  due: String? = null): String {
         val sha = sha256(bytes)
         blobsDir.mkdirs()
         val local = File(blobsDir, sha)
         if (!local.exists()) local.writeBytes(bytes)
         val id = "n_" + randomSuffix()
-        upsert("note", id, hashMapOf(
+        val f = hashMapOf<String, String?>(
             "title" to title, "kind" to kind, "media_sha256" to sha,
-            "media_mime" to mime, "media_bytes" to bytes.size.toString(),
-        ), com.hubidubios.core.nowUtc())
+            "media_mime" to mime, "media_bytes" to bytes.size.toString())
+        if (!due.isNullOrBlank()) f["due"] = due
+        upsert("note", id, f, com.hubidubios.core.nowUtc())
         blobDao.add(BlobUploadRow(sha256 = sha, local_path = local.path,
             mime = mime, note_id = id))
         uploadPendingBlobs()   // best-effort now; the queue survives if offline
