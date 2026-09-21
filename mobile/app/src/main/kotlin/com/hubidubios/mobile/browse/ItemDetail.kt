@@ -12,6 +12,19 @@ import com.hubidubios.core.EntityRecord
  */
 object ItemDetail {
 
+    /** The auto-generated capture names, which used to end in a timestamp:
+     *  "Photo Sep 21 14:32". Anchored and narrow on purpose — a name the user
+     *  typed that happens to mention a date is theirs, and stays. */
+    private val STAMPED = Regex("""(Photo|Voice memo|Document) [A-Z][a-z]{2} \d{1,2} \d{1,2}:\d{2}""")
+
+    /** What an item is called on screen.
+     *
+     *  Items captured before the rename still carry the minute they were taken
+     *  in their stored name, so a list with no date fields in it can still be
+     *  full of dates. The stored name is left alone; only the reading changes. */
+    fun cleanName(raw: String): String =
+        if (STAMPED.matches(raw.trim())) STAMPED.find(raw.trim())!!.groupValues[1] else raw
+
     /** The item's date, or null when it has none. */
     fun dueOf(record: EntityRecord): String? =
         record.fields["due"]?.takeIf { it.isNotBlank() }

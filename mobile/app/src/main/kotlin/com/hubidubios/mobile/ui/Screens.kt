@@ -933,10 +933,6 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
     val firstFreeId = remember(nodes) { nodes.firstOrNull { it.isFree }?.id }
-    val today = remember {
-        val f = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        f.timeZone = java.util.TimeZone.getTimeZone("UTC"); f.format(java.util.Date())
-    }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
@@ -1059,9 +1055,6 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                         )
                     }
                 } else {
-                    val due = node.record.fields["due"]
-                    val imminent = Agenda.isImminent(due, today)
-                    val overdue = imminent && due!! < today
                     Row(
                         Modifier.fillMaxWidth()
                             .combinedClickable(
@@ -1079,19 +1072,11 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Spacer(Modifier.width(18.dp))
+                        // No date here, however close it is: this list is for
+                        // finding things. Dates live in Next, and in the sheet
+                        // the item opens into.
                         Text(node.title, style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f))
-                        // Anything further out than tomorrow is noise here: this
-                        // list is for finding things, Next is for planning.
-                        if (imminent) {
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                due!!,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (overdue) MaterialTheme.colorScheme.error
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                     }
                 }
             }

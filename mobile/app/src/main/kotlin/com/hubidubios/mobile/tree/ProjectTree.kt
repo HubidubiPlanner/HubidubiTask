@@ -25,8 +25,8 @@ object ProjectTree {
         val id: String get() = record.id
         val isProject: Boolean get() = record.type == "project"
         val isNote: Boolean get() = record.type == "note"
-        val title: String get() =
-            record.fields["title"] ?: record.fields["text"] ?: record.id
+        val title: String get() = com.hubidubios.mobile.browse.ItemDetail.cleanName(
+            record.fields["title"] ?: record.fields["text"] ?: record.id)
         val done: Boolean get() = record.fields["done"] == "true"
         /** An item belonging to no project: the loose ones listed at the end. */
         val isFree: Boolean get() = !isProject && depth == 0

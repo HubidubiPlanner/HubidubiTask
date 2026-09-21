@@ -2,7 +2,6 @@ package com.hubidubios.mobile.browse
 
 import com.hubidubios.core.EntityRecord
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -70,40 +69,5 @@ class AgendaTest {
     @Test
     fun `tomorrow handles a leap day`() {
         assertEquals("2028-02-29", Agenda.dayAfter("2028-02-28"))
-    }
-}
-
-class AgendaImminenceTest {
-
-    private val today = "2026-09-21"
-
-    @Test
-    fun `today and tomorrow are imminent`() {
-        assertTrue(Agenda.isImminent("2026-09-21", today))
-        assertTrue(Agenda.isImminent("2026-09-22", today))
-    }
-
-    @Test
-    fun `overdue is the most imminent thing a date can be`() {
-        assertTrue(Agenda.isImminent("2026-09-01", today))
-    }
-
-    @Test
-    fun `further out than tomorrow is not shown`() {
-        // The Projects view is for finding things; planning the week is Next.
-        assertFalse(Agenda.isImminent("2026-09-23", today))
-        assertFalse(Agenda.isImminent("2027-01-01", today))
-    }
-
-    @Test
-    fun `an undated item has nothing to show`() {
-        assertFalse(Agenda.isImminent(null, today))
-        assertFalse(Agenda.isImminent("", today))
-    }
-
-    @Test
-    fun `imminence holds across a month boundary`() {
-        assertTrue(Agenda.isImminent("2026-10-01", "2026-09-30"))
-        assertFalse(Agenda.isImminent("2026-10-02", "2026-09-30"))
     }
 }

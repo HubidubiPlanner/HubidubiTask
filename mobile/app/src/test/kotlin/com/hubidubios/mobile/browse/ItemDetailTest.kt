@@ -91,3 +91,26 @@ class ItemDetailCaptureTest {
         assertNull(ItemDetail.capturedAt(rec()))
     }
 }
+
+class ItemDetailNameTest {
+
+    @Test
+    fun `a capture named before the rename loses its stamp`() {
+        assertEquals("Photo", ItemDetail.cleanName("Photo Sep 21 14:32"))
+        assertEquals("Voice memo", ItemDetail.cleanName("Voice memo Jan 3 9:05"))
+        assertEquals("Document", ItemDetail.cleanName("Document Dec 31 23:59"))
+    }
+
+    @Test
+    fun `a name the user wrote is theirs, date in it or not`() {
+        assertEquals("Photo of the meter Sep 21 14:32",
+            ItemDetail.cleanName("Photo of the meter Sep 21 14:32"))
+        assertEquals("Call the bank Sep 21", ItemDetail.cleanName("Call the bank Sep 21"))
+        assertEquals("Roof quote", ItemDetail.cleanName("Roof quote"))
+    }
+
+    @Test
+    fun `a name already clean is left alone`() {
+        assertEquals("Photo", ItemDetail.cleanName("Photo"))
+    }
+}

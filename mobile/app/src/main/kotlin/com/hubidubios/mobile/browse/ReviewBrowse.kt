@@ -17,7 +17,7 @@ object ReviewBrowse {
 
     /** The searchable text of a record, across the differently-named fields. */
     fun labelOf(record: EntityRecord): String =
-        record.fields["title"] ?: record.fields["text"] ?: record.id
+        ItemDetail.cleanName(record.fields["title"] ?: record.fields["text"] ?: record.id)
 
     /** Which records a [kind] covers. Items are the actionable things — inbox
      *  captures and next actions; notes are reference material. */
