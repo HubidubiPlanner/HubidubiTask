@@ -37,7 +37,6 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                 Dest("projects", "Projects") { Icon(Icons.Filled.AccountTree, null) },
                 Dest("home", "Home") { Icon(Icons.Filled.Add, null) },
                 Dest("next", "Next") { Icon(Icons.Filled.CheckCircle, null) },
-                Dest("review", "Review") { Icon(Icons.Filled.Refresh, null) },
                 Dest("chat", "Chat") { Icon(Icons.Filled.Chat, null) },
                 Dest("settings", "Settings") { Icon(Icons.Filled.Settings, null) },
             )
@@ -66,7 +65,6 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                     composable("projects") { ProjectsScreen(state, vm) }
                     composable("home") { HomeScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }
-                    composable("review") { ReviewScreen(state, vm) }
                     composable("chat") { ChatScreen(state, vm) }
                     composable("settings") { SettingsScreen(state, vm) }
                 }
