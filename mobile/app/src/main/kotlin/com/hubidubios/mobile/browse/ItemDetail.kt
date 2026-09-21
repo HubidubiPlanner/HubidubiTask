@@ -43,6 +43,18 @@ object ItemDetail {
         else -> record.type.replace('_', ' ')
     }
 
+    /** When this was captured, if the item records it.
+     *
+     *  A photo used to be *named* for the minute it was taken, which put a date
+     *  in every list that was supposed to be free of them. The time is still
+     *  worth having — it just belongs here, where you opened the item to ask. */
+    fun capturedAt(record: EntityRecord): String? {
+        record.fields["created"]?.takeIf { it.isNotBlank() }?.let { return it.take(16).replace('T', ' ') }
+        val date = record.fields["date"]?.takeIf { it.isNotBlank() } ?: return null
+        val time = record.fields["time"]?.takeIf { it.isNotBlank() }
+        return if (time == null) date else "$date $time"
+    }
+
     /** The line under the title: what it is, and when it is due. */
     fun subtitle(record: EntityRecord): String {
         val due = dueOf(record)

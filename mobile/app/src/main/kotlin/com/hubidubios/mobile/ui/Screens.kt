@@ -245,6 +245,10 @@ private fun DetailSheet(
                 Text(ItemDetail.subtitle(record),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ItemDetail.capturedAt(record)?.let {
+                    Text("Captured $it", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 record.fields["body"]?.takeIf { it.isNotBlank() }?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(top = 12.dp))
@@ -340,11 +344,8 @@ private fun documentNameOf(context: android.content.Context, uri: android.net.Ur
         val i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
         if (i >= 0 && c.moveToFirst()) return c.getString(i)
     }
-    return uri.lastPathSegment ?: ("Document " + shortStamp())
+    return uri.lastPathSegment ?: "Document"
 }
-
-private fun shortStamp(): String =
-    java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
 
 /** A capture waiting for the user to say whether it is a task or a note.
  *
@@ -388,7 +389,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
             val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             if (bytes != null)
-                pending = PendingCapture("image", "Photo " + shortStamp(), bytes, mime)
+                pending = PendingCapture("image", "Photo", bytes, mime)
         }
     }
     val pickDocument = rememberLauncherForActivityResult(
@@ -406,8 +407,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         ActivityResultContracts.TakePicture()) { ok ->
         val f = cameraFile.value
         if (ok && f != null && f.exists())
-            pending = PendingCapture("image", "Photo " + shortStamp(),
-                f.readBytes(), "image/jpeg")
+            pending = PendingCapture("image", "Photo", f.readBytes(), "image/jpeg")
     }
     fun launchCamera() {
         val f = File(context.cacheDir, "cam_${System.currentTimeMillis()}.jpg")
@@ -424,8 +424,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     fun stopRecording() {
         val f = recorder.value?.stop(); recorder.value = null; recording = false
         if (f != null)
-            pending = PendingCapture("audio", "Voice memo " + shortStamp(),
-                f.readBytes(), "audio/mp4")
+            pending = PendingCapture("audio", "Voice memo", f.readBytes(), "audio/mp4")
     }
     val micPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
@@ -921,8 +920,8 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     // A project is a flat container holding its items — notes and tasks alike.
     // The shape and move rules live in ProjectTree so they are testable without
     // driving the UI.
-    val records = remember(state.projects, state.nextActions, state.notes) {
-        state.projects + state.nextActions + state.notes
+    val records = remember(state.projects, state.nextActions, state.notes, state.inbox) {
+        ProjectTree.records(state.projects, state.nextActions, state.notes, state.inbox)
     }
     var collapsed by remember { mutableStateOf(setOf<String>()) }
     var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }

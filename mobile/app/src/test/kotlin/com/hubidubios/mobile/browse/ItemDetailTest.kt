@@ -71,3 +71,23 @@ class ItemDetailTest {
             ItemDetail.subtitle(rec(fields = mapOf("due" to "2026-09-25"))))
     }
 }
+
+class ItemDetailCaptureTest {
+
+    @Test
+    fun `an inbox capture reports the day and minute it was taken`() {
+        assertEquals("2026-09-21 14:32", ItemDetail.capturedAt(
+            rec(fields = mapOf("date" to "2026-09-21", "time" to "14:32"))))
+    }
+
+    @Test
+    fun `a note reports its creation stamp readably`() {
+        assertEquals("2026-09-21 14:32", ItemDetail.capturedAt(
+            rec(type = "note", fields = mapOf("created" to "2026-09-21T14:32:09Z"))))
+    }
+
+    @Test
+    fun `an item that records nothing says nothing`() {
+        assertNull(ItemDetail.capturedAt(rec()))
+    }
+}

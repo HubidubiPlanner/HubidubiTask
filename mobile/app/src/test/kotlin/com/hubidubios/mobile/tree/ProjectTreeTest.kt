@@ -163,3 +163,36 @@ class ProjectTreeTest {
         assertEquals(listOf(null, "p_a", "p_b"), ids)
     }
 }
+
+class ProjectTreeRecordsTest {
+
+    private fun rec(id: String, type: String, fields: Map<String, String?> = emptyMap()) =
+        EntityRecord(id = id, type = type, updated = "2026-09-21T09:00:00Z", fields = fields)
+
+    @Test
+    fun `a captured item is in the view it was filed into`() {
+        // A capture stays an inbox item until it is clarified. Leaving that type
+        // out of the view was the whole bug: the item was filed, synced, and
+        // invisible.
+        val project = rec("p_1", "project", mapOf("title" to "Roof"))
+        val captured = rec("i_1", "inbox_item", mapOf("text" to "call the roofer",
+            "parent" to "p_1"))
+
+        val nodes = ProjectTree.build(
+            ProjectTree.records(listOf(project), emptyList(), emptyList(), listOf(captured)))
+
+        assertEquals(listOf("p_1", "i_1"), nodes.map { it.id })
+    }
+
+    @Test
+    fun `every kind of item reaches the view`() {
+        val records = ProjectTree.records(
+            listOf(rec("p_1", "project", mapOf("title" to "Roof"))),
+            listOf(rec("t_1", "next_action", mapOf("text" to "a"))),
+            listOf(rec("n_1", "note", mapOf("title" to "b"))),
+            listOf(rec("i_1", "inbox_item", mapOf("text" to "c"))),
+        )
+
+        assertEquals(setOf("p_1", "t_1", "n_1", "i_1"), records.map { it.id }.toSet())
+    }
+}

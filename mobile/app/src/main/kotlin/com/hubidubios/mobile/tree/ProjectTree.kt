@@ -30,6 +30,21 @@ object ProjectTree {
         val done: Boolean get() = record.fields["done"] == "true"
     }
 
+    /**
+     * Everything the Projects view holds: the containers and every kind of
+     * item that can go in one.
+     *
+     * Captures land as inbox items until they are clarified, so leaving those
+     * out means a note you just wrote is simply not in the view you filed it
+     * into — it looks lost, and there is nowhere in the app to find it.
+     */
+    fun records(
+        projects: List<EntityRecord>,
+        nextActions: List<EntityRecord>,
+        notes: List<EntityRecord>,
+        inbox: List<EntityRecord>,
+    ): List<EntityRecord> = projects + nextActions + notes + inbox
+
     fun slugOf(title: String): String =
         title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
 
