@@ -121,7 +121,12 @@ class AgentClient(private val server: PairedServer) {
             }
         } catch (e: Exception) {
             android.util.Log.w(TAG, "saving agent config failed", e)
-            e.message ?: "could not reach the workstation"
+            // Name the workstation explicitly. The raw exception quotes the
+            // workstation's address, which next to a form showing the agent's
+            // address reads as "it saved somewhere I did not ask for".
+            "Could not reach your workstation at ${server.host} — the setting " +
+                "lives there, so it has to be on and on this network. " +
+                "(The agent address you typed was not the problem.)"
         }
     }
 

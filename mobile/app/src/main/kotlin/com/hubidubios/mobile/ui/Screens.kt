@@ -449,7 +449,8 @@ private fun RoundCaptureButton(
     onClick: () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        FilledIconButton(onClick = onClick, modifier = Modifier.size(72.dp), shape = CircleShape) {
+        FilledIconButton(onClick = onClick, modifier = Modifier.size(72.dp),
+        shape = androidx.compose.ui.graphics.RectangleShape) {
             Icon(icon, contentDescription = label, modifier = Modifier.size(32.dp))
         }
         Spacer(Modifier.height(4.dp))
@@ -666,6 +667,8 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     LaunchedEffect(state.paired) {
         if (state.paired && !loaded) {
+            // A null here means the workstation did not answer, so the fields
+            // keep their proposed values rather than silently blanking.
             vm.agentConfig()?.let {
                 if (it.endpoint.isNotBlank()) endpoint = it.endpoint
                 protocol = it.protocol
