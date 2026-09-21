@@ -18,6 +18,10 @@ import org.json.JSONObject
  * The phone cannot reach the loopback-only model directly; the workstation
  * probes and proxies. Same pinned self-signed TLS as PinnedTransport.
  */
+private const val TAG = "HubidubiOsAgent"
+private const val PROBE_TIMEOUT_S = 15L
+private const val ASK_TIMEOUT_S = 600L
+
 class AgentClient(private val server: PairedServer) {
 
     private val json = "application/json".toMediaType()
@@ -27,9 +31,9 @@ class AgentClient(private val server: PairedServer) {
     // an answer is slow by nature — the model may still be loading, and a large
     // one takes minutes before the first token — so OkHttp's 10s default read
     // timeout cancels the request long before the agent has said anything.
-    private val client = pinnedClient(server.certFingerprint, readTimeoutSeconds = 15)
+    private val client = pinnedClient(server.certFingerprint, readTimeoutSeconds = PROBE_TIMEOUT_S)
     private val patientClient =
-        pinnedClient(server.certFingerprint, readTimeoutSeconds = 600)
+        pinnedClient(server.certFingerprint, readTimeoutSeconds = ASK_TIMEOUT_S)
 
     data class Health(val connected: Boolean, val server: String?, val models: List<String>)
 
@@ -49,6 +53,7 @@ class AgentClient(private val server: PairedServer) {
                        models)
             }
         } catch (e: Exception) {
+            android.util.Log.w(TAG, "health probe failed for ${'$'}{server.baseUrl}", e)
             Health(false, null, emptyList())
         }
     }
@@ -78,7 +83,10 @@ class AgentClient(private val server: PairedServer) {
                     apiKeySet = o.optBoolean("api_key_set", false),
                 )
             }
-        } catch (e: Exception) { null }
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "reading agent config failed", e)
+            null
+        }
     }
 
     /** Point the workstation's agent at an inference server.
@@ -111,7 +119,10 @@ class AgentClient(private val server: PairedServer) {
                     else -> JSONObject(text).optString("error", "failed (${resp.code})")
                 }
             }
-        } catch (e: Exception) { e.message ?: "could not reach the workstation" }
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "saving agent config failed", e)
+            e.message ?: "could not reach the workstation"
+        }
     }
 
     /** Blocking read of the NDJSON stream; returns the final answer text, or an
@@ -139,9 +150,13 @@ class AgentClient(private val server: PairedServer) {
                 answer.ifEmpty { "(no answer)" }
             }
         } catch (e: java.net.SocketTimeoutException) {
+            android.util.Log.w(TAG, "ask timed out after ${'$'}{ASK_TIMEOUT_S}s", e)
             "The agent did not answer in time. If the model was cold it may " +
                 "still be loading — try again in a moment."
         } catch (e: Exception) {
+            // Returned to the UI *and* logged: a failure only visible as text
+            // inside a dialog cannot be diagnosed from a bug report.
+            android.util.Log.w(TAG, "ask failed", e)
             "error: ${e.message}"
         }
     }
