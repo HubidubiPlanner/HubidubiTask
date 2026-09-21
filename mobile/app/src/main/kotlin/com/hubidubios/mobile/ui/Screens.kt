@@ -75,6 +75,10 @@ import kotlinx.coroutines.launch
 
 private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
 
+/** The agent server proposed on a fresh install. A saved setting always wins;
+ *  this only fills the form so Save works on arrival. */
+private const val DEFAULT_AGENT_ENDPOINT = "https://192.168.1.50:8443"
+
 private fun shortStamp(): String =
     java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
 
@@ -513,9 +517,10 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     // pinned certificate), so the phone edits it through the sync API rather
     // than keeping a second copy that could drift.
     // Everything is proposed, nothing demanded: the form arrives filled in and
-    // Save works on arrival. The agent usually runs on the same box the phone
-    // already pairs with, so that host is the obvious opening guess.
-    val defaultEndpoint = state.workstationHost?.let { "https://$it:8443" }.orEmpty()
+    // Save works on arrival. Deriving this from the paired workstation was a
+    // worse guess than a fixed one — the agent runs on its own box here, so
+    // proposing the workstation just made a wrong address easy to save.
+    val defaultEndpoint = DEFAULT_AGENT_ENDPOINT
     var endpoint by remember(defaultEndpoint) { mutableStateOf(defaultEndpoint) }
     var protocol by remember { mutableStateOf("selfhostedai") }
     // The default is filled in rather than hinted at: an empty box reads as
@@ -578,9 +583,7 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             placeholder = { Text("https://192.168.1.50:8443") },
             supportingText = {
                 Text(
-                    if (endpoint == defaultEndpoint && defaultEndpoint.isNotBlank())
-                        "Proposed: your workstation. Change it if the agent runs elsewhere."
-                    else "",
+                    if (endpoint == defaultEndpoint) "Default agent server" else "",
                     style = MaterialTheme.typography.labelSmall,
                 )
             },
