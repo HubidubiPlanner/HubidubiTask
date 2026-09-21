@@ -166,9 +166,10 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(syncing = false)
     }
 
-    suspend fun ask(query: String): String = withContext(Dispatchers.IO) {
-        val server = PairedServer.load(getApplication())
-            ?: return@withContext "not paired"
-        AgentClient(server).ask(query)
-    }
+    suspend fun ask(query: String, plain: Boolean = false): String =
+        withContext(Dispatchers.IO) {
+            val server = PairedServer.load(getApplication())
+                ?: return@withContext "not paired"
+            AgentClient(server).ask(query, plain)
+        }
 }

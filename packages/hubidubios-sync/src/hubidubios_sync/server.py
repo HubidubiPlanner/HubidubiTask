@@ -205,6 +205,23 @@ class Handler(BaseHTTPRequestHandler):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
 
+    def _agent_plain(self, agent, query: str):
+        """One completion, plain text in and out. No tools, no JSON contract."""
+        from hubidubios_agent.loop import strip_reasoning
+
+        system = ("You are the user's assistant. Answer in plain prose. "
+                  "Be concise and concrete. Do not use JSON, markdown fences, "
+                  "or tool calls.")
+        try:
+            with self.server.lock:
+                text = agent.client.complete([
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": query},
+                ])
+        except Exception as e:
+            return self._json(502, {"error": str(e)})
+        return self._json(200, {"answer": strip_reasoning(text)})
+
     def _agent_health(self):
         """Report inference-server reachability so the phone can show a native
         connection-status chip. The phone can't reach the model directly (it is
@@ -323,6 +340,15 @@ class Handler(BaseHTTPRequestHandler):
         agent = self.server.agent_factory() if self.server.agent_factory else None
         if agent is None:
             return self._json(501, {"error": "agent not installed on this host"})
+
+        # Summarising a note needs prose, not a tool call. The agent loop makes
+        # the model emit one JSON object per turn so tools can be dispatched;
+        # asking that of a model whose own server wraps it in a reasoning
+        # persona produces <think> blocks and commentary, none of which parse,
+        # and the user gets "I couldn't produce a valid response" for what was
+        # only ever a request for a sentence of text.
+        if body.get("plain"):
+            return self._agent_plain(agent, str(body["query"]))
 
         self.send_response(200)
         self.send_header("Content-Type", "application/x-ndjson")

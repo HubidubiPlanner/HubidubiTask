@@ -236,7 +236,7 @@ private fun AnalysisSheet(
     LaunchedEffect(record.id) {
         if (connected && text == null) {
             busy = true
-            text = vm.ask(ReviewBrowse.analysisPrompt(record))
+            text = vm.ask(ReviewBrowse.analysisPrompt(record), plain = true)
             busy = false
         }
     }
@@ -272,7 +272,7 @@ private fun AnalysisSheet(
     // "Again" clears the text; run once more when that happens.
     LaunchedEffect(busy) {
         if (busy && text == null && connected) {
-            text = vm.ask(ReviewBrowse.analysisPrompt(record))
+            text = vm.ask(ReviewBrowse.analysisPrompt(record), plain = true)
             busy = false
         }
     }

@@ -132,14 +132,25 @@ class AgentClient(private val server: PairedServer) {
 
     /** Blocking read of the NDJSON stream; returns the final answer text, or an
      *  error string. Chat is online-only, so callers gate on health() first. */
-    fun ask(query: String): String {
-        val body = JSONObject().put("query", query).toString().toRequestBody(json)
+    fun ask(query: String, plain: Boolean = false): String {
+        // plain = prose in, prose out. Reviewing a note wants a sentence, not a
+        // tool call, and demanding a JSON envelope of a model that is wrapped in
+        // its own reasoning persona is what produced "could not create a valid
+        // response" for a request that was only ever asking for text.
+        val body = JSONObject().put("query", query).put("plain", plain)
+            .toString().toRequestBody(json)
         val req = Request.Builder()
             .url("${server.baseUrl}/v1/agent/ask")
             .header("Authorization", "Bearer ${server.deviceToken}")
             .post(body).build()
         return try {
             patientClient.newCall(req).execute().use { resp ->
+                if (plain) {
+                    val o = JSONObject(resp.body!!.string())
+                    val text = o.optString("answer").ifBlank { o.optString("error") }
+                    android.util.Log.i(TAG, "plain answer (${text.length} chars)")
+                    return if (text.isBlank()) "(the model returned nothing)" else text
+                }
                 var answer = ""
                 resp.body!!.source().use { src ->
                     while (!src.exhausted()) {
