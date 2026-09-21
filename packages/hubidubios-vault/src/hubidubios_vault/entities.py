@@ -73,6 +73,9 @@ class Note(Entity):
     # A note can be dated too — a reference you need in hand on a given day is
     # as time-bound as a task, and the Next view is what surfaces both.
     due: str | None = None
+    # What the agent made of this note, kept so it is there next time rather
+    # than regenerated (and paid for) on every look.
+    review: str | None = None
 
     def __post_init__(self):
         self.type = "note"

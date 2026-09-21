@@ -70,6 +70,7 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> Note | None:
         media_bytes=int(fm["media_bytes"]) if fm.get("media_bytes") else None,
         parent=str(fm["parent"]) if fm.get("parent") else None,
         due=str(fm["due"]) if fm.get("due") else None,
+        review=str(fm["review"]) if fm.get("review") else None,
     )
 
 
@@ -100,6 +101,11 @@ def render(note: Note) -> str:
         fm_lines.append(f"parent: {note.parent}")
     if note.due:
         fm_lines.append(f"due: {note.due}")
+    if note.review:
+        # A block scalar: the review is prose and will contain colons, quotes
+        # and newlines, none of which survive a bare YAML scalar.
+        fm_lines.append("review: |-")
+        fm_lines += [f"  {line}" for line in note.review.split("\n")]
     if note.tags:
         fm_lines.append(f"tags: [{', '.join(note.tags)}]")
     fm_lines.append(_FM_DELIM)

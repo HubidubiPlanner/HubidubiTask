@@ -136,6 +136,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    /** Keep the agent's review on the item so opening it again is free. */
+    fun setReview(id: String, text: String?) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().setReview(id, text) }
+        refresh()
+    }
+
     /** Delete an item; its attachment goes with it. */
     fun delete(id: String) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().delete(id) }

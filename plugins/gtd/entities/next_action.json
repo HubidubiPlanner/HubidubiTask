@@ -83,6 +83,13 @@
         "null"
       ],
       "description": "id of the containing project or item; absent means top level"
+    },
+    "review": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Prose the agent wrote about this item."
     }
   }
 }

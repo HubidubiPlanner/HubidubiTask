@@ -14,6 +14,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import reviews
 from .formats import meta as _meta
 from .formats import notes_md
 
@@ -82,6 +83,18 @@ def replace_or_remove_line(path: Path, entity_id: str,
     return False
 
 
+def _store_review(d: dict, vault) -> None:
+    """Park a line entity's review in its sidecar.
+
+    A note holds its own in frontmatter; a checkbox or inbox line cannot hold
+    prose at all. "review" absent from the payload means "not sent" — an older
+    client that knows nothing about reviews must not wipe one — so only an
+    explicit empty value clears it.
+    """
+    if "review" in d:
+        reviews.write(vault, d["id"], d.get("review"))
+
+
 # ------------------------------------------------------------- upserts
 
 def _checkbox_upsert(vault, d: dict, default_path: Path,
@@ -100,6 +113,7 @@ def _checkbox_upsert(vault, d: dict, default_path: Path,
                     indent = cb.group(1)
                     break
         if replace_or_remove_line(path, d["id"], render_task_line(d, indent)):
+            _store_review(d, vault)
             return path
     path = default_path
     if path.exists():
@@ -110,6 +124,7 @@ def _checkbox_upsert(vault, d: dict, default_path: Path,
         path.parent.mkdir(parents=True, exist_ok=True)
         content = f"---\nproject: {path.stem}\n---\n\n" if project_header else ""
     path.write_text(content + render_task_line(d) + "\n", encoding="utf-8")
+    _store_review(d, vault)
     return path
 
 
@@ -185,6 +200,7 @@ def upsert_inbox(vault, d: dict, existing_rel: str | None = None) -> Path:
         path = vault.root / existing_rel
         if replace_or_remove_line(path, d["id"], render_inbox_line(d)):
             _materialize_inbox_media(vault, d)
+            _store_review(d, vault)
             return path
     date = d.get("date") or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     path = vault.inbox_dir / f"{date}.md"
@@ -192,6 +208,7 @@ def upsert_inbox(vault, d: dict, existing_rel: str | None = None) -> Path:
     with open(path, "a", encoding="utf-8") as f:
         f.write(render_inbox_line(d) + "\n")
     _materialize_inbox_media(vault, d)
+    _store_review(d, vault)
     return path
 
 
@@ -256,7 +273,8 @@ def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
                 created=d.get("created"), kind=d.get("kind") or "text",
                 media=media_rel, media_sha256=d.get("media_sha256"),
                 media_mime=d.get("media_mime"), media_bytes=d.get("media_bytes"),
-                parent=d.get("parent"), due=d.get("due"))
+                parent=d.get("parent"), due=d.get("due"),
+                review=d.get("review"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(notes_md.render(note), encoding="utf-8")
 
@@ -368,4 +386,6 @@ def delete(vault, entity_type: str, entity_id: str,
             media.unlink(missing_ok=True)
         except OSError:
             pass
+    # The review belongs to the item, so it goes with it.
+    reviews.remove(vault, entity_id)
     return path

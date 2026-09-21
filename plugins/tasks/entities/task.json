@@ -2,17 +2,67 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "task",
   "type": "object",
-  "required": ["id", "updated", "type", "text", "done", "project"],
+  "required": [
+    "id",
+    "updated",
+    "type",
+    "text",
+    "done",
+    "project"
+  ],
   "properties": {
-    "id": {"type": "string", "pattern": "^t_[a-z2-7]+$"},
-    "updated": {"type": "string", "format": "date-time"},
-    "type": {"const": "task"},
-    "text": {"type": "string"},
-    "done": {"type": "boolean"},
-    "project": {"type": "string"},
-    "due": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-    "done_date": {"type": ["string", "null"]},
-    "context": {"type": ["string", "null"], "pattern": "^@"},
-    "tags": {"type": "array", "items": {"type": "string"}}
+    "id": {
+      "type": "string",
+      "pattern": "^t_[a-z2-7]+$"
+    },
+    "updated": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "const": "task"
+    },
+    "text": {
+      "type": "string"
+    },
+    "done": {
+      "type": "boolean"
+    },
+    "project": {
+      "type": "string"
+    },
+    "due": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "done_date": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "context": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^@"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "review": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Prose the agent wrote about this item."
+    }
   }
 }

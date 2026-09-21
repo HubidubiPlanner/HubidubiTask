@@ -12,6 +12,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .. import reviews
 from ..vault import Vault
 from . import schema
 
@@ -122,6 +123,7 @@ def index_file(conn: sqlite3.Connection, vault: Vault, path: Path) -> int:
         conn.execute("DELETE FROM entities WHERE file = ?", (rel,))
 
         for d, line in parsed:
+            reviews.attach(vault, d)
             data = json.dumps(d, ensure_ascii=False, sort_keys=True)
             conn.execute(
                 "INSERT OR REPLACE INTO entities (id, type, updated, file, line, data)"

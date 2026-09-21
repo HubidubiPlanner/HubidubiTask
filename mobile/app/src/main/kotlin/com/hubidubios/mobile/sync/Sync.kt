@@ -211,6 +211,20 @@ class Sync private constructor(
         return true
     }
 
+    /** Keep what the agent said about an item.
+     *
+     *  Stored on the item so it is there the next time the item is opened,
+     *  rather than asked for — and paid for — again. Empty clears it. */
+    fun setReview(id: String, text: String?): Boolean {
+        val rec = store.get(id) ?: return false
+        val fields = rec.fields.toMutableMap()
+        if (text.isNullOrBlank()) fields["review"] = "" else fields["review"] = text.trim()
+        val updated = rec.copy(updated = com.hubidubios.core.nowUtc(), fields = fields)
+        store.put(updated)
+        outbox.enqueueUpsert(updated)
+        return true
+    }
+
     /** Delete an item and the attachment it owns.
      *
      *  Blobs are content-addressed, so the cached file is only removed when no
