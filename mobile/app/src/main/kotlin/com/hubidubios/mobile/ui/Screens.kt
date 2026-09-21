@@ -932,6 +932,11 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
+    val firstFreeId = remember(nodes) { nodes.firstOrNull { it.isFree }?.id }
+    val today = remember {
+        val f = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        f.timeZone = java.util.TimeZone.getTimeZone("UTC"); f.format(java.util.Date())
+    }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
@@ -1046,26 +1051,47 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                             // Derived from the item size rather than picked by
-                            // eye, so the 20% gap holds if the body scale or the
+                            // eye, so the gap holds if the body scale or the
                             // device font size changes.
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.2f,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.224f,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                         )
                     }
                 } else {
+                    val due = node.record.fields["due"]
+                    val imminent = Agenda.isImminent(due, today)
+                    val overdue = imminent && due!! < today
                     Row(
                         Modifier.fillMaxWidth()
                             .combinedClickable(
                                 onClick = { detailFor = node.record },
                                 onLongClick = { menuFor = node.record },
                             )
-                            .padding(start = (node.depth * 18).dp, top = 4.dp, bottom = 4.dp),
+                            .padding(
+                                start = (node.depth * 18).dp,
+                                // The loose items are their own group, so the
+                                // first one gets the same air a project gets —
+                                // otherwise it reads as the last project's.
+                                top = if (node.id == firstFreeId) 18.dp else 4.dp,
+                                bottom = 4.dp,
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Spacer(Modifier.width(18.dp))
                         Text(node.title, style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f))
+                        // Anything further out than tomorrow is noise here: this
+                        // list is for finding things, Next is for planning.
+                        if (imminent) {
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                due!!,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (overdue) MaterialTheme.colorScheme.error
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

@@ -196,3 +196,32 @@ class ProjectTreeRecordsTest {
         assertEquals(setOf("p_1", "t_1", "n_1", "i_1"), records.map { it.id }.toSet())
     }
 }
+
+class ProjectTreeFreeItemsTest {
+
+    private fun rec(id: String, type: String, fields: Map<String, String?> = emptyMap()) =
+        EntityRecord(id = id, type = type, updated = "2026-09-21T09:00:00Z", fields = fields)
+
+    @Test
+    fun `the loose items are the ones outside every project`() {
+        val nodes = ProjectTree.build(listOf(
+            rec("p_1", "project", mapOf("title" to "Roof")),
+            rec("n_1", "note", mapOf("title" to "quote", "parent" to "p_1")),
+            rec("n_2", "note", mapOf("title" to "loose")),
+        ))
+
+        assertEquals(listOf("n_2"), nodes.filter { it.isFree }.map { it.id })
+        // A project is a container, never a loose item, however it is listed.
+        assertTrue(nodes.none { it.isProject && it.isFree })
+    }
+
+    @Test
+    fun `with no projects at all every item is loose`() {
+        val nodes = ProjectTree.build(listOf(
+            rec("n_1", "note", mapOf("title" to "a")),
+            rec("i_1", "inbox_item", mapOf("text" to "b")),
+        ))
+
+        assertEquals(2, nodes.count { it.isFree })
+    }
+}
