@@ -446,10 +446,12 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("HubidubiOS", fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(4.dp))
-        StatusDot(state.paired, if (state.paired) "sync paired" else "local only")
-        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("HubidubiOS", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(8.dp))
+            StatusDot(state.paired)
+        }
+        Spacer(Modifier.height(20.dp))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             RoundCaptureButton("Text", Icons.Filled.Edit) {
@@ -494,12 +496,6 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save") }
         }
 
-        Spacer(Modifier.height(24.dp))
-        Text(
-            "Captures land in Projects; dated ones show up in Next.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -990,14 +986,8 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Spacer(Modifier.width(18.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(node.title, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                if (node.isNote) "note" else "task",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        Text(node.title, style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f))
                     }
                 }
             }

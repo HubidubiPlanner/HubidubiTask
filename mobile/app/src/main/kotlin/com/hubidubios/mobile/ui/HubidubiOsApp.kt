@@ -77,7 +77,13 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
 @Composable
 fun StatusDot(connected: Boolean, label: String) {
     Row {
-        Text("● ", color = if (connected) Color(0xFF22AA66) else Color(0xFF999999))
-        Text(label)
+        StatusDot(connected)
+        Text(" $label")
     }
+}
+
+/** Just the dot. Beside a title, "sync paired" only restates what green says. */
+@Composable
+fun StatusDot(connected: Boolean) {
+    Text("●", color = if (connected) Color(0xFF22AA66) else Color(0xFF999999))
 }
