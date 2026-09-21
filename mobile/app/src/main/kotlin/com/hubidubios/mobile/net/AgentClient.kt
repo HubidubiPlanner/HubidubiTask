@@ -53,7 +53,7 @@ class AgentClient(private val server: PairedServer) {
                        models)
             }
         } catch (e: Exception) {
-            android.util.Log.w(TAG, "health probe failed for ${'$'}{server.baseUrl}", e)
+            android.util.Log.w(TAG, "health probe failed for ${server.baseUrl}", e)
             Health(false, null, emptyList())
         }
     }
@@ -149,23 +149,23 @@ class AgentClient(private val server: PairedServer) {
                                 // inference server. Not an exception, so it was
                                 // previously invisible to logcat.
                                 val msg = e.optString("error")
-                                android.util.Log.w(TAG, "agent returned an error: ${'$'}msg")
-                                return "error: ${'$'}msg"
+                                android.util.Log.w(TAG, "agent returned an error: $msg")
+                                return "error: $msg"
                             }
                         }
                     }
                 }
                 if (answer.isEmpty()) {
                     android.util.Log.w(TAG, "agent stream ended with no answer " +
-                        "(HTTP ${'$'}{resp.code}) — the model produced nothing")
+                        "(HTTP ${resp.code}) — the model produced nothing")
                     "(no answer)"
                 } else {
-                    android.util.Log.i(TAG, "agent answered (${'$'}{answer.length} chars)")
+                    android.util.Log.i(TAG, "agent answered (${answer.length} chars)")
                     answer
                 }
             }
         } catch (e: java.net.SocketTimeoutException) {
-            android.util.Log.w(TAG, "ask timed out after ${'$'}{ASK_TIMEOUT_S}s", e)
+            android.util.Log.w(TAG, "ask timed out after ${ASK_TIMEOUT_S}s", e)
             "The agent did not answer in time. If the model was cold it may " +
                 "still be loading — try again in a moment."
         } catch (e: Exception) {
