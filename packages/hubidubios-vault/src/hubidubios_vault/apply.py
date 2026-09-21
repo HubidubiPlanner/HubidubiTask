@@ -216,6 +216,9 @@ def _materialize_inbox_media(vault, d: dict) -> None:
 
 
 _MIME_EXT = {
+    "application/pdf": "pdf", "text/plain": "txt", "text/markdown": "md",
+    "application/msword": "doc", "text/csv": "csv",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
     "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
     "image/heic": "heic", "image/gif": "gif",
     "audio/mp4": "m4a", "audio/m4a": "m4a", "audio/aac": "m4a",

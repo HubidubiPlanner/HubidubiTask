@@ -63,7 +63,8 @@ def cmd_capture(vault: Vault, args) -> int:
         data = src.read_bytes()
         media_mime = mimetypes.guess_type(str(src))[0] or "application/octet-stream"
         kind = ("audio" if media_mime.startswith("audio/")
-                else "image" if media_mime.startswith("image/") else "text")
+                else "image" if media_mime.startswith("image/")
+                else "document")
         dest = vault.inbox_dir / "media" / f"{item_id}{src.suffix or '.bin'}"
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)

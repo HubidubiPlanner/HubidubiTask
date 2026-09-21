@@ -34,7 +34,8 @@
       "enum": [
         "text",
         "image",
-        "audio"
+        "audio",
+        "document"
       ]
     },
     "media": {

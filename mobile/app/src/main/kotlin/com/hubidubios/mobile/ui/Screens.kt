@@ -63,6 +63,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
@@ -278,6 +279,15 @@ private fun AnalysisSheet(
     }
 }
 
+/** A picked file's display name, for the item's title. */
+private fun documentNameOf(context: android.content.Context, uri: android.net.Uri): String {
+    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+        val i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+        if (i >= 0 && c.moveToFirst()) return c.getString(i)
+    }
+    return uri.lastPathSegment ?: ("Document " + shortStamp())
+}
+
 private fun shortStamp(): String =
     java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
 
@@ -321,6 +331,16 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             if (bytes != null)
                 pending = PendingCapture("image", "Photo " + shortStamp(), bytes, mime)
+        }
+    }
+    val pickDocument = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val mime = context.contentResolver.getType(uri) ?: "application/octet-stream"
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            val name = documentNameOf(context, uri)
+            if (bytes != null)
+                pending = PendingCapture("document", name, bytes, mime)
         }
     }
     val cameraFile = remember { mutableStateOf<File?>(null) }
@@ -391,6 +411,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
                         when (p.kind) {
                             "image" -> "Photo — act on it, or keep it as a note."
                             "audio" -> "Voice memo — act on it, or keep it as a note."
+                            "document" -> "${p.text} — act on it, or keep it as a note."
                             else -> p.text
                         }
                     )
@@ -404,7 +425,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             confirmButton = {
                 Button(onClick = {
                     when (p.kind) {
-                        "image" -> vm.captureImage(p.bytes!!, p.mime, p.text, captureDue)
+                        "image", "document" -> vm.captureImage(p.bytes!!, p.mime, p.text, captureDue)
                         "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text, captureDue)
                         else -> vm.capture(p.text, captureDue)
                     }
@@ -414,7 +435,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             dismissButton = {
                 OutlinedButton(onClick = {
                     when (p.kind) {
-                        "image" -> vm.noteImage(p.bytes!!, p.mime, p.text, captureDue)
+                        "image", "document" -> vm.noteImage(p.bytes!!, p.mime, p.text, captureDue)
                         "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text, captureDue)
                         else -> vm.noteText(p.text, captureDue)
                     }
@@ -431,13 +452,24 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         Spacer(Modifier.height(16.dp))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            RoundCaptureButton("Text", Icons.Filled.Edit) { textMode = !textMode; showImageChoice = false }
-            RoundCaptureButton("Image", Icons.Filled.Image) { showImageChoice = !showImageChoice; textMode = false }
+            RoundCaptureButton("Text", Icons.Filled.Edit) {
+                textMode = !textMode; showImageChoice = false
+            }
+            RoundCaptureButton("Image", Icons.Filled.Image) {
+                showImageChoice = !showImageChoice; textMode = false
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             RoundCaptureButton(if (recording) "Stop" else "Audio", Icons.Filled.Mic) {
                 if (recording) stopRecording()
                 else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                     == PackageManager.PERMISSION_GRANTED) startRecording()
                 else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+            RoundCaptureButton("Document", Icons.Filled.Description) {
+                textMode = false; showImageChoice = false
+                pickDocument.launch("*/*")
             }
         }
         if (recording) Text("● recording… tap Stop", Modifier.padding(top = 8.dp))
@@ -938,8 +970,12 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                         Text(
                             node.title,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            // Derived from the item size rather than picked by
+                            // eye, so the 20% gap holds if the body scale or the
+                            // device font size changes.
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.2f,
+                            style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                         )
                     }

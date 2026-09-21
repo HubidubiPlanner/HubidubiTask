@@ -62,7 +62,7 @@ class Note(Entity):
     # A note is one of three kinds. text = body only; image/audio carry an
     # attachment: a plain file in notes/ referenced by relative path + SHA-256,
     # whose bytes move over the sync blob channel (never inside the entity).
-    kind: str = "text"  # "text" | "image" | "audio"
+    kind: str = "text"  # "text" | "image" | "audio" | "document"
     media: str | None = None        # vault-relative path, e.g. notes/2026/09/x.jpg
     media_sha256: str | None = None
     media_mime: str | None = None
@@ -88,7 +88,7 @@ class InboxItem(Entity):
     # vault referenced by relative path + SHA-256, whose bytes travel over the
     # sync blob channel and never inside the entity. `text` stays the human
     # description, so the inbox is still readable and clarifiable as a list.
-    kind: str = "text"  # "text" | "image" | "audio"
+    kind: str = "text"  # "text" | "image" | "audio" | "document"
     media: str | None = None        # vault-relative path, e.g. inbox/media/x.jpg
     media_sha256: str | None = None
     media_mime: str | None = None
