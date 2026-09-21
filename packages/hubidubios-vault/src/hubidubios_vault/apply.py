@@ -56,6 +56,8 @@ def render_inbox_line(d: dict) -> str:
         md["mime"] = d["media_mime"]
     if d.get("media_bytes") is not None:
         md["bytes"] = str(d["media_bytes"])
+    if d.get("due"):
+        md["due"] = d["due"]
     if d.get("updated"):
         md["updated"] = d["updated"]
     return f"- {d.get('time') or '00:00'} {d['text']}  {_meta.render(md)}"
@@ -251,7 +253,7 @@ def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
                 created=d.get("created"), kind=d.get("kind") or "text",
                 media=media_rel, media_sha256=d.get("media_sha256"),
                 media_mime=d.get("media_mime"), media_bytes=d.get("media_bytes"),
-                parent=d.get("parent"))
+                parent=d.get("parent"), due=d.get("due"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(notes_md.render(note), encoding="utf-8")
 

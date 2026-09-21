@@ -70,6 +70,9 @@ class Note(Entity):
     # The project this note belongs to, if any. Projects are flat containers of
     # notes and tasks; a note without a parent sits at the top level.
     parent: str | None = None
+    # A note can be dated too — a reference you need in hand on a given day is
+    # as time-bound as a task, and the Next view is what surfaces both.
+    due: str | None = None
 
     def __post_init__(self):
         self.type = "note"

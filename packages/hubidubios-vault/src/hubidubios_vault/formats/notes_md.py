@@ -69,6 +69,7 @@ def parse_file(text: str, path: Path, file_mtime_rfc3339: str) -> Note | None:
         media_mime=str(fm["media_mime"]) if fm.get("media_mime") else None,
         media_bytes=int(fm["media_bytes"]) if fm.get("media_bytes") else None,
         parent=str(fm["parent"]) if fm.get("parent") else None,
+        due=str(fm["due"]) if fm.get("due") else None,
     )
 
 
@@ -97,6 +98,8 @@ def render(note: Note) -> str:
         fm_lines.append(f"media_bytes: {note.media_bytes}")
     if note.parent:
         fm_lines.append(f"parent: {note.parent}")
+    if note.due:
+        fm_lines.append(f"due: {note.due}")
     if note.tags:
         fm_lines.append(f"tags: [{', '.join(note.tags)}]")
     fm_lines.append(_FM_DELIM)

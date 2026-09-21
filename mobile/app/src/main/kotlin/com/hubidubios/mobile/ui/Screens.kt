@@ -1,4 +1,5 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.hubidubios.mobile.ui
 
@@ -29,6 +30,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
@@ -122,6 +126,158 @@ private fun ConfirmDelete(
     )
 }
 
+/**
+ * Everything you can do to one item, from a long press. Actions live here
+ * rather than as icons in the row: the lists are mostly for reading, and a row
+ * that ends in a strip of buttons reads as a toolbar instead of content.
+ */
+@Composable
+private fun ItemActionsMenu(
+    record: EntityRecord?,
+    canMove: Boolean,
+    vm: HubidubiOsViewModel,
+    onMove: () -> Unit,
+    onReview: () -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    record ?: return
+    val label = record.fields["title"] ?: record.fields["text"] ?: record.id
+    val due = record.fields["due"].orEmpty()
+    var picking by remember(record.id) { mutableStateOf(false) }
+
+    if (picking) {
+        DatePickerFor(record, vm) { picking = false; onDismiss() }
+        return
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(label, style = MaterialTheme.typography.titleSmall) },
+        text = {
+            Column {
+                if (canMove) {
+                    TextButton(onClick = { onDismiss(); onMove() },
+                        modifier = Modifier.fillMaxWidth()) {
+                        Text("Move to a project", modifier = Modifier.weight(1f))
+                    }
+                }
+                TextButton(onClick = { picking = true },
+                    modifier = Modifier.fillMaxWidth()) {
+                    Text(if (due.isBlank()) "Set a date" else "Date: $due",
+                        modifier = Modifier.weight(1f))
+                }
+                TextButton(onClick = { onDismiss(); onReview() },
+                    modifier = Modifier.fillMaxWidth()) {
+                    Text("Review with the agent", modifier = Modifier.weight(1f))
+                }
+                TextButton(onClick = { onDismiss(); onDelete() },
+                    modifier = Modifier.fillMaxWidth()) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/** Pick a date for an item. Dated items are what the Next view lists. */
+@Composable
+private fun DatePickerFor(
+    record: EntityRecord,
+    vm: HubidubiOsViewModel,
+    onDone: () -> Unit,
+) {
+    val state = rememberDatePickerState()
+    DatePickerDialog(
+        onDismissRequest = onDone,
+        confirmButton = {
+            TextButton(onClick = {
+                state.selectedDateMillis?.let { ms ->
+                    // The picker hands back UTC midnight; formatting in UTC
+                    // keeps the date the user tapped from sliding a day.
+                    val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                    fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    vm.setDue(record.id, fmt.format(java.util.Date(ms)))
+                }
+                onDone()
+            }) { Text("Set") }
+        },
+        dismissButton = {
+            Row {
+                if (!record.fields["due"].isNullOrBlank()) {
+                    TextButton(onClick = { vm.setDue(record.id, null); onDone() }) {
+                        Text("Clear")
+                    }
+                }
+                TextButton(onClick = onDone) { Text("Cancel") }
+            }
+        },
+    ) { DatePicker(state = state) }
+}
+
+/**
+ * The agent's take on one item. Chosen from the menu, so it starts working the
+ * moment it opens — asking twice (menu, then a button) for something already
+ * asked for is a step that earns nothing.
+ */
+@Composable
+private fun AnalysisSheet(
+    record: EntityRecord?,
+    connected: Boolean,
+    vm: HubidubiOsViewModel,
+    onDismiss: () -> Unit,
+) {
+    record ?: return
+    var text by remember(record.id) { mutableStateOf<String?>(null) }
+    var busy by remember(record.id) { mutableStateOf(false) }
+
+    LaunchedEffect(record.id) {
+        if (connected && text == null) {
+            busy = true
+            text = vm.ask(ReviewBrowse.analysisPrompt(record))
+            busy = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(ReviewBrowse.labelOf(record),
+            style = MaterialTheme.typography.titleSmall) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                when {
+                    !connected -> Text(
+                        "Agent not connected. Set the server in Settings.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    busy -> Text("Thinking… a cold model can take a minute.",
+                        style = MaterialTheme.typography.bodySmall)
+                    else -> Text(text.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            if (connected && !busy && text != null) {
+                TextButton(onClick = {
+                    text = null   // re-triggers the LaunchedEffect guard below
+                    busy = true
+                }) { Text("Again") }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+    // "Again" clears the text; run once more when that happens.
+    LaunchedEffect(busy) {
+        if (busy && text == null && connected) {
+            text = vm.ask(ReviewBrowse.analysisPrompt(record))
+            busy = false
+        }
+    }
+}
+
 private fun shortStamp(): String =
     java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
 
@@ -147,8 +303,16 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
     var pending by remember { mutableStateOf<PendingCapture?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
+    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
+    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
+    ItemActionsMenu(
+        record = menuFor, canMove = false, vm = vm,
+        onMove = {}, onReview = { reviewing = menuFor },
+        onDelete = { pendingDelete = menuFor }, onDismiss = { menuFor = null },
+    )
+    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -269,7 +433,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         LazyColumn(Modifier.fillMaxSize()) {
             items(state.notes) { note ->
                 Box(Modifier.fillMaxWidth().combinedClickable(
-                    onClick = {}, onLongClick = { pendingDelete = note })) {
+                    onClick = {}, onLongClick = { menuFor = note })) {
                     NoteRow(note, vm)
                 }
                 Divider()
@@ -389,22 +553,57 @@ private fun ClarifyRow(item: EntityRecord, vm: HubidubiOsViewModel) {
 
 @Composable
 fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
+    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
+    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
+    val today = remember {
+        val f = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        f.timeZone = java.util.TimeZone.getTimeZone("UTC"); f.format(java.util.Date())
+    }
+
+    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
+    ItemActionsMenu(
+        record = menuFor, canMove = false, vm = vm,
+        onMove = {}, onReview = { reviewing = menuFor },
+        onDelete = { pendingDelete = menuFor }, onDismiss = { menuFor = null },
+    )
+    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Next actions (${state.nextActions.size})", fontWeight = FontWeight.Bold)
-        LazyColumn {
-            items(state.nextActions) { a ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text(a.text())
-                        val ctx = a.fields["context"]; val due = a.fields["due"]
-                        if (ctx != null || due != null) {
-                            Text(listOfNotNull(ctx, due?.let { "due $it" }).joinToString("  "))
-                        }
+        Text("Next", style = MaterialTheme.typography.titleMedium)
+        Text("Anything with a date, soonest first",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        if (state.dated.isEmpty()) {
+            Text("Nothing dated yet. Long-press an item and set a date.",
+                style = MaterialTheme.typography.bodySmall)
+            return@Column
+        }
+        LazyColumn(Modifier.fillMaxSize()) {
+            items(state.dated, key = { it.id }) { rec ->
+                val date = rec.fields["due"].orEmpty()
+                Row(
+                    Modifier.fillMaxWidth().combinedClickable(
+                        onClick = {}, onLongClick = { menuFor = rec },
+                    ).padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(ReviewBrowse.labelOf(rec),
+                            style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            date,
+                            style = MaterialTheme.typography.labelSmall,
+                            // Overdue earns the only colour in this list.
+                            color = if (date < today) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                    OutlinedButton(onClick = { vm.markDone(a.id) }) { Text("Done") }
+                    if (rec.type == "next_action") {
+                        TextButton(onClick = { vm.markDone(rec.id) }) { Text("Done") }
+                    }
                 }
-                Divider()
             }
         }
     }
@@ -414,13 +613,17 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
 fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var kind by remember { mutableStateOf(ReviewBrowse.Kind.ITEMS) }
     var query by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf<EntityRecord?>(null) }
-    var analysis by remember { mutableStateOf<String?>(null) }
-    var analyzing by remember { mutableStateOf(false) }
+    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
-    val scope = rememberCoroutineScope()
+    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
+    ItemActionsMenu(
+        record = menuFor, canMove = false, vm = vm,
+        onMove = {}, onReview = { reviewing = menuFor },
+        onDelete = { pendingDelete = menuFor }, onDismiss = { menuFor = null },
+    )
+    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     val pool = remember(kind, state.inbox, state.nextActions, state.notes) {
         ReviewBrowse.pool(kind, state.inbox, state.nextActions, state.notes)
@@ -464,8 +667,8 @@ fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         LazyColumn(Modifier.weight(1f, fill = false)) {
             items(results, key = { it.id }) { rec ->
                 Box(Modifier.fillMaxWidth().combinedClickable(
-                    onClick = { selected = rec; analysis = null },
-                    onLongClick = { pendingDelete = rec },
+                    onClick = { reviewing = rec },
+                    onLongClick = { menuFor = rec },
                 )) {
                     if (kind == ReviewBrowse.Kind.NOTES) {
                         NoteRow(rec, vm)
@@ -475,50 +678,6 @@ fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
                     }
                 }
             }
-        }
-
-        selected?.let { rec ->
-            AlertDialog(
-                onDismissRequest = { selected = null; analysis = null },
-                title = { Text(ReviewBrowse.labelOf(rec),
-                    style = MaterialTheme.typography.titleSmall) },
-                text = {
-                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                        rec.fields["body"]?.takeIf { it.isNotBlank() }?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(12.dp))
-                        }
-                        when {
-                            analyzing -> Text("Analysing…",
-                                style = MaterialTheme.typography.bodySmall)
-                            analysis != null -> Text(analysis!!,
-                                style = MaterialTheme.typography.bodyMedium)
-                            // Say why the button is dead rather than leaving the
-                            // user tapping a greyed-out control.
-                            !state.inference.connected -> Text(
-                                "Agent not connected. Set the server in Settings.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        enabled = state.inference.connected && !analyzing,
-                        onClick = {
-                            analyzing = true; analysis = null
-                            scope.launch {
-                                analysis = vm.ask(ReviewBrowse.analysisPrompt(rec))
-                                analyzing = false
-                            }
-                        },
-                    ) { Text(if (analysis == null) "Analyse" else "Again") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { selected = null; analysis = null }) { Text("Close") }
-                },
-            )
         }
 
         // The defining GTD failure still deserves to be called out, but it is
@@ -717,9 +876,19 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
+    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
+    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
+    ItemActionsMenu(
+        record = menuFor, canMove = menuFor?.type != "project", vm = vm,
+        onMove = { val m = menuFor; moving = nodes.firstOrNull { it.id == m?.id } },
+        onReview = { reviewing = menuFor },
+        onDelete = { pendingDelete = menuFor },
+        onDismiss = { menuFor = null },
+    )
+    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     moving?.let { node ->
         val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
@@ -799,10 +968,15 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                     // without needing rules or boxes.
                     Row(
                         Modifier.fillMaxWidth()
-                            .clickable(enabled = node.hasChildren) {
-                                collapsed = if (node.id in collapsed) collapsed - node.id
-                                            else collapsed + node.id
-                            }
+                            .combinedClickable(
+                                onClick = {
+                                    if (node.hasChildren) {
+                                        collapsed = if (node.id in collapsed)
+                                            collapsed - node.id else collapsed + node.id
+                                    }
+                                },
+                                onLongClick = { menuFor = node.record },
+                            )
                             .padding(top = 18.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -825,7 +999,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                         Modifier.fillMaxWidth()
                             .combinedClickable(
                                 onClick = {},
-                                onLongClick = { pendingDelete = node.record },
+                                onLongClick = { menuFor = node.record },
                             )
                             .padding(start = (node.depth * 18).dp, top = 4.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -837,31 +1011,6 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                                 if (node.isNote) "note" else "task",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        IconButton(
-                            onClick = { moving = node },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.SwapHoriz,
-                                contentDescription = "Move to another project",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                        // Deleting still confirms: a tap target beside another
-                        // one is easy to hit by mistake, and this is the only
-                        // irreversible action in the row.
-                        IconButton(
-                            onClick = { pendingDelete = node.record },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.DeleteOutline,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }

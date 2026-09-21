@@ -134,6 +134,13 @@ class Sync private constructor(
         store.byType("next_action").filter { it.fields["done"] != "true" }
     fun projects(): List<EntityRecord> = store.byType("project")
 
+    /** Everything with a date, soonest first. Notes count: a reference you need
+     *  in hand on a given day is as time-bound as a task. */
+    fun dated(): List<EntityRecord> =
+        (store.byType("next_action") + store.byType("inbox_item") + store.byType("note"))
+            .filter { !it.fields["due"].isNullOrBlank() && it.fields["done"] != "true" }
+            .sortedBy { it.fields["due"] }
+
     /** Projects with no open next action — the defining GTD failure. */
     fun projectsWithoutNextAction(): List<EntityRecord> {
         val have = nextActions().mapNotNull { it.fields["project"] }.toSet()
@@ -180,6 +187,20 @@ class Sync private constructor(
             fields = rec.fields + ("done" to "true"))
         store.put(updated)
         outbox.enqueueUpsert(updated)
+    }
+
+    /** Put a date on an item, or clear it with null.
+     *
+     *  Dated items are what the Next view lists, so this is how something moves
+     *  from "someday" into the day it is actually due. */
+    fun setDue(id: String, due: String?): Boolean {
+        val rec = store.get(id) ?: return false
+        val fields = rec.fields.toMutableMap()
+        if (due.isNullOrBlank()) fields.remove("due") else fields["due"] = due
+        val updated = rec.copy(updated = com.hubidubios.core.nowUtc(), fields = fields)
+        store.put(updated)
+        outbox.enqueueUpsert(updated)
+        return true
     }
 
     /** Delete an item and the attachment it owns.

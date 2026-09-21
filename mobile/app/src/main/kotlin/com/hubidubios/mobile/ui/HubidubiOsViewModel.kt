@@ -30,6 +30,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val staleProjects: List<EntityRecord> = emptyList(),
         val notes: List<EntityRecord> = emptyList(),
         val projects: List<EntityRecord> = emptyList(),
+        /** Everything carrying a date, soonest first — what Next shows. */
+        val dated: List<EntityRecord> = emptyList(),
         /** Host of the paired workstation, to propose a default endpoint. */
         val workstationHost: String? = null,
     )
@@ -51,6 +53,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 staleProjects = sync.projectsWithoutNextAction(),
                 notes = sync.notes(),
                 projects = sync.projects(),
+                dated = sync.dated(),
                 inference = health(),
                 workstationHost = PairedServer.load(getApplication())?.host,
             )
@@ -126,6 +129,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
             }
             refresh()
         }
+
+    /** Date an item so it shows up in Next, or clear it with null. */
+    fun setDue(id: String, due: String?) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().setDue(id, due) }
+        refresh()
+    }
 
     /** Delete an item; its attachment goes with it. */
     fun delete(id: String) = viewModelScope.launch {
