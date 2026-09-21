@@ -127,6 +127,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
             refresh()
         }
 
+    /** Delete an item; its attachment goes with it. */
+    fun delete(id: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().delete(id) }
+        refresh()
+    }
+
     /** Create a project, optionally as a child of [parentId]. */
     fun createProject(title: String, parentId: String? = null) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().createProject(title, parentId) }

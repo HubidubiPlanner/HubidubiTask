@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.hubidubios.mobile.ui
 
 import android.content.Intent
@@ -14,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.IconButton
@@ -79,6 +82,45 @@ private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
  *  this only fills the form so Save works on arrival. */
 private const val DEFAULT_AGENT_ENDPOINT = "https://192.168.1.50:8443"
 
+/**
+ * Confirm before deleting. Long-press alone is too easy to do by accident for
+ * something irreversible, and the attachment goes with the item, so the sheet
+ * says so rather than letting the user discover it afterwards.
+ */
+@Composable
+private fun ConfirmDelete(
+    record: EntityRecord?,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    record ?: return
+    val label = record.fields["title"] ?: record.fields["text"] ?: record.id
+    val hasMedia = !record.fields["media_sha256"].isNullOrBlank()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete?", style = MaterialTheme.typography.titleSmall) },
+        text = {
+            Column {
+                Text(label, style = MaterialTheme.typography.bodyMedium)
+                if (hasMedia) {
+                    Text(
+                        "Its attachment is deleted too.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(record.id); onDismiss() }) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
 private fun shortStamp(): String =
     java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US).format(java.util.Date())
 
@@ -103,6 +145,9 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var recording by remember { mutableStateOf(false) }
     val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
     var pending by remember { mutableStateOf<PendingCapture?>(null) }
+    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
+
+    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
 
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -222,7 +267,10 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         Text("Notes (${state.notes.size})", fontWeight = FontWeight.Bold)
         LazyColumn(Modifier.fillMaxSize()) {
             items(state.notes) { note ->
-                NoteRow(note, vm)
+                Box(Modifier.fillMaxWidth().combinedClickable(
+                    onClick = {}, onLongClick = { pendingDelete = note })) {
+                    NoteRow(note, vm)
+                }
                 Divider()
             }
         }
@@ -368,7 +416,10 @@ fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var selected by remember { mutableStateOf<EntityRecord?>(null) }
     var analysis by remember { mutableStateOf<String?>(null) }
     var analyzing by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
     val scope = rememberCoroutineScope()
+
+    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
 
     val pool = remember(kind, state.inbox, state.nextActions, state.notes) {
         ReviewBrowse.pool(kind, state.inbox, state.nextActions, state.notes)
@@ -411,9 +462,10 @@ fun ReviewScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         }
         LazyColumn(Modifier.weight(1f, fill = false)) {
             items(results, key = { it.id }) { rec ->
-                Box(Modifier.fillMaxWidth().clickable {
-                    selected = rec; analysis = null
-                }) {
+                Box(Modifier.fillMaxWidth().combinedClickable(
+                    onClick = { selected = rec; analysis = null },
+                    onLongClick = { pendingDelete = rec },
+                )) {
                     if (kind == ReviewBrowse.Kind.NOTES) {
                         NoteRow(rec, vm)
                     } else {
@@ -663,7 +715,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
     var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
+    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
+
+    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
 
     moving?.let { node ->
         val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
@@ -767,6 +822,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                 } else {
                     Row(
                         Modifier.fillMaxWidth()
+                            .combinedClickable(
+                                onClick = {},
+                                onLongClick = { pendingDelete = node.record },
+                            )
                             .padding(start = (node.depth * 18).dp, top = 4.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

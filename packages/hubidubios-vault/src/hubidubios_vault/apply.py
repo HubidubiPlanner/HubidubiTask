@@ -326,13 +326,41 @@ def upsert(vault, entity_type: str, d: dict,
     return UPSERT[entity_type](vault, d, existing_rel)
 
 
+def _attachment_of(vault, entity_type: str, entity_id: str, path: Path) -> Path | None:
+    """The media file an entity owns, read before the entity is removed."""
+    if not path.exists():
+        return None
+    try:
+        if entity_type in _LINE_TYPES:
+            for line in path.read_text(encoding="utf-8").split("\n"):
+                _text, md = _meta.extract(line)
+                if md.get("id") == entity_id and md.get("media"):
+                    return vault.root / md["media"]
+        elif entity_type == "note":
+            note = notes_md.parse_file(path.read_text(encoding="utf-8"), path, "")
+            if note is not None and note.media:
+                return vault.root / note.media
+    except (OSError, ValueError):
+        return None
+    return None
+
+
 def delete(vault, entity_type: str, entity_id: str,
            existing_rel: str | None) -> Path | None:
     if not existing_rel:
         return None
     path = vault.root / existing_rel
+    # Look the attachment up first: once the line or the file is gone there is
+    # nothing left pointing at it, and the bytes would sit in the vault forever
+    # belonging to nothing.
+    media = _attachment_of(vault, entity_type, entity_id, path)
     if entity_type in _LINE_TYPES:
         replace_or_remove_line(path, entity_id, None)
     else:  # note, event, project: one entity per file
         path.unlink(missing_ok=True)
+    if media is not None:
+        try:
+            media.unlink(missing_ok=True)
+        except OSError:
+            pass
     return path

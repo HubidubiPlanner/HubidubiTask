@@ -21,7 +21,15 @@ import org.json.JSONObject
 class AgentClient(private val server: PairedServer) {
 
     private val json = "application/json".toMediaType()
-    private val client = pinnedClient(server.certFingerprint)
+
+    // Two clients, because the two jobs have opposite deadlines. A status probe
+    // must fail fast so the UI is not held up by a box that is off. Generating
+    // an answer is slow by nature — the model may still be loading, and a large
+    // one takes minutes before the first token — so OkHttp's 10s default read
+    // timeout cancels the request long before the agent has said anything.
+    private val client = pinnedClient(server.certFingerprint, readTimeoutSeconds = 15)
+    private val patientClient =
+        pinnedClient(server.certFingerprint, readTimeoutSeconds = 600)
 
     data class Health(val connected: Boolean, val server: String?, val models: List<String>)
 
@@ -115,7 +123,7 @@ class AgentClient(private val server: PairedServer) {
             .header("Authorization", "Bearer ${server.deviceToken}")
             .post(body).build()
         return try {
-            client.newCall(req).execute().use { resp ->
+            patientClient.newCall(req).execute().use { resp ->
                 var answer = ""
                 resp.body!!.source().use { src ->
                     while (!src.exhausted()) {
@@ -130,12 +138,15 @@ class AgentClient(private val server: PairedServer) {
                 }
                 answer.ifEmpty { "(no answer)" }
             }
+        } catch (e: java.net.SocketTimeoutException) {
+            "The agent did not answer in time. If the model was cold it may " +
+                "still be loading — try again in a moment."
         } catch (e: Exception) {
             "error: ${e.message}"
         }
     }
 
-    private fun pinnedClient(fingerprint: String): OkHttpClient {
+    private fun pinnedClient(fingerprint: String, readTimeoutSeconds: Long): OkHttpClient {
         val expected = fingerprint.removePrefix("sha256:").lowercase()
         val tm = object : X509TrustManager {
             override fun checkClientTrusted(c: Array<out X509Certificate>?, a: String?) {}
@@ -152,6 +163,12 @@ class AgentClient(private val server: PairedServer) {
         return OkHttpClient.Builder()
             .sslSocketFactory(ssl.socketFactory, tm)
             .hostnameVerifier { _, _ -> true }
+            // Connecting is either instant on a LAN or never; the wait that
+            // matters is for the answer.
+            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(readTimeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+            .callTimeout(0, java.util.concurrent.TimeUnit.SECONDS)   // bounded by read
             .build()
     }
 }

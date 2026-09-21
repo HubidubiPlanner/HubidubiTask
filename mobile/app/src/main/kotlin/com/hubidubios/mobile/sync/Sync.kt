@@ -182,6 +182,23 @@ class Sync private constructor(
         outbox.enqueueUpsert(updated)
     }
 
+    /** Delete an item and the attachment it owns.
+     *
+     *  Blobs are content-addressed, so the cached file is only removed when no
+     *  other item still points at the same bytes — otherwise deleting one of
+     *  two notes sharing a photo would blank the other. */
+    fun delete(id: String): Boolean {
+        val rec = store.get(id) ?: return false
+        store.put(rec.tombstone())
+        outbox.enqueueDelete(rec)
+        rec.fields["media_sha256"]?.takeIf { it.isNotBlank() }?.let { sha ->
+            val stillReferenced = (store.byType("note") + store.byType("inbox_item"))
+                .any { it.id != id && it.fields["media_sha256"] == sha }
+            if (!stillReferenced) File(blobsDir, sha).delete()
+        }
+        return true
+    }
+
     /** Create a project, optionally nested under [parentId].
      *
      *  Returns its id so the caller can reveal it in the tree. */
