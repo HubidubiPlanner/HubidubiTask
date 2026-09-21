@@ -143,11 +143,26 @@ class AgentClient(private val server: PairedServer) {
                         val e = JSONObject(line)
                         when (e.optString("event")) {
                             "answer" -> answer = e.optString("answer")
-                            "error" -> return "error: ${e.optString("error")}"
+                            "error" -> {
+                                // The agent answered, but reported a failure of
+                                // its own — usually that it cannot reach the
+                                // inference server. Not an exception, so it was
+                                // previously invisible to logcat.
+                                val msg = e.optString("error")
+                                android.util.Log.w(TAG, "agent returned an error: ${'$'}msg")
+                                return "error: ${'$'}msg"
+                            }
                         }
                     }
                 }
-                answer.ifEmpty { "(no answer)" }
+                if (answer.isEmpty()) {
+                    android.util.Log.w(TAG, "agent stream ended with no answer " +
+                        "(HTTP ${'$'}{resp.code}) — the model produced nothing")
+                    "(no answer)"
+                } else {
+                    android.util.Log.i(TAG, "agent answered (${'$'}{answer.length} chars)")
+                    answer
+                }
             }
         } catch (e: java.net.SocketTimeoutException) {
             android.util.Log.w(TAG, "ask timed out after ${'$'}{ASK_TIMEOUT_S}s", e)
