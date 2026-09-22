@@ -97,3 +97,27 @@ def test_the_fallback_says_so_when_the_model_only_reasons():
     answer = next(e for e in _agent(_Hopeless()).run_streamed("q")
                   if e["event"] == "answer")
     assert "never answered" in answer["answer"]
+
+
+def test_a_model_that_says_nothing_is_not_asked_three_times():
+    """selfhostedai logs "EOG token generated at position 0" — the model ended its
+    turn without a word. The loop used to send the same prompt twice more,
+    each on its own session with its own RAG store on the server."""
+
+    class _Silent:
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, messages, json_mode=True):
+            self.calls += 1
+            return "" if json_mode else "I can answer in prose."
+
+        def health(self):
+            return {"connected": True, "server": "test", "models": []}
+
+    client = _Silent()
+    answer = next(e for e in _agent(client).run_streamed("q") if e["event"] == "answer")
+
+    assert answer["answer"] == "I can answer in prose."
+    # One contract attempt that came back empty, then straight to prose.
+    assert client.calls == 2
