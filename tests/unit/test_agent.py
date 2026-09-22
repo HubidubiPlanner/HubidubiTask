@@ -92,12 +92,29 @@ def test_schema_violation_fed_back(agent_env):
     assert "invalid" in retry_prompt.lower()
 
 
-def test_exhausted_retries_gives_up(agent_env):
+def test_exhausted_retries_fall_back_to_prose(agent_env):
+    """A model that cannot emit the JSON contract can still answer the question.
+
+    Telling the user "I couldn't produce a valid response" was a refusal the
+    model never made — reasoning-wrapped models routinely fail the contract and
+    answer the question perfectly well in prose.
+    """
     vault, make = agent_env
-    client = ScriptedClient(["nope", "still nope", "nope again"])
+    client = ScriptedClient(["nope", "still nope", "nope again",
+                             "A roof leak needs a roofer."])
     agent, conn, _ = make(client)
+
     result = agent.run("hi")
-    assert "couldn't produce a valid response" in result["answer"]
+
+    assert result["answer"] == "A roof leak needs a roofer."
+    assert result["events"][-1]["plain_fallback"] is True
+
+
+def test_a_model_that_cannot_be_reached_at_all_says_so(agent_env):
+    vault, make = agent_env
+    agent, conn, _ = make(ScriptedClient(["nope", "still nope", "nope again"]))
+
+    assert "could not be reached" in agent.run("hi")["answer"]
 
 
 def test_turn_cap_forces_answer(agent_env):

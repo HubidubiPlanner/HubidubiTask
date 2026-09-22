@@ -43,3 +43,57 @@ def test_json_hidden_behind_reasoning_now_parses():
 
 def test_a_reply_that_is_only_reasoning_yields_nothing_to_parse():
     assert _parse_action("<think>no idea</think>") is None
+
+
+class _ProseOnlyClient:
+    """A model that cannot emit the JSON contract — reasoning-wrapped models
+    routinely cannot — but answers perfectly well in prose."""
+
+    def __init__(self):
+        self.json_modes: list[bool] = []
+
+    def complete(self, messages, json_mode=True):
+        self.json_modes.append(json_mode)
+        if json_mode:
+            return "<think>the user wants to know about roofs</think>"
+        return "A roof leak needs a roofer, and soon."
+
+    def health(self):
+        return {"connected": True, "server": "test", "models": ["test"]}
+
+
+def _agent(client):
+    from unittest.mock import MagicMock
+
+    from hubidubios_agent.loop import Agent
+
+    agent = Agent.__new__(Agent)   # no registry, no sandbox: only the loop here
+    agent.client = client
+    agent.log_file = None
+    agent.system_prompt = "system"
+    agent.skills = {}
+    agent.vault = MagicMock()
+    agent.conn = MagicMock()
+    return agent
+
+
+def test_a_model_that_cannot_do_json_still_answers():
+    client = _ProseOnlyClient()
+
+    events = list(_agent(client).run_streamed("what about the roof?"))
+
+    answer = next(e for e in events if e["event"] == "answer")
+    assert answer["answer"] == "A roof leak needs a roofer, and soon."
+    assert answer["plain_fallback"] is True
+    # The retry loop asked for JSON, and only the fallback dropped it.
+    assert client.json_modes[-1] is False
+
+
+def test_the_fallback_says_so_when_the_model_only_reasons():
+    class _Hopeless(_ProseOnlyClient):
+        def complete(self, messages, json_mode=True):
+            return "<think>still thinking"
+
+    answer = next(e for e in _agent(_Hopeless()).run_streamed("q")
+                  if e["event"] == "answer")
+    assert "never answered" in answer["answer"]

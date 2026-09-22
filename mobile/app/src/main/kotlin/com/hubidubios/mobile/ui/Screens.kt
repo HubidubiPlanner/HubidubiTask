@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.Manifest
+import android.speech.RecognizerIntent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
@@ -68,6 +69,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.ui.Alignment
@@ -752,24 +754,56 @@ fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var answer by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val online = state.paired && state.inference.connected
+
+    // Dictation uses the phone's own recogniser: a spoken question is text by
+    // the time it leaves the device, so nothing new travels and nothing new
+    // has to run on the workstation.
+    val dictate = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val said = result.data
+            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            ?.firstOrNull()
+        if (!said.isNullOrBlank()) query = if (query.isBlank()) said else "$query $said"
+    }
+    fun listen() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Ask the agent")
+        runCatching { dictate.launch(intent) }
+            .onFailure { answer = "No speech recogniser on this phone." }
+    }
+    fun send() {
+        val q = query.trim()
+        if (q.isNotBlank()) scope.launch { answer = "…"; answer = vm.ask(q) }
+    }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Agent chat", fontWeight = FontWeight.Bold)
         if (!online) {
             Text("Online only — needs the workstation and a connected inference server.")
         }
-        OutlinedTextField(
-            value = query, onValueChange = { query = it },
-            label = { Text("Ask") }, enabled = online,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Button(
-            enabled = online && query.isNotBlank(),
-            onClick = { scope.launch { answer = "…"; answer = vm.ask(query.trim()) } },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        ) { Text("Send") }
+        // Ask, speak, send — one row, in that order, because the question is
+        // the thing and the two ways of finishing it belong next to it.
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = query, onValueChange = { query = it },
+                label = { Text("Ask") }, enabled = online,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = { listen() }, enabled = online) {
+                Icon(Icons.Filled.Mic, contentDescription = "Dictate")
+            }
+            IconButton(onClick = { send() }, enabled = online && query.isNotBlank()) {
+                Icon(Icons.Filled.Send, contentDescription = "Send")
+            }
+        }
         Spacer(Modifier.height(16.dp))
-        if (answer.isNotEmpty()) Card(Modifier.fillMaxWidth()) {
-            Text(answer, Modifier.padding(12.dp))
+        // No card: the answer is the page, not something sitting on it.
+        if (answer.isNotEmpty()) {
+            Text(answer, style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()))
         }
     }
 }
