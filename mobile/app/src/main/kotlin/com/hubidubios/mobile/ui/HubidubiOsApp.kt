@@ -85,5 +85,5 @@ fun StatusDot(connected: Boolean, label: String) {
 /** Just the dot. Beside a title, "sync paired" only restates what green says. */
 @Composable
 fun StatusDot(connected: Boolean) {
-    Text("●", color = if (connected) Color(0xFF22AA66) else Color(0xFF999999))
+    Text("●", color = if (connected) Color(0xFF6F8A5A) else Color(0xFF848072))
 }
