@@ -4,75 +4,160 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import com.hubidubios.mobile.R
 
-// The palette: five earth tones, dark to light. Everything below is one of
+// The palette: five earth tones, dark to light. Every colour below is one of
 // these or a lighter/darker step of one, so the app reads as a single family.
-private val Moss = Color(0xFF56594D)
-private val Sage = Color(0xFF848072)
-private val Clay = Color(0xFFB4997E)
-private val Sand = Color(0xFFCFC2AB)
-private val Cream = Color(0xFFD3C9AF)
+//   Moss #56594D · Sage #848072 · Clay #B4997E · Sand #CFC2AB · Cream #D3C9AF
+//
+// Light is "Piasek": sand paper, clay accent. Dark is "Mech": moss taken nearly
+// to black, cream ink, clay accent. Both keep text at 4.5:1 or better.
 
-// Clay is the only warm tone, so it is the accent. It marks structure —
-// which project a row belongs to — without shouting; on light paper it is
-// taken a step darker so accent text still clears 4.5:1.
-private val ClayDeep = Color(0xFF7A624C)
-
-// Ink is Moss taken nearly to black, so text stays in the same olive family.
-private val InkLight = Color(0xFF2E3028)
-
-// Paper, not white: a flat off-tone keeps large text blocks from glaring, and
-// surfaces sit on it without needing borders or elevation to be legible.
-// Light paper is Cream lifted; dark paper is Moss pushed down.
-private val PaperLight = Color(0xFFF4F0E6)
-private val PaperDark = Color(0xFF1C1D18)
-
-// Sage taken a step darker/lighter so secondary text is still readable.
-private val MutedLight = Color(0xFF65625A)
-private val MutedDark = Color(0xFF9A9686)
-
-private val Light = lightColorScheme(
-    primary = ClayDeep,
-    onPrimary = PaperLight,
-    secondary = Moss,
-    onSecondary = PaperLight,
-    secondaryContainer = Sand,
-    onSecondaryContainer = InkLight,
-    tertiary = Sage,
-    background = PaperLight,
-    onBackground = InkLight,
-    surface = PaperLight,
-    onSurface = InkLight,
-    surfaceVariant = Color(0xFFE8E1D0),
-    onSurfaceVariant = MutedLight,
-    outline = Sand,
-    outlineVariant = Cream,
-    error = Color(0xFF9B3A32),          // brick, not fire-engine
+/**
+ * The roles Material's scheme has no name for. Screens read these through
+ * [HubidubiOsTheme.colors] rather than hard-coding hex, so light and dark stay
+ * one decision each.
+ */
+@Immutable
+data class AppColors(
+    val paper: Color,      // the page
+    val raised: Color,     // cards and grouped rows sitting on the page
+    val line: Color,       // hairlines between rows, card edges
+    val ink: Color,        // body text
+    val muted: Color,      // secondary text
+    val accent: Color,     // project names, links, selected tab
+    val frame: Color,      // outlines of secondary buttons and fields
+    val glyph: Color,      // small row glyphs, dashed "optional" outlines
+    val well: Color,       // thumbnail and placeholder fill
+    val button: Color,     // filled buttons
+    val onButton: Color,
+    val onButtonMuted: Color,
+    val nav: Color,        // bottom bar
+    val danger: Color,
+    val ok: Color,         // "connected", "synced"
 )
 
-private val Dark = darkColorScheme(
-    primary = Clay,
-    onPrimary = PaperDark,
-    secondary = Sand,
-    onSecondary = PaperDark,
-    secondaryContainer = Moss,
-    onSecondaryContainer = Cream,
-    tertiary = Sage,
-    background = PaperDark,
-    onBackground = Cream,
-    surface = PaperDark,
-    onSurface = Cream,
-    surfaceVariant = Color(0xFF2A2C25),
-    onSurfaceVariant = MutedDark,
-    outline = Moss,
-    outlineVariant = Color(0xFF3A3C33),
-    error = Color(0xFFC98078),
+private val Piasek = AppColors(
+    paper = Color(0xFFE9E1CF),
+    raised = Color(0xFFF5F0E4),
+    line = Color(0xFFCFC2AB),
+    ink = Color(0xFF2E3028),
+    muted = Color(0xFF5E5B52),
+    accent = Color(0xFF7A624C),
+    frame = Color(0xFF56594D),
+    glyph = Color(0xFFB4997E),
+    well = Color(0xFFCFC2AB),
+    button = Color(0xFF7A624C),
+    onButton = Color(0xFFF8F4EB),
+    onButtonMuted = Color(0xFFE8DCCB),
+    nav = Color(0xFFDDD3BC),
+    danger = Color(0xFF9B3A32),          // brick, not fire-engine
+    ok = Color(0xFF5F7A4C),
 )
+
+private val Mech = AppColors(
+    paper = Color(0xFF1C1D18),
+    raised = Color(0xFF25271F),
+    line = Color(0xFF3A3C33),
+    ink = Color(0xFFD3C9AF),
+    muted = Color(0xFF9A9686),
+    accent = Color(0xFFB4997E),
+    frame = Color(0xFF848072),
+    glyph = Color(0xFF56594D),
+    well = Color(0xFF3A3C33),
+    button = Color(0xFFB4997E),
+    onButton = Color(0xFF1C1D18),
+    onButtonMuted = Color(0xFF3A3129),
+    nav = Color(0xFF151612),
+    danger = Color(0xFFD08A80),
+    ok = Color(0xFF8FA877),
+)
+
+private fun schemeOf(c: AppColors, dark: Boolean) = if (dark) darkColorScheme(
+    primary = c.button, onPrimary = c.onButton,
+    primaryContainer = c.well, onPrimaryContainer = c.ink,
+    secondary = c.frame, onSecondary = c.paper,
+    secondaryContainer = c.well, onSecondaryContainer = c.ink,
+    tertiary = c.accent,
+    background = c.paper, onBackground = c.ink,
+    surface = c.paper, onSurface = c.ink,
+    surfaceVariant = c.raised, onSurfaceVariant = c.muted,
+    surfaceContainerLowest = c.paper, surfaceContainerLow = c.raised,
+    surfaceContainer = c.raised, surfaceContainerHigh = c.raised,
+    surfaceContainerHighest = c.line,
+    outline = c.frame, outlineVariant = c.line,
+    error = c.danger,
+) else lightColorScheme(
+    primary = c.button, onPrimary = c.onButton,
+    primaryContainer = c.well, onPrimaryContainer = c.ink,
+    secondary = c.frame, onSecondary = c.paper,
+    secondaryContainer = c.well, onSecondaryContainer = c.ink,
+    tertiary = c.accent,
+    background = c.paper, onBackground = c.ink,
+    surface = c.paper, onSurface = c.ink,
+    surfaceVariant = c.raised, onSurfaceVariant = c.muted,
+    surfaceContainerLowest = c.raised, surfaceContainerLow = c.raised,
+    surfaceContainer = c.raised, surfaceContainerHigh = c.raised,
+    surfaceContainerHighest = c.line,
+    outline = c.frame, outlineVariant = c.line,
+    error = c.danger,
+)
+
+// A serif for screen titles only, over a plain sans for everything read:
+// the title says where you are, the sans carries the content. Dates and
+// addresses are set in mono so they line up in a column.
+private val Sans = FontFamily(
+    Font(R.font.plex_sans_regular, FontWeight.Normal),
+    Font(R.font.plex_sans_medium, FontWeight.Medium),
+    Font(R.font.plex_sans_semibold, FontWeight.SemiBold),
+    Font(R.font.plex_sans_semibold, FontWeight.Bold),
+)
+private val Serif = FontFamily(Font(R.font.source_serif_semibold, FontWeight.SemiBold))
+val Mono = FontFamily(Font(R.font.plex_mono_regular, FontWeight.Normal))
+
+private val AppTypography = Typography().let { t ->
+    fun TextStyle.sans() = copy(fontFamily = Sans)
+    Typography(
+        displayLarge = t.displayLarge.sans(), displayMedium = t.displayMedium.sans(),
+        displaySmall = t.displaySmall.sans(),
+        headlineLarge = TextStyle(fontFamily = Serif, fontWeight = FontWeight.SemiBold,
+            fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.01).em),
+        headlineMedium = TextStyle(fontFamily = Serif, fontWeight = FontWeight.SemiBold,
+            fontSize = 24.sp, lineHeight = 29.sp),
+        headlineSmall = TextStyle(fontFamily = Serif, fontWeight = FontWeight.SemiBold,
+            fontSize = 22.sp, lineHeight = 27.sp),
+        titleLarge = t.titleLarge.sans(),
+        titleMedium = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+            fontSize = 17.sp, lineHeight = 22.sp),
+        titleSmall = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp, lineHeight = 21.sp),
+        bodyLarge = TextStyle(fontFamily = Sans, fontSize = 16.sp, lineHeight = 24.sp),
+        bodyMedium = TextStyle(fontFamily = Sans, fontSize = 16.sp, lineHeight = 22.sp),
+        bodySmall = TextStyle(fontFamily = Sans, fontSize = 13.sp, lineHeight = 19.sp),
+        labelLarge = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+            fontSize = 15.sp, lineHeight = 20.sp),
+        labelMedium = TextStyle(fontFamily = Sans, fontWeight = FontWeight.Medium,
+            fontSize = 12.sp, lineHeight = 16.sp),
+        // Section labels: small caps-style, tracked out.
+        labelSmall = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.08.em),
+    )
+}
 
 // Square. Rounded corners are Material's default voice; this app is a list of
 // plain text on plain paper, and hard edges suit it.
@@ -84,11 +169,23 @@ private val SquareShapes = Shapes(
     extraLarge = RoundedCornerShape(0.dp),
 )
 
+private val LocalAppColors = staticCompositionLocalOf { Piasek }
+
+object HubidubiOsTheme {
+    val colors: AppColors
+        @Composable get() = LocalAppColors.current
+}
+
 @Composable
 fun HubidubiOsTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) Dark else Light,
-        shapes = SquareShapes,
-        content = content,
-    )
+    val dark = isSystemInDarkTheme()
+    val colors = if (dark) Mech else Piasek
+    CompositionLocalProvider(LocalAppColors provides colors) {
+        MaterialTheme(
+            colorScheme = schemeOf(colors, dark),
+            typography = AppTypography,
+            shapes = SquareShapes,
+            content = content,
+        )
+    }
 }

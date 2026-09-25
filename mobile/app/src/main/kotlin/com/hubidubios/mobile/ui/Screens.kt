@@ -3,94 +3,132 @@
 
 package com.hubidubios.mobile.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.AlertDialog
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.RateReview
+import androidx.compose.material.icons.outlined.Stop
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.Divider
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import android.Manifest
-import android.speech.RecognizerIntent
-import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.media.MediaPlayer
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.hubidubios.core.EntityRecord
-import com.hubidubios.mobile.capture.AudioRecorder
 import com.hubidubios.mobile.browse.Agenda
 import com.hubidubios.mobile.browse.ItemDetail
 import com.hubidubios.mobile.browse.ReviewBrowse
+import com.hubidubios.mobile.capture.AudioRecorder
 import com.hubidubios.mobile.pairing.PairingActivity
 import com.hubidubios.mobile.tree.ProjectTree
 import java.io.File
 import kotlinx.coroutines.launch
 
-private fun EntityRecord.text() = fields["text"] ?: fields["title"] ?: id
-
 /** The agent server proposed on a fresh install. A saved setting always wins;
  *  this only fills the form so Save works on arrival. */
 private const val DEFAULT_AGENT_ENDPOINT = "https://192.168.1.50:8443"
+
+/** Task or note, at a glance: an empty box is something to do, lines are something kept. */
+@Composable
+private fun KindGlyph(record: EntityRecord) {
+    val c = HubidubiOsTheme.colors
+    if (record.type == "note")
+        Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = "Note",
+            tint = c.muted, modifier = Modifier.size(16.dp))
+    else
+        Icon(Icons.Outlined.CheckBoxOutlineBlank, contentDescription = "Task",
+            tint = c.glyph, modifier = Modifier.size(16.dp))
+}
+
+/** "Photo", "Voice memo" beside a title: the attachment reads as a property of the item. */
+@Composable
+private fun AttachmentTag(record: EntityRecord) {
+    if (record.fields["media_sha256"].isNullOrBlank()) return
+    val label = when (record.fields["kind"]) {
+        "image" -> "Photo"
+        "audio" -> "Voice memo"
+        "document" -> "Document"
+        else -> return
+    }
+    val c = HubidubiOsTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Icon(Icons.Filled.AttachFile, contentDescription = null, tint = c.muted,
+            modifier = Modifier.size(14.dp))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = c.muted)
+    }
+}
 
 /**
  * Confirm before deleting. Long-press alone is too easy to do by accident for
@@ -104,19 +142,21 @@ private fun ConfirmDelete(
     onConfirm: (String) -> Unit,
 ) {
     record ?: return
+    val c = HubidubiOsTheme.colors
     val label = record.fields["title"] ?: record.fields["text"] ?: record.id
     val hasMedia = !record.fields["media_sha256"].isNullOrBlank()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete?", style = MaterialTheme.typography.titleSmall) },
+        containerColor = c.paper,
+        title = { Text("Delete?", style = MaterialTheme.typography.headlineSmall) },
         text = {
             Column {
-                Text(label, style = MaterialTheme.typography.bodyMedium)
+                Text(label, style = MaterialTheme.typography.bodyMedium, color = c.ink)
                 if (hasMedia) {
                     Text(
                         "Its attachment is deleted too.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.muted,
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
@@ -124,10 +164,14 @@ private fun ConfirmDelete(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(record.id); onDismiss() }) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+                Text("Delete", color = c.danger, style = MaterialTheme.typography.labelLarge)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = c.ink, style = MaterialTheme.typography.labelLarge)
+            }
+        },
     )
 }
 
@@ -150,7 +194,7 @@ private fun ItemActionsMenu(
     onDismiss: () -> Unit,
 ) {
     record ?: return
-    val label = record.fields["title"] ?: record.fields["text"] ?: record.id
+    val c = HubidubiOsTheme.colors
     val due = record.fields["due"].orEmpty()
     var picking by remember(record.id) { mutableStateOf(false) }
 
@@ -158,36 +202,23 @@ private fun ItemActionsMenu(
         DatePickerFor(record, vm) { picking = false; onDismiss() }
         return
     }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(label, style = MaterialTheme.typography.titleSmall) },
-        text = {
-            Column {
-                if (canMove) {
-                    TextButton(onClick = { onDismiss(); onMove(record) },
-                        modifier = Modifier.fillMaxWidth()) {
-                        Text("Move to a project", modifier = Modifier.weight(1f))
-                    }
-                }
-                TextButton(onClick = { picking = true },
-                    modifier = Modifier.fillMaxWidth()) {
-                    Text(if (due.isBlank()) "Set a date" else "Date: $due",
-                        modifier = Modifier.weight(1f))
-                }
-                TextButton(onClick = { onDismiss(); onReview(record) },
-                    modifier = Modifier.fillMaxWidth()) {
-                    Text("Review with the agent", modifier = Modifier.weight(1f))
-                }
-                TextButton(onClick = { onDismiss(); onDelete(record) },
-                    modifier = Modifier.fillMaxWidth()) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.weight(1f))
-                }
+    AppSheet(onDismiss) {
+        SheetTitle(ReviewBrowse.labelOf(record), overline = ItemDetail.typeLabel(record))
+        if (canMove) {
+            ActionRow(Icons.AutoMirrored.Outlined.DriveFileMove, "Move to a project") {
+                onDismiss(); onMove(record)
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
+        }
+        ActionRow(Icons.Outlined.CalendarToday, if (due.isBlank()) "Set a date" else "Date",
+            meta = due.takeIf { it.isNotBlank() }?.let(::shortDate)) { picking = true }
+        ActionRow(Icons.Outlined.RateReview, "Review with the agent") {
+            onDismiss(); onReview(record)
+        }
+        ActionRow(Icons.Outlined.DeleteOutline, "Delete", color = c.danger, last = true) {
+            onDismiss(); onDelete(record)
+        }
+        SecondaryButton("Cancel", onDismiss, Modifier.fillMaxWidth().padding(top = 16.dp))
+    }
 }
 
 /** Pick a date for an item. Dated items are what the Next view lists. */
@@ -225,6 +256,16 @@ private fun DatePickerFor(
     ) { DatePicker(state = state) }
 }
 
+/** The small tracked heading inside a sheet or card: REVIEW, AGENT. */
+@Composable
+private fun Overline(text: String, color: Color, icon: ImageVector? = null) {
+    Row(verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(14.dp)) }
+        Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
 /**
  * One item, opened with a single press: what it is, when it is due, and what
  * the agent made of it last time. Reading, not editing — the long press is
@@ -237,42 +278,56 @@ private fun DetailSheet(
     onDismiss: () -> Unit,
 ) {
     record ?: return
+    val c = HubidubiOsTheme.colors
     val review = ItemDetail.reviewOf(record)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(ReviewBrowse.labelOf(record),
-            style = MaterialTheme.typography.titleSmall) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text(ItemDetail.subtitle(record),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val due = ItemDetail.dueOf(record)
+    val overdue = due != null && due < todayIso()
+    AppSheet(onDismiss) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            Overline(ItemDetail.typeLabel(record), c.accent)
+            Text(ReviewBrowse.labelOf(record), style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                due?.let {
+                    val tint = if (overdue) c.danger else c.muted
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = tint,
+                            modifier = Modifier.size(14.dp))
+                        Text("Due ${shortDate(it)}", style = MaterialTheme.typography.bodySmall,
+                            color = tint)
+                    }
+                }
                 ItemDetail.capturedAt(record)?.let {
-                    Text("Captured $it", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Captured $it", style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
-                record.fields["body"]?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 12.dp))
-                }
-                Text("Review", style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
+            }
+            record.fields["body"]?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 16.dp))
+            }
+            Column(
+                Modifier.padding(top = 20.dp).fillMaxWidth()
+                    .background(c.raised).border(1.dp, c.line)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            ) {
+                Overline("Review", c.frame, Icons.Outlined.RateReview)
                 Text(
                     review ?: "Nothing yet.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (review == null) MaterialTheme.colorScheme.onSurfaceVariant
-                            else MaterialTheme.colorScheme.onSurface,
+                    color = if (review == null) c.muted else c.ink,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { val r = record; onDismiss(); onReview(r) }) {
-                Text(if (review == null) "Review" else "Review again")
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-    )
+        }
+        Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            SecondaryButton("Close", onDismiss, Modifier.weight(1f))
+            PrimaryButton(if (review == null) "Review" else "Review again",
+                { val r = record; onDismiss(); onReview(r) },
+                Modifier.weight(1f), icon = Icons.Outlined.RateReview)
+        }
+    }
 }
 
 /**
@@ -288,6 +343,7 @@ private fun AnalysisSheet(
     onDismiss: () -> Unit,
 ) {
     record ?: return
+    val c = HubidubiOsTheme.colors
     // A review already asked for is shown as it is: the answer does not improve
     // by being bought twice, and a cold model takes a minute to say the same.
     var text by remember(record.id) { mutableStateOf(ItemDetail.reviewOf(record)) }
@@ -304,34 +360,28 @@ private fun AnalysisSheet(
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(ReviewBrowse.labelOf(record),
-            style = MaterialTheme.typography.titleSmall) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                when {
-                    !connected -> Text(
-                        "Agent not connected. Set the server in Settings.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    busy -> Text("Thinking… a cold model can take a minute.",
-                        style = MaterialTheme.typography.bodySmall)
-                    else -> Text(text.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium)
-                }
+    AppSheet(onDismiss) {
+        SheetTitle(ReviewBrowse.labelOf(record), overline = "Review")
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            when {
+                !connected -> Text(
+                    "Agent not connected. Set the server in Settings.",
+                    style = MaterialTheme.typography.bodyMedium, color = c.muted)
+                busy -> Text("Thinking… a cold model can take a minute.",
+                    style = MaterialTheme.typography.bodyMedium, color = c.muted)
+                else -> Text(text.orEmpty(), style = MaterialTheme.typography.bodyLarge)
             }
-        },
-        confirmButton = {
+        }
+        Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            SecondaryButton("Close", onDismiss, Modifier.weight(1f))
             if (connected && !busy && text != null) {
-                TextButton(onClick = {
+                PrimaryButton("Again", {
                     text = null   // re-triggers the LaunchedEffect guard below
                     busy = true
-                }) { Text("Again") }
+                }, Modifier.weight(1f), icon = Icons.Outlined.RateReview)
             }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-    )
+        }
+    }
     // "Again" clears the text; run once more when that happens.
     LaunchedEffect(busy) {
         if (busy && text == null && connected) {
@@ -368,26 +418,13 @@ private data class PendingCapture(
 @Composable
 fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     val context = LocalContext.current
+    val c = HubidubiOsTheme.colors
     var textMode by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("") }
     var showImageChoice by remember { mutableStateOf(false) }
     var recording by remember { mutableStateOf(false) }
     val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
     var pending by remember { mutableStateOf<PendingCapture?>(null) }
-    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
-    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
-    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
-    var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
-
-    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
-    ItemActionsMenu(
-        record = menuFor, canMove = false, vm = vm,
-        onMove = {}, onReview = { rec -> reviewing = rec },
-        onDelete = { rec -> pendingDelete = rec }, onDismiss = { menuFor = null },
-    )
-    DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
-        onDismiss = { detailFor = null })
-    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -465,228 +502,168 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     }
 
     pending?.let { p ->
-        AlertDialog(
-            onDismissRequest = { pending = null },
-            title = { Text("Task or note?") },
-            text = {
-                Column {
-                    Text(
+        AppSheet(onDismiss = { pending = null }) {
+            SheetTitle("Task or note?")
+            Text("Act on it, or keep it as a note.", style = MaterialTheme.typography.bodyMedium,
+                color = c.muted, modifier = Modifier.padding(bottom = 18.dp))
+            // What is being filed, so the choice is made looking at it.
+            Row(
+                Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line).padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(Modifier.size(56.dp).background(c.well), contentAlignment = Alignment.Center) {
+                    Icon(
                         when (p.kind) {
-                            "image" -> "Photo — act on it, or keep it as a note."
-                            "audio" -> "Voice memo — act on it, or keep it as a note."
-                            "document" -> "${p.text} — act on it, or keep it as a note."
-                            else -> p.text
-                        }
+                            "image" -> Icons.Outlined.Image
+                            "audio" -> Icons.Outlined.Mic
+                            "document" -> Icons.Outlined.Description
+                            else -> Icons.Outlined.Edit
+                        },
+                        contentDescription = null, tint = c.frame, modifier = Modifier.size(24.dp),
                     )
-                    TextButton(onClick = { pickingDate = true },
-                        contentPadding = PaddingValues(0.dp)) {
-                        Text(captureDue?.let { "Due $it" } ?: "Add a date",
-                            style = MaterialTheme.typography.labelLarge)
-                    }
                 }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    when (p.kind) {
-                        "image", "document" -> vm.captureImage(p.bytes!!, p.mime, p.text, captureDue)
-                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text, captureDue)
-                        else -> vm.capture(p.text, captureDue)
-                    }
-                    pending = null; captureDue = null
-                }) { Text("Task") }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = {
+                Text(p.text, style = MaterialTheme.typography.titleSmall, maxLines = 3,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            }
+            Row(
+                Modifier.padding(top = 12.dp).fillMaxWidth()
+                    .defaultMinSize(minHeight = 52.dp)
+                    .border(1.dp, c.glyph)
+                    .clickable(role = Role.Button) { pickingDate = true }
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
+                    modifier = Modifier.size(20.dp))
+                Text(captureDue?.let { "Due ${shortDate(it)}" } ?: "Add a date",
+                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                    color = c.accent, modifier = Modifier.weight(1f))
+                if (captureDue == null)
+                    Text("optional", style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
+            Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton("Note", {
                     when (p.kind) {
                         "image", "document" -> vm.noteImage(p.bytes!!, p.mime, p.text, captureDue)
                         "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text, captureDue)
                         else -> vm.noteText(p.text, captureDue)
                     }
                     pending = null; captureDue = null
-                }) { Text("Note") }
-            },
-        )
+                }, Modifier.weight(1f), icon = Icons.AutoMirrored.Filled.Notes)
+                PrimaryButton("Task", {
+                    when (p.kind) {
+                        "image", "document" -> vm.captureImage(p.bytes!!, p.mime, p.text, captureDue)
+                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text, captureDue)
+                        else -> vm.capture(p.text, captureDue)
+                    }
+                    pending = null; captureDue = null
+                }, Modifier.weight(1f), icon = Icons.Outlined.CheckBoxOutlineBlank)
+            }
+        }
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("HubidubiOS", fontWeight = FontWeight.Bold)
-            Spacer(Modifier.width(8.dp))
-            StatusDot(state.paired)
+    Column(Modifier.fillMaxSize().imePadding()) {
+        ScreenHeader("Capture", "Get it out of your head. Sort it later.") {
+            StatusChip(if (state.paired) "Synced" else "Not paired", state.paired)
         }
-        // The buttons are the screen's whole purpose, so they sit in the middle
-        // of it rather than tucked under the title — and within thumb reach.
+        // The buttons are the screen's whole purpose, so they sit low on it,
+        // within thumb reach, rather than tucked under the title.
         Spacer(Modifier.weight(1f))
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            RoundCaptureButton("Text", Icons.Filled.Edit) {
-                textMode = !textMode; showImageChoice = false
-            }
-            RoundCaptureButton("Image", Icons.Filled.Image) {
-                showImageChoice = !showImageChoice; textMode = false
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            RoundCaptureButton(if (recording) "Stop" else "Audio", Icons.Filled.Mic) {
-                if (recording) stopRecording()
-                else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                    == PackageManager.PERMISSION_GRANTED) startRecording()
-                else micPermission.launch(Manifest.permission.RECORD_AUDIO)
-            }
-            RoundCaptureButton("Document", Icons.Filled.Description) {
-                textMode = false; showImageChoice = false
-                pickDocument.launch("*/*")
-            }
-        }
-        // Balances the spacer above so the block is centred, but yields to the
-        // text field and the image choice when either is open.
-        Spacer(Modifier.weight(1f))
-        if (recording) Text("● recording… tap Stop", Modifier.padding(top = 8.dp))
-        if (showImageChoice) {
-            Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = {
-                    showImageChoice = false
-                    pickImage.launch(PickVisualMediaRequest(
-                        ActivityResultContracts.PickVisualMedia.ImageOnly))
-                }) { Text("Gallery") }
-                OutlinedButton(onClick = { showImageChoice = false; launchCamera() }) { Text("Camera") }
-            }
-        }
-        if (textMode) {
-            OutlinedTextField(value = text, onValueChange = { text = it },
-                label = { Text("Text note") },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-            Button(onClick = {
-                if (text.isNotBlank()) {
-                    pending = PendingCapture("text", text.trim()); text = ""; textMode = false
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CaptureTile("Text", "Type a thought", Icons.Outlined.Edit, primary = true,
+                    modifier = Modifier.weight(1f)) {
+                    textMode = !textMode; showImageChoice = false
                 }
-            }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save") }
+                CaptureTile("Image", "Camera or gallery", Icons.Outlined.Image,
+                    modifier = Modifier.weight(1f)) {
+                    showImageChoice = !showImageChoice; textMode = false
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CaptureTile(
+                    if (recording) "Stop" else "Audio",
+                    if (recording) "Recording… tap to stop" else "Record a memo",
+                    if (recording) Icons.Outlined.Stop else Icons.Outlined.Mic,
+                    alert = recording, modifier = Modifier.weight(1f),
+                ) {
+                    if (recording) stopRecording()
+                    else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED) startRecording()
+                    else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
+                CaptureTile("Document", "Attach a file", Icons.Outlined.Description,
+                    modifier = Modifier.weight(1f)) {
+                    textMode = false; showImageChoice = false
+                    pickDocument.launch("*/*")
+                }
+            }
+            if (showImageChoice) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SecondaryButton("Gallery", {
+                        showImageChoice = false
+                        pickImage.launch(PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }, Modifier.weight(1f), icon = Icons.Outlined.PhotoLibrary)
+                    SecondaryButton("Camera", { showImageChoice = false; launchCamera() },
+                        Modifier.weight(1f), icon = Icons.Outlined.CameraAlt)
+                }
+            }
+            if (textMode) {
+                OutlinedTextField(value = text, onValueChange = { text = it },
+                    label = { Text("Text note") }, colors = appFieldColors(),
+                    shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+                PrimaryButton("Save", {
+                    if (text.isNotBlank()) {
+                        pending = PendingCapture("text", text.trim()); text = ""; textMode = false
+                    }
+                }, Modifier.fillMaxWidth())
+            }
         }
-
+        Spacer(Modifier.height(24.dp))
     }
 }
 
+/** One way in: a large square the thumb can't miss, the label saying what it takes. */
 @Composable
-private fun RoundCaptureButton(
+private fun CaptureTile(
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    hint: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false,
+    alert: Boolean = false,
     onClick: () -> Unit,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        FilledIconButton(onClick = onClick, modifier = Modifier.size(72.dp),
-        shape = androidx.compose.ui.graphics.RectangleShape) {
-            Icon(icon, contentDescription = label, modifier = Modifier.size(32.dp))
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(label)
-    }
-}
-
-@Composable
-private fun NoteRow(note: EntityRecord, vm: HubidubiOsViewModel) {
-    val kind = note.fields["kind"] ?: "text"
-    val title = note.fields["title"] ?: "(untitled)"
-    val body = note.fields["body"].orEmpty()
-    val sha = note.fields["media_sha256"]
-    // Text is the point of this app; a photo or voice memo is an attachment on
-    // an item, not the item itself. The chip sits beside the title rather than
-    // under it, so the attachment reads as a property of the note and the body
-    // stays the next thing the eye reaches.
-    var open by remember(note.id) { mutableStateOf(false) }
-    val attached = sha != null && kind != "text"
-
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, false))
-            if (attached) {
-                TextButton(
-                    onClick = { open = !open },
-                    contentPadding = PaddingValues(start = 8.dp, end = 0.dp),
-                ) {
-                    Icon(Icons.Filled.AttachFile, contentDescription = null,
-                        modifier = Modifier.size(16.dp))
-                    Text(if (kind == "image") " Photo" else " Voice memo",
-                        style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-        if (body.isNotBlank()) {
-            Text(body, maxLines = 3, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp))
-        }
-        if (attached && open) AttachmentPreview(kind, sha!!, title, vm)
-    }
-}
-
-/** The attachment itself, shown only once the user asks for it. */
-@Composable
-private fun AttachmentPreview(
-    kind: String, sha: String, title: String, vm: HubidubiOsViewModel,
-) {
-    if (kind == "image") {
-        val bmp = remember(sha) { mutableStateOf<android.graphics.Bitmap?>(null) }
-        LaunchedEffect(sha) {
-            vm.mediaFile(sha)?.let { bmp.value = BitmapFactory.decodeFile(it.path) }
-        }
-        bmp.value?.let {
-            Image(it.asImageBitmap(), contentDescription = title,
-                modifier = Modifier.fillMaxWidth().height(200.dp).padding(top = 4.dp))
-        } ?: Text("loading…", Modifier.padding(top = 4.dp))
-    } else {
-        val scope = rememberCoroutineScope()
-        OutlinedButton(onClick = {
-            scope.launch {
-                vm.mediaFile(sha)?.let { f ->
-                    runCatching {
-                        MediaPlayer().apply {
-                            setDataSource(f.path); prepare(); start()
-                            setOnCompletionListener { release() }
-                        }
-                    }
-                }
-            }
-        }, modifier = Modifier.padding(top = 4.dp)) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = "Play")
-            Text("  Play")
-        }
-    }
-}
-
-@Composable
-private fun ClarifyRow(item: EntityRecord, vm: HubidubiOsViewModel) {
-    var expanded by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(item.text())
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { expanded = !expanded }) { Text("Clarify") }
-        }
-        if (expanded) {
-            Row(Modifier.padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("next_action", "project", "waiting_for", "someday", "trash")
-                    .forEach { kind ->
-                        FilterChip(
-                            selected = false,
-                            onClick = { vm.fileClarify(item.id, kind, item.text(), null) },
-                            label = { Text(kind.replace("_", " ")) },
-                        )
-                    }
-            }
+    val c = HubidubiOsTheme.colors
+    val bg = when { alert -> c.danger; primary -> c.button; else -> c.raised }
+    val fg = if (alert || primary) c.onButton else c.ink
+    val sub = if (alert || primary) c.onButtonMuted else c.muted
+    Column(
+        modifier.height(148.dp).background(bg)
+            .border(1.dp, if (alert || primary) bg else c.line)
+            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
+            .padding(18.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(30.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp, color = fg)
+            Text(hint, style = MaterialTheme.typography.bodySmall, color = sub)
         }
     }
 }
 
 @Composable
 fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    val c = HubidubiOsTheme.colors
     var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
     var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
-    val today = remember {
-        val f = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        f.timeZone = java.util.TimeZone.getTimeZone("UTC"); f.format(java.util.Date())
-    }
+    val today = remember { todayIso() }
     val sections = remember(state.dated, today) { Agenda.sections(state.dated, today) }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
@@ -699,58 +676,56 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         onDismiss = { detailFor = null })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Next", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader("Next", remember { todayLong() })
         if (sections.isEmpty()) {
             Text("Nothing dated. Add a date when you capture, or long-press an item.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                style = MaterialTheme.typography.bodyMedium, color = c.muted,
+                modifier = Modifier.padding(horizontal = 20.dp))
             return@Column
         }
         LazyColumn(Modifier.fillMaxSize()) {
             sections.forEach { section ->
-                item(key = "h_${section.bucket}") {
-                    Text(
-                        section.title,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.2f,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (section.bucket == Agenda.Bucket.OVERDUE)
-                            MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 18.dp, bottom = 6.dp),
-                    )
+                val overdue = section.bucket == Agenda.Bucket.OVERDUE
+                // Overdue is the one heading that asks for something, so it alone
+                // is brick; today is the accent, the rest recede.
+                val tone = when (section.bucket) {
+                    Agenda.Bucket.OVERDUE -> c.danger
+                    Agenda.Bucket.TODAY -> c.accent
+                    Agenda.Bucket.TOMORROW -> c.frame
+                    Agenda.Bucket.LATER -> c.muted
                 }
-                items(section.items, key = { it.id }) { rec ->
-                    Row(
-                        Modifier.fillMaxWidth().combinedClickable(
-                            onClick = { detailFor = rec }, onLongClick = { menuFor = rec },
-                        ).padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        // Name left, date hard right: the dates line up in a
-                        // column you can scan without reading the names.
-                        Text(ReviewBrowse.labelOf(rec),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f))
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            rec.fields["due"].orEmpty(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (section.bucket == Agenda.Bucket.OVERDUE)
-                                MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                item(key = "s_${section.bucket}") {
+                    SectionLabel(section.title, tone, section.items.size)
+                    CardGroup(border = if (overdue) c.danger else c.line) {
+                        section.items.forEachIndexed { i, rec ->
+                            ListRow(
+                                onClick = { detailFor = rec }, onLongClick = { menuFor = rec },
+                                last = i == section.items.lastIndex,
+                            ) {
+                                // Name left, date hard right: the dates line up in a
+                                // column you can scan without reading the names.
+                                Text(ReviewBrowse.labelOf(rec),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f))
+                                Text(shortDate(rec.fields["due"].orEmpty()), fontFamily = Mono,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (overdue) c.danger else c.muted)
+                            }
+                        }
                     }
                 }
             }
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }
+
 @Composable
 fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    val c = HubidubiOsTheme.colors
     var query by remember { mutableStateOf("") }
+    var asked by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val online = state.paired && state.inference.connected
@@ -775,36 +750,118 @@ fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     }
     fun send() {
         val q = query.trim()
-        if (q.isNotBlank()) scope.launch { answer = "…"; answer = vm.ask(q) }
+        if (q.isNotBlank()) {
+            asked = q; query = ""
+            scope.launch { answer = "…"; answer = vm.ask(q) }
+        }
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Agent chat", fontWeight = FontWeight.Bold)
-        if (!online) {
-            Text("Online only — needs the workstation and a connected inference server.")
+    Column(Modifier.fillMaxSize().imePadding()) {
+        val model = state.inference.models.firstOrNull()
+        ScreenHeader("Agent") {
+            StatusChip(
+                if (!online) "Offline" else if (model != null) "Online · $model" else "Online",
+                online,
+            )
         }
-        // Ask, speak, send — one row, in that order, because the question is
-        // the thing and the two ways of finishing it belong next to it.
-        Row(Modifier.fillMaxWidth().padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (!online) {
+                Text("Online only — needs the workstation and a connected inference server.",
+                    style = MaterialTheme.typography.bodyMedium, color = c.muted,
+                    modifier = Modifier.fillMaxWidth().background(c.raised)
+                        .border(1.dp, c.line).padding(14.dp))
+            }
+            if (asked.isNotEmpty()) {
+                Text(asked, style = MaterialTheme.typography.bodyMedium, color = c.onButton,
+                    modifier = Modifier.align(Alignment.End).fillMaxWidth(0.8f)
+                        .background(c.button).padding(horizontal = 14.dp, vertical = 12.dp))
+            }
+            // No card: the answer is the page, not something sitting on it.
+            if (answer.isNotEmpty()) {
+                Column {
+                    Overline("Agent", c.accent)
+                    Text(answer, style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 6.dp))
+                }
+            }
+        }
+        HorizontalDivider(color = c.line, thickness = 1.dp)
+        // Ask, speak, send — one row, in that order, docked where the thumb is.
+        Row(
+            Modifier.fillMaxWidth().background(c.raised)
+                .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             OutlinedTextField(
                 value = query, onValueChange = { query = it },
-                label = { Text("Ask") }, enabled = online,
-                modifier = Modifier.weight(1f),
+                placeholder = { Text("Ask about your projects…", color = c.muted) },
+                enabled = online, maxLines = 4, colors = appFieldColors(),
+                shape = RectangleShape, modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = { listen() }, enabled = online) {
-                Icon(Icons.Filled.Mic, contentDescription = "Dictate")
+            IconButton(onClick = { listen() }, enabled = online, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Outlined.Mic, contentDescription = "Dictate",
+                    tint = if (online) c.frame else c.line)
             }
-            IconButton(onClick = { send() }, enabled = online && query.isNotBlank()) {
-                Icon(Icons.Filled.Send, contentDescription = "Send")
+            FilledIconButton(
+                onClick = { send() }, enabled = online && query.isNotBlank(),
+                shape = RectangleShape, modifier = Modifier.size(48.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = c.button, contentColor = c.onButton,
+                    disabledContainerColor = c.line, disabledContentColor = c.muted,
+                ),
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send",
+                    modifier = Modifier.size(20.dp))
             }
         }
-        Spacer(Modifier.height(16.dp))
-        // No card: the answer is the page, not something sitting on it.
-        if (answer.isNotEmpty()) {
-            Text(answer, style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()))
+    }
+}
+
+/** A field with its label above it rather than inside: it stays readable once filled. */
+@Composable
+private fun LabeledField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    helper: String,
+    enabled: Boolean,
+    placeholder: String? = null,
+) {
+    val c = HubidubiOsTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        OutlinedTextField(
+            value = value, onValueChange = onValueChange,
+            placeholder = placeholder?.let { { Text(it, fontFamily = Mono, color = c.muted) } },
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = Mono, fontSize = 14.sp),
+            singleLine = true, enabled = enabled, colors = appFieldColors(),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth(),
+        )
+        if (helper.isNotEmpty())
+            Text(helper, style = MaterialTheme.typography.labelMedium, color = c.muted)
+    }
+}
+
+@Composable
+private fun StatusRow(label: String, value: String, good: Boolean, last: Boolean = false) {
+    val c = HubidubiOsTheme.colors
+    Column {
+        Row(
+            Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Dot(if (good) c.ok else c.muted)
+            Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Text(value, style = MaterialTheme.typography.bodySmall, color = c.muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        if (!last) HorizontalDivider(color = c.line, thickness = 1.dp)
     }
 }
 
@@ -812,6 +869,7 @@ fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
 fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val c = HubidubiOsTheme.colors
 
     // The inference endpoint lives on the workstation (it holds the URL and the
     // pinned certificate), so the phone edits it through the sync API rather
@@ -851,110 +909,111 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Text("Settings", fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        StatusDot(state.paired, if (state.paired) "Paired with workstation" else "Not paired")
-        StatusDot(state.inference.connected,
-            "Inference: " + (state.inference.server ?: "not configured"))
-        Spacer(Modifier.height(16.dp))
+    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
+        ScreenHeader("Settings")
+        SectionLabel("Connection", modifier = Modifier.padding(top = 0.dp))
+        CardGroup {
+            StatusRow("Workstation", if (state.paired) "Paired" else "Not paired", state.paired)
+            StatusRow("Inference", state.inference.server ?: "not configured",
+                state.inference.connected, last = true)
+        }
+        val openPairing = { context.startActivity(Intent(context, PairingActivity::class.java)) }
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Unpaired, pairing is the only thing this screen can do, so it is
+            // the filled button; once paired it steps back beside Sync.
+            if (state.paired) {
+                SecondaryButton("Re-pair", openPairing, Modifier.weight(1f), icon = Icons.Outlined.Link)
+                SecondaryButton(if (state.syncing) "Syncing…" else "Sync now", { vm.syncNow() },
+                    Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)
+            } else {
+                PrimaryButton("Pair workstation", openPairing, Modifier.weight(1f),
+                    icon = Icons.Outlined.Link)
+            }
+        }
 
-        Button(
-            onClick = { context.startActivity(Intent(context, PairingActivity::class.java)) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(if (state.paired) "Re-pair workstation" else "Pair workstation") }
-
-        Spacer(Modifier.height(8.dp))
-        Button(
-            onClick = { vm.syncNow() },
-            enabled = state.paired && !state.syncing,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(if (state.syncing) "Syncing…" else "Sync now") }
-
-        Spacer(Modifier.height(24.dp))
-        Divider()
-        Spacer(Modifier.height(16.dp))
-        Text("Agent server", fontWeight = FontWeight.Bold)
+        SectionLabel("Agent server", modifier = Modifier.padding(top = 10.dp))
         Text("Where the workstation sends questions and captures for summarising.",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
+            style = MaterialTheme.typography.bodySmall, color = c.muted,
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp))
 
-        OutlinedTextField(
-            value = endpoint, onValueChange = { endpoint = it; message = null },
-            label = { Text("Server address") },
-            placeholder = { Text("https://192.168.1.50:8443") },
-            supportingText = {
-                Text(
-                    if (endpoint == defaultEndpoint) "Default agent server" else "",
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            },
-            singleLine = true, enabled = state.paired,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = protocol == "selfhostedai",
-                onClick = { protocol = "selfhostedai"; message = null },
-                label = { Text("selfhostedai (encrypted)") })
-            FilterChip(selected = protocol == "openai",
-                onClick = { protocol = "openai"; message = null },
-                label = { Text("OpenAI-compatible") })
-        }
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = model, onValueChange = { model = it; message = null },
-            label = { Text("Model") },
-            placeholder = { Text(defaultModel) },
-            supportingText = {
-                Text(
-                    if (model == defaultModel) "Default for this protocol"
-                    else "Custom — the default is $defaultModel",
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            },
-            singleLine = true, enabled = state.paired,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        Button(
-            onClick = {
-                saving = true; message = null
-                scope.launch {
-                    val err = vm.setAgentConfig(endpoint, protocol, model.ifBlank { null })
-                    message = if (err != null) err else {
-                        // Saving is not the same as working. Writing an address
-                        // nothing answers on looks identical to writing a good
-                        // one until something later fails, so probe it now and
-                        // say plainly which happened.
-                        message = "Saved — checking…"
-                        val h = vm.checkInference()
-                        if (h.connected) "Connected to ${h.server ?: endpoint}"
-                        else "Saved, but nothing answered at $endpoint — check " +
-                            "the address and that the agent is running there."
-                    }
-                    saving = false
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            LabeledField("Server address", endpoint, { endpoint = it; message = null },
+                helper = if (endpoint == defaultEndpoint) "Default agent server" else "",
+                enabled = state.paired, placeholder = "https://192.168.1.50:8443")
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Protocol", style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold)
+                Row(Modifier.fillMaxWidth().border(1.dp, c.glyph)) {
+                    listOf("selfhostedai" to "selfhostedai (encrypted)", "openai" to "OpenAI-compatible")
+                        .forEach { (value, label) ->
+                            val on = protocol == value
+                            Box(
+                                Modifier.weight(1f).height(44.dp)
+                                    .background(if (on) c.button else Color.Transparent)
+                                    .clickable(role = Role.RadioButton) {
+                                        protocol = value; message = null
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(label, style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = if (on) c.onButton else c.ink)
+                            }
+                        }
                 }
-            },
-            enabled = state.paired && !saving && endpoint.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(if (saving) "Saving…" else "Save agent server") }
+            }
 
-        message?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp))
+            LabeledField("Model", model, { model = it; message = null },
+                helper = if (model == defaultModel) "Default for this protocol"
+                         else "Custom — the default is $defaultModel",
+                enabled = state.paired, placeholder = defaultModel)
+
+            PrimaryButton(
+                if (saving) "Saving…" else "Save agent server",
+                {
+                    saving = true; message = null
+                    scope.launch {
+                        val err = vm.setAgentConfig(endpoint, protocol, model.ifBlank { null })
+                        message = if (err != null) err else {
+                            // Saving is not the same as working. Writing an address
+                            // nothing answers on looks identical to writing a good
+                            // one until something later fails, so probe it now and
+                            // say plainly which happened.
+                            message = "Saved — checking…"
+                            val h = vm.checkInference()
+                            if (h.connected) "Connected to ${h.server ?: endpoint}"
+                            else "Saved, but nothing answered at $endpoint — check " +
+                                "the address and that the agent is running there."
+                        }
+                        saving = false
+                    }
+                },
+                Modifier.fillMaxWidth(),
+                enabled = state.paired && !saving && endpoint.isNotBlank(),
+            )
+
+            message?.let {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Dot(if (it.startsWith("Connected")) c.ok else c.muted)
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
+                }
+            }
+            if (!state.paired) {
+                Text("Pair with a workstation first — it is the workstation that talks "
+                    + "to the agent server.",
+                    style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
         }
-        if (!state.paired) {
-            Text("Pair with a workstation first — it is the workstation that talks "
-                + "to the agent server.",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp))
-        }
+        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
 fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+    val c = HubidubiOsTheme.colors
     // A project is a flat container holding its items — notes and tasks alike.
     // The shape and move rules live in ProjectTree so they are testable without
     // driving the UI.
@@ -970,7 +1029,26 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
     val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
-    val firstFreeId = remember(nodes) { nodes.firstOrNull { it.isFree }?.id }
+    // Counted from the full tree, so a collapsed project still says how much it holds.
+    val counts = remember(records) {
+        val out = HashMap<String, Int>()
+        var owner: String? = null
+        ProjectTree.build(records).forEach { n ->
+            if (n.isProject) { owner = n.id; out[n.id] = 0 }
+            else if (n.depth == 1) owner?.let { out[it] = (out[it] ?: 0) + 1 }
+        }
+        out
+    }
+    // Each project with the items shown under it, then the loose ones.
+    val groups = remember(nodes) {
+        val out = mutableListOf<Pair<ProjectTree.Node, MutableList<ProjectTree.Node>>>()
+        nodes.forEach { n ->
+            if (n.isProject) out += n to mutableListOf()
+            else if (n.depth == 1) out.lastOrNull()?.second?.add(n)
+        }
+        out
+    }
+    val free = remember(nodes) { nodes.filter { it.isFree } }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
@@ -986,138 +1064,162 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     moving?.let { node ->
         val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
-        AlertDialog(
-            onDismissRequest = { moving = null },
-            title = { Text(node.title, style = MaterialTheme.typography.titleSmall) },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    val current = node.record.fields["parent"]
-                    targets.forEach { (id, label) ->
-                        val here = id == current || (id == null && current.isNullOrBlank())
-                        TextButton(
-                            onClick = { vm.move(node.id, id); moving = null },
-                            enabled = !here,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                if (here) "$label  ·  here" else label,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (here) MaterialTheme.colorScheme.onSurfaceVariant
-                                        else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
+        AppSheet(onDismiss = { moving = null }) {
+            SheetTitle(node.title, overline = "Move to")
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                val current = node.record.fields["parent"]
+                targets.forEachIndexed { i, (id, label) ->
+                    val here = id == current || (id == null && current.isNullOrBlank())
+                    ActionRow(Icons.Outlined.Folder, label, meta = if (here) "here" else null,
+                        color = c.accent, enabled = !here, last = i == targets.lastIndex) {
+                        vm.move(node.id, id); moving = null
                     }
                 }
-            },
-            confirmButton = {},
-            dismissButton = { TextButton(onClick = { moving = null }) { Text("Cancel") } },
-        )
+            }
+            SecondaryButton("Cancel", { moving = null }, Modifier.fillMaxWidth().padding(top = 16.dp))
+        }
     }
 
     if (creating) {
         AlertDialog(
             onDismissRequest = { creating = false; newTitle = "" },
-            title = { Text("New project") },
+            containerColor = c.paper,
+            title = { Text("New project", style = MaterialTheme.typography.headlineSmall) },
             text = {
                 OutlinedTextField(
                     value = newTitle, onValueChange = { newTitle = it },
                     label = { Text("Project name") }, singleLine = true,
+                    colors = appFieldColors(), shape = RectangleShape,
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
             confirmButton = {
-                Button(
-                    onClick = { vm.createProject(newTitle); creating = false; newTitle = "" },
-                    enabled = newTitle.isNotBlank(),
-                ) { Text("Create") }
+                PrimaryButton("Create",
+                    { vm.createProject(newTitle); creating = false; newTitle = "" },
+                    enabled = newTitle.isNotBlank())
             },
             dismissButton = {
-                TextButton(onClick = { creating = false; newTitle = "" }) { Text("Cancel") }
+                TextButton(onClick = { creating = false; newTitle = "" }) {
+                    Text("Cancel", color = c.ink, style = MaterialTheme.typography.labelLarge)
+                }
             },
         )
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Projects", style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f))
-            TextButton(onClick = { creating = true }) {
-                Icon(Icons.Filled.Add, contentDescription = null,
-                    modifier = Modifier.size(18.dp))
-                Text(" New", style = MaterialTheme.typography.labelLarge)
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader("Projects") {
+            // The plus alone: on a screen called Projects it can only mean one thing.
+            FilledIconButton(
+                onClick = { creating = true },
+                shape = RectangleShape, modifier = Modifier.size(48.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = c.button, contentColor = c.onButton,
+                ),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "New project")
             }
         }
-        Spacer(Modifier.height(8.dp))
         if (nodes.isEmpty()) {
-            Text("No projects yet. Tap New project, then file notes and tasks into it.",
-                style = MaterialTheme.typography.bodySmall)
+            Text("No projects yet. Tap + to start one, then file notes and tasks into it.",
+                style = MaterialTheme.typography.bodyMedium, color = c.muted,
+                modifier = Modifier.padding(horizontal = 20.dp))
             return@Column
         }
         LazyColumn(Modifier.fillMaxSize()) {
-            items(nodes, key = { it.id }) { node ->
-                if (node.isProject) {
-                    // Projects carry the accent colour: scanning the list, the
-                    // containers should separate from their contents at a glance
-                    // without needing rules or boxes.
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .combinedClickable(
-                                onClick = {
-                                    if (node.hasChildren) {
-                                        collapsed = if (node.id in collapsed)
-                                            collapsed - node.id else collapsed + node.id
-                                    }
-                                },
-                                onLongClick = { menuFor = node.record },
-                            )
-                            .padding(top = 18.dp, bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            if (!node.hasChildren) "" else if (node.id in collapsed) "▸" else "▾",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.width(18.dp),
+            groups.forEach { (project, items) ->
+                item(key = project.id) {
+                    CardGroup(Modifier.padding(bottom = 10.dp)) {
+                        ProjectHeader(
+                            project, counts[project.id] ?: 0,
+                            expanded = project.id !in collapsed,
+                            onToggle = {
+                                if (project.hasChildren) {
+                                    collapsed = if (project.id in collapsed)
+                                        collapsed - project.id else collapsed + project.id
+                                }
+                            },
+                            onLongClick = { menuFor = project.record },
                         )
-                        Text(
-                            node.title,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            // Derived from the item size rather than picked by
-                            // eye, so the gap holds if the body scale or the
-                            // device font size changes.
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.224f,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                } else {
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .combinedClickable(
+                        items.forEachIndexed { i, node ->
+                            // No date here, however close it is: this list is for
+                            // finding things. Dates live in Next, and in the sheet
+                            // the item opens into.
+                            ListRow(
                                 onClick = { detailFor = node.record },
                                 onLongClick = { menuFor = node.record },
-                            )
-                            .padding(
-                                start = (node.depth * 18).dp,
-                                // The loose items are their own group, so the
-                                // first one gets the same air a project gets —
-                                // otherwise it reads as the last project's.
-                                top = if (node.id == firstFreeId) 18.dp else 4.dp,
-                                bottom = 4.dp,
-                            ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Spacer(Modifier.width(18.dp))
-                        // No date here, however close it is: this list is for
-                        // finding things. Dates live in Next, and in the sheet
-                        // the item opens into.
-                        Text(node.title, style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f))
+                                last = i == items.lastIndex, startPadding = 44,
+                                leading = { KindGlyph(node.record) },
+                            ) {
+                                Text(node.title, style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f))
+                                AttachmentTag(node.record)
+                            }
+                        }
                     }
                 }
             }
+            if (free.isNotEmpty()) {
+                // The loose items are their own group, named, so the first one
+                // doesn't read as the last project's.
+                item(key = "free") {
+                    SectionLabel("Not in a project", count = free.size,
+                        modifier = Modifier.padding(top = 0.dp))
+                    CardGroup {
+                        free.forEachIndexed { i, node ->
+                            ListRow(
+                                onClick = { detailFor = node.record },
+                                onLongClick = { menuFor = node.record },
+                                last = i == free.lastIndex,
+                                leading = { KindGlyph(node.record) },
+                            ) {
+                                Text(node.title, style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f))
+                                AttachmentTag(node.record)
+                            }
+                        }
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(16.dp)) }
         }
+    }
+}
+
+/**
+ * A project's name row. Projects carry the accent colour: scanning the list,
+ * the containers separate from their contents at a glance.
+ */
+@Composable
+private fun ProjectHeader(
+    node: ProjectTree.Node,
+    count: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    val c = HubidubiOsTheme.colors
+    Column {
+        Row(
+            Modifier.fillMaxWidth()
+                .combinedClickable(onClick = onToggle, onLongClick = onLongClick,
+                    onClickLabel = if (expanded) "Collapse" else "Expand")
+                .defaultMinSize(minHeight = 52.dp)
+                .padding(start = 12.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (node.hasChildren || count > 0) {
+                Icon(if (expanded) Icons.Filled.KeyboardArrowDown
+                     else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null, tint = c.accent, modifier = Modifier.size(20.dp))
+            } else {
+                Spacer(Modifier.width(20.dp))
+            }
+            Text(node.title, style = MaterialTheme.typography.titleMedium, color = c.accent,
+                modifier = Modifier.weight(1f))
+            Text(count.toString(), fontFamily = Mono, style = MaterialTheme.typography.labelMedium,
+                color = c.muted)
+        }
+        if (expanded && node.hasChildren) HorizontalDivider(color = c.line, thickness = 1.dp)
     }
 }

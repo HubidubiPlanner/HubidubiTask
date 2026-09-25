@@ -4,13 +4,52 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.hubidubios.mobile.ui.HubidubiOsTheme
+import com.hubidubios.mobile.ui.Mono
+import com.hubidubios.mobile.ui.PrimaryButton
+import com.hubidubios.mobile.ui.SecondaryButton
+import com.hubidubios.mobile.ui.appFieldColors
 import com.hubidubios.mobile.net.Discovery
 import com.hubidubios.mobile.net.PairedServer
 import java.util.concurrent.CountDownLatch
@@ -30,18 +69,18 @@ import java.util.concurrent.atomic.AtomicReference
  * Manual entry is always present so pairing works without a camera and on
  * networks where mDNS is blocked.
  */
-class PairingActivity : AppCompatActivity() {
+class PairingActivity : ComponentActivity() {
 
-    private lateinit var payload: EditText
-    private lateinit var name: EditText
-    private lateinit var pair: Button
+    private var payload by mutableStateOf("")
+    private var name by mutableStateOf(Build.MODEL)
+    private var busy by mutableStateOf(false)
 
     private val scan = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { res ->
         val text = res.data?.getStringExtra(ScanActivity.EXTRA_PAYLOAD)
         if (res.resultCode == Activity.RESULT_OK && !text.isNullOrBlank()) {
-            payload.setText(text)
+            payload = text
             // A scan is an unambiguous "pair with this" — don't make the user
             // tap again.
             submit(text)
@@ -50,35 +89,25 @@ class PairingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val help = TextView(this).apply {
-            text = "On the workstation run:  hubidubios-sync pair\n" +
-                "Scan the QR it prints — or paste the payload line below."
+        enableEdgeToEdge()
+        setContent {
+            HubidubiOsTheme {
+                PairingScreen(
+                    payload = payload, onPayload = { payload = it },
+                    name = name, onName = { name = it },
+                    busy = busy,
+                    onBack = { finish() },
+                    onScan = { scan.launch(Intent(this, ScanActivity::class.java)) },
+                    onPair = { submit(payload.trim()) },
+                )
+            }
         }
-        val scanButton = Button(this).apply { text = "Scan QR" }
-        payload = EditText(this).apply { hint = "Pairing payload or one-time token" }
-        name = EditText(this).apply {
-            hint = "Device name"
-            setText(Build.MODEL)
-        }
-        pair = Button(this).apply { text = "Pair" }
-
-        scanButton.setOnClickListener {
-            scan.launch(Intent(this, ScanActivity::class.java))
-        }
-        pair.setOnClickListener { submit(payload.text.toString().trim()) }
-
-        setContentView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val pad = (16 * resources.displayMetrics.density).toInt()
-            setPadding(pad, pad, pad, pad)
-            addView(help); addView(scanButton); addView(payload); addView(name); addView(pair)
-        })
     }
 
     /** Redeem [input] (scanned or typed) against the workstation, off the UI thread. */
     private fun submit(input: String) {
-        val deviceName = name.text.toString().ifBlank { "phone" }
-        pair.isEnabled = false
+        val deviceName = name.ifBlank { "phone" }
+        busy = true
         Thread {
             val result = runCatching {
                 val qr = resolvePayload(input)
@@ -87,7 +116,7 @@ class PairingActivity : AppCompatActivity() {
                 server
             }
             runOnUiThread {
-                pair.isEnabled = true
+                busy = false
                 result.onSuccess {
                     Toast.makeText(this, "Paired with ${it.host}", Toast.LENGTH_LONG).show()
                     finish()
@@ -129,5 +158,82 @@ class PairingActivity : AppCompatActivity() {
         latch.await(5, TimeUnit.SECONDS)
         disco.stop()
         return hit.get()
+    }
+}
+
+/**
+ * Three numbered steps, in the order they happen: run the command, scan what it
+ * prints, or paste it when there is no camera. Scanning is the filled button
+ * because it is the path that needs no typing.
+ */
+@Composable
+private fun PairingScreen(
+    payload: String, onPayload: (String) -> Unit,
+    name: String, onName: (String) -> Unit,
+    busy: Boolean,
+    onBack: () -> Unit, onScan: () -> Unit, onPair: () -> Unit,
+) {
+    val c = HubidubiOsTheme.colors
+    Surface(color = c.paper, contentColor = c.ink) {
+        Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
+            IconButton(onClick = onBack, modifier = Modifier.padding(start = 8.dp, top = 12.dp).size(48.dp)) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = c.ink)
+            }
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+            ) {
+                Text("Pair workstation", style = MaterialTheme.typography.headlineLarge)
+                Text("The phone syncs only with a workstation it has paired with.",
+                    style = MaterialTheme.typography.bodySmall, color = c.muted,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 26.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
+                    Step(1, "On the workstation, run") {
+                        Text("hubidubios-sync pair", fontFamily = Mono, color = c.well,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
+                            modifier = Modifier.fillMaxWidth().background(c.ink)
+                                .padding(horizontal = 14.dp, vertical = 12.dp))
+                    }
+                    Step(2, "Scan the QR it prints") {
+                        PrimaryButton("Scan QR", onScan, Modifier.fillMaxWidth(),
+                            icon = Icons.Outlined.QrCodeScanner, enabled = !busy)
+                    }
+                    Step(3, "Or paste the payload") {
+                        Field("Pairing payload or one-time token", payload, onPayload, mono = true)
+                        Spacer(Modifier.height(14.dp))
+                        Field("Device name", name, onName)
+                    }
+                }
+            }
+            SecondaryButton(if (busy) "Pairing…" else "Pair", onPair,
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 28.dp),
+                icon = Icons.Outlined.Link, enabled = !busy && payload.isNotBlank())
+        }
+    }
+}
+
+@Composable
+private fun Step(n: Int, title: String, body: @Composable () -> Unit) {
+    val c = HubidubiOsTheme.colors
+    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(Modifier.size(28.dp).background(c.frame, CircleShape), contentAlignment = Alignment.Center) {
+            Text(n.toString(), color = c.paper, style = MaterialTheme.typography.labelLarge)
+        }
+        Column(Modifier.weight(1f).padding(top = 3.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            body()
+        }
+    }
+}
+
+@Composable
+private fun Field(label: String, value: String, onChange: (String) -> Unit, mono: Boolean = false) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        OutlinedTextField(
+            value = value, onValueChange = onChange, singleLine = true,
+            textStyle = if (mono) MaterialTheme.typography.bodySmall.copy(fontFamily = Mono, fontSize = 14.sp)
+                        else MaterialTheme.typography.bodyMedium,
+            colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
