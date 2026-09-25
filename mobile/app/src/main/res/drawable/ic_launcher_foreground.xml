@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An H whose corner carries a tick: the app is where things get done. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#D3C9AF" android:pathData="M27,29h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
+    <!-- Background-coloured ring so the badge reads as sitting on the H. -->
+    <path android:fillColor="#56594D" android:pathData="M56,69a13,13 0,1 0,26 0a13,13 0,1 0,-26 0z" />
+    <path android:fillColor="#B4997E" android:pathData="M58.5,69a10.5,10.5 0,1 0,21 0a10.5,10.5 0,1 0,-21 0z" />
+    <path
+        android:pathData="M64,69.5L67.5,73L74.5,65"
+        android:strokeColor="#56594D"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
