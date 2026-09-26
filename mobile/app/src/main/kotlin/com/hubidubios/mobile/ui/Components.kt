@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -312,3 +314,29 @@ fun todayLong(): String = utc("EEEE, d MMMM").format(java.util.Date())
 fun shortDate(iso: String): String = runCatching {
     utc("EEE d MMM").format(utc("yyyy-MM-dd").parse(iso)!!)
 }.getOrDefault(iso)
+
+/** Two or three mutually exclusive choices side by side: protocol, range. */
+@Composable
+fun <T> Segmented(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = HubidubiOsTheme.colors
+    Row(modifier.fillMaxWidth().border(1.dp, c.glyph)) {
+        options.forEach { (value, label) ->
+            val on = value == selected
+            Box(
+                Modifier.weight(1f).height(44.dp)
+                    .background(if (on) c.button else Color.Transparent)
+                    .clickable(role = Role.RadioButton) { onSelect(value) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
+                    color = if (on) c.onButton else c.ink)
+            }
+        }
+    }
+}

@@ -70,15 +70,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -663,8 +667,13 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
     var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
+    // Today first: it is the question the tab is opened to answer. The wider
+    // ranges are for planning, one tap away.
+    var range by rememberSaveable { mutableStateOf(Agenda.Range.DAY) }
     val today = remember { todayIso() }
-    val sections = remember(state.dated, today) { Agenda.sections(state.dated, today) }
+    val view = remember(state.dated, today, range) { Agenda.view(state.dated, today, range) }
+    val strip = remember(state.dated, today) { Agenda.counts(state.dated, today) }
+    val projectTitle = remember(state.projects) { projectTitles(state.projects) }
 
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
@@ -677,48 +686,144 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Next", remember { todayLong() })
-        if (sections.isEmpty()) {
-            Text("Nothing dated. Add a date when you capture, or long-press an item.",
-                style = MaterialTheme.typography.bodyMedium, color = c.muted,
-                modifier = Modifier.padding(horizontal = 20.dp))
-            return@Column
-        }
+        ScreenHeader("Next", remember(range) {
+            when (range) {
+                Agenda.Range.DAY -> todayLong()
+                else -> rangeSpan(today, range.days)
+            }
+        })
+        Segmented(Agenda.Range.entries.map { it to it.label }, range, { range = it },
+            Modifier.padding(horizontal = 20.dp))
         LazyColumn(Modifier.fillMaxSize()) {
-            sections.forEach { section ->
-                val overdue = section.bucket == Agenda.Bucket.OVERDUE
+            if (range == Agenda.Range.WEEK) item(key = "strip") { WeekStrip(strip) }
+            if (view.groups.isEmpty()) item(key = "empty") {
+                Text(
+                    if (state.dated.isEmpty())
+                        "Nothing dated. Add a date when you capture, or long-press an item."
+                    else when (range) {
+                        Agenda.Range.DAY -> "Nothing due today."
+                        Agenda.Range.WEEK -> "Nothing due in the next seven days."
+                        Agenda.Range.MONTH -> "Nothing due in the next thirty days."
+                    },
+                    style = MaterialTheme.typography.bodyMedium, color = c.muted,
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp),
+                )
+            }
+            view.groups.forEach { group ->
+                val overdue = group.tone == Agenda.Tone.OVERDUE
                 // Overdue is the one heading that asks for something, so it alone
                 // is brick; today is the accent, the rest recede.
-                val tone = when (section.bucket) {
-                    Agenda.Bucket.OVERDUE -> c.danger
-                    Agenda.Bucket.TODAY -> c.accent
-                    Agenda.Bucket.TOMORROW -> c.frame
-                    Agenda.Bucket.LATER -> c.muted
+                val tone = when (group.tone) {
+                    Agenda.Tone.OVERDUE -> c.danger
+                    Agenda.Tone.TODAY -> c.accent
+                    Agenda.Tone.SOON -> c.frame
+                    Agenda.Tone.LATER -> c.muted
                 }
-                item(key = "s_${section.bucket}") {
-                    SectionLabel(section.title, tone, section.items.size)
+                // Inside one day the date says nothing new, so the row names the
+                // project instead; across a week or a month the date is the point.
+                val showDate = overdue || range == Agenda.Range.MONTH
+                item(key = "g_${group.title}") {
+                    SectionLabel(group.title, tone, group.items.size)
                     CardGroup(border = if (overdue) c.danger else c.line) {
-                        section.items.forEachIndexed { i, rec ->
+                        group.items.forEachIndexed { i, rec ->
                             ListRow(
                                 onClick = { detailFor = rec }, onLongClick = { menuFor = rec },
-                                last = i == section.items.lastIndex,
+                                last = i == group.items.lastIndex,
                             ) {
                                 // Name left, date hard right: the dates line up in a
                                 // column you can scan without reading the names.
                                 Text(ReviewBrowse.labelOf(rec),
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f))
-                                Text(shortDate(rec.fields["due"].orEmpty()), fontFamily = Mono,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (overdue) c.danger else c.muted)
+                                if (showDate) {
+                                    Text(shortDate(rec.fields["due"].orEmpty()), fontFamily = Mono,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (overdue) c.danger else c.muted)
+                                } else {
+                                    projectTitle(rec)?.let {
+                                        Text(it, style = MaterialTheme.typography.bodySmall,
+                                            color = c.muted, maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(0.6f, fill = false))
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+            // Day hides tomorrow; saying how much is waiting keeps it from
+            // being a surprise, and the tap is the way to see it.
+            if (range == Agenda.Range.DAY && view.laterThisWeek > 0) item(key = "more") {
+                Row(
+                    Modifier.padding(start = 12.dp, end = 12.dp, top = 14.dp).fillMaxWidth()
+                        .defaultMinSize(minHeight = 48.dp)
+                        .border(1.dp, c.glyph)
+                        .clickable(role = Role.Button) { range = Agenda.Range.WEEK }
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
+                        modifier = Modifier.size(18.dp))
+                    Text("${view.laterThisWeek} more this week",
+                        style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                        color = c.accent, modifier = Modifier.weight(1f))
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+                        tint = c.accent, modifier = Modifier.size(20.dp))
+                }
+            }
             item { Spacer(Modifier.height(16.dp)) }
         }
     }
+}
+
+/** Seven days at a glance: a dot per item, today filled in. */
+@Composable
+private fun WeekStrip(days: List<Pair<java.time.LocalDate, Int>>) {
+    val c = HubidubiOsTheme.colors
+    val dayName = remember { java.time.format.DateTimeFormatter.ofPattern("EEE", java.util.Locale.ENGLISH) }
+    Row(
+        Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp).fillMaxWidth()
+            .background(c.raised).border(1.dp, c.line).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        days.forEachIndexed { i, (date, count) ->
+            val today = i == 0
+            Column(
+                Modifier.weight(1f).height(64.dp)
+                    .background(if (today) c.button else Color.Transparent)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "${date.format(dayName)} ${date.dayOfMonth}, " +
+                            if (count == 1) "1 item" else "$count items"
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
+            ) {
+                Text(date.format(dayName).uppercase(), style = MaterialTheme.typography.labelSmall,
+                    fontSize = 11.sp, color = if (today) c.onButtonMuted else c.muted)
+                Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium,
+                    color = if (today) c.onButton else c.ink)
+                Row(Modifier.height(5.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    repeat(minOf(count, 3)) { Dot(if (today) c.onButton else c.accent, 5) }
+                }
+            }
+        }
+    }
+}
+
+/** "26 Sep – 2 Oct": the stretch a range covers, under the title. */
+private fun rangeSpan(today: String, days: Int): String {
+    val start = java.time.LocalDate.parse(today)
+    val fmt = java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.ENGLISH)
+    return "${start.format(fmt)} – ${start.plusDays(days - 1L).format(fmt)}"
+}
+
+/** The project an item is filed under, by name, or null when it is loose. */
+private fun projectTitles(projects: List<EntityRecord>): (EntityRecord) -> String? {
+    val byId = projects.associate { it.id to (it.fields["title"] ?: it.id) }
+    val bySlug = projects.associate { ProjectTree.slugOf(it.fields["title"] ?: it.id) to it.id }
+    return { rec -> ProjectTree.parentOf(rec, bySlug)?.let { byId[it] } }
 }
 
 @Composable
@@ -945,24 +1050,10 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Protocol", style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold)
-                Row(Modifier.fillMaxWidth().border(1.dp, c.glyph)) {
-                    listOf("selfhostedai" to "selfhostedai (encrypted)", "openai" to "OpenAI-compatible")
-                        .forEach { (value, label) ->
-                            val on = protocol == value
-                            Box(
-                                Modifier.weight(1f).height(44.dp)
-                                    .background(if (on) c.button else Color.Transparent)
-                                    .clickable(role = Role.RadioButton) {
-                                        protocol = value; message = null
-                                    },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(label, style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
-                                    color = if (on) c.onButton else c.ink)
-                            }
-                        }
-                }
+                Segmented(
+                    listOf("selfhostedai" to "selfhostedai (encrypted)", "openai" to "OpenAI-compatible"),
+                    protocol, { protocol = it; message = null },
+                )
             }
 
             LabeledField("Model", model, { model = it; message = null },
@@ -1108,15 +1199,21 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Projects") {
-            // The plus alone: on a screen called Projects it can only mean one thing.
-            FilledIconButton(
+            // The plus alone, no box around it: on a screen called Projects it
+            // can only mean one thing. The tap target stays 48dp.
+            IconButton(
                 onClick = { creating = true },
-                shape = RectangleShape, modifier = Modifier.size(48.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = c.button, contentColor = c.onButton,
-                ),
+                // Reports only the title's line height, centred on it, so the
+                // 48dp touch target doesn't make this header taller than the
+                // other tabs' and push the title down.
+                modifier = Modifier.layout { m, cs ->
+                    val p = m.measure(cs.copy(minHeight = 0))
+                    val h = 34.sp.roundToPx()
+                    layout(p.width, h) { p.place(0, (h - p.height) / 2) }
+                }.size(48.dp),
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "New project")
+                Icon(Icons.Filled.Add, contentDescription = "New project", tint = c.accent,
+                    modifier = Modifier.size(30.dp))
             }
         }
         if (nodes.isEmpty()) {
