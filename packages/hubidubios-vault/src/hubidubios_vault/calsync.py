@@ -38,17 +38,24 @@ def pull(vault, fetch=_default_fetch) -> dict:
     """Fetch every configured iCal URL, split into per-event files under
     calendars/google/, prune stale ones. Returns {fetched, written, pruned}."""
     urls = (vault.config().get("calendar") or {}).get("google_ics_urls") or []
-    dest = vault.calendars_dir / GOOGLE_SUBDIR
     if not urls:
         return {"fetched": 0, "written": 0, "pruned": 0}
+    res = write_calendars(vault, [fetch(url) for url in urls])
+    return {"fetched": len(urls), **res}
 
+
+def write_calendars(vault, raws: list[bytes]) -> dict:
+    """Split already-fetched iCal feeds into per-event files under
+    calendars/google/ and prune events no longer in any of them. Kept apart
+    from the fetching so a feed pulled elsewhere (the import skill fetches on
+    another machine) lands exactly as a pull here would. Returns {written, pruned}."""
     from icalendar import Calendar
 
+    dest = vault.calendars_dir / GOOGLE_SUBDIR
     dest.mkdir(parents=True, exist_ok=True)
     keep: set[Path] = set()
     written = 0
-    for url in urls:
-        raw = fetch(url)
+    for raw in raws:
         cal = Calendar.from_ical(raw)
         for comp in cal.walk("VEVENT"):
             uid = str(comp.get("UID") or "")
@@ -68,4 +75,4 @@ def pull(vault, fetch=_default_fetch) -> dict:
         if existing not in keep:
             existing.unlink()
             pruned += 1
-    return {"fetched": len(urls), "written": written, "pruned": pruned}
+    return {"written": written, "pruned": pruned}

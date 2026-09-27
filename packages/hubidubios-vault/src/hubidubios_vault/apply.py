@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import reviews
+from .sidecars import BODY
 from .formats import meta as _meta
 from .formats import notes_md
 
@@ -22,6 +23,10 @@ _CHECKBOX_RE = re.compile(r"^(\s*)- \[( |x|X)\] (.*)$")
 
 
 # ------------------------------------------------------------- line helpers
+
+def _yes(v) -> bool:
+    return v is True or (isinstance(v, str) and v.strip().lower() in ("true", "1", "yes"))
+
 
 def render_task_line(d: dict, indent: str = "") -> str:
     md: dict[str, str] = {"id": d["id"]}
@@ -38,7 +43,10 @@ def render_task_line(d: dict, indent: str = "") -> str:
         # is cosmetic and does not survive a user reordering lines by hand.
         md["parent"] = d["parent"]
     md["updated"] = d["updated"]
-    box = "x" if d.get("done") else " "
+    # The phone's fields are all strings, so "false" arrives as a non-empty
+    # (truthy) string; only a real yes counts, or every task it creates would
+    # be written already done.
+    box = "x" if _yes(d.get("done")) else " "
     return f"{indent}- [{box}] {d['text']}  {_meta.render(md)}"
 
 
@@ -93,6 +101,10 @@ def _store_review(d: dict, vault) -> None:
     """
     if "review" in d:
         reviews.write(vault, d["id"], d.get("review"))
+    # The item's own description (Todoist's, or anything else longer than a
+    # line) follows the same rule: absent means "not sent", empty clears.
+    if "body" in d:
+        BODY.write(vault, d["id"], d.get("body"))
 
 
 # ------------------------------------------------------------- upserts
@@ -260,8 +272,15 @@ def upsert_note(vault, d: dict, existing_rel: str | None = None) -> Path:
         path = vault.root / existing_rel
     else:
         stamp = d.get("created") or d["updated"]
-        path = (vault.notes_dir / stamp[:4] / stamp[5:7]
-                / f"{notes_md.slugify(d.get('title') or 'untitled')}.md")
+        folder = vault.notes_dir / stamp[:4] / stamp[5:7]
+        slug = notes_md.slugify(d.get('title') or 'untitled')
+        path = folder / f"{slug}.md"
+        # Two notes of the same name in one month would share a file and the
+        # second would overwrite the first; give the newcomer its own.
+        n = 2
+        while path.exists() and f"id: {d['id']}" not in path.read_text(encoding="utf-8"):
+            path = folder / f"{slug}-{n}.md"
+            n += 1
 
     media_rel = d.get("media")
     if d.get("media_sha256") and not media_rel:
@@ -386,6 +405,8 @@ def delete(vault, entity_type: str, entity_id: str,
             media.unlink(missing_ok=True)
         except OSError:
             pass
-    # The review belongs to the item, so it goes with it.
+    # The review and description belong to the item, so they go with it.
     reviews.remove(vault, entity_id)
+    if entity_type in _LINE_TYPES:
+        BODY.remove(vault, entity_id)
     return path

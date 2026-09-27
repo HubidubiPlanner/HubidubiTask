@@ -439,6 +439,32 @@ def cmd_calendar_pull(vault: Vault, args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- todoist
+
+def cmd_todoist_import(vault: Vault, args) -> int:
+    """One-time import of active Todoist projects and tasks. The token is read
+    from TODOIST_API_TOKEN or asked for, used once, and never stored."""
+    import getpass
+    import os
+    from . import todoist
+    from .index import indexer
+
+    token = os.environ.get("TODOIST_API_TOKEN") or getpass.getpass(
+        "Todoist API token (Settings → Integrations → Developer): ")
+    if not token.strip():
+        print("todoist import: no token given", file=sys.stderr)
+        return 2
+    try:
+        res = todoist.import_all(vault, token.strip())
+    except OSError as e:   # urllib's URLError/HTTPError are OSErrors
+        print(f"todoist import: could not reach Todoist: {e}", file=sys.stderr)
+        return 1
+    indexer.rebuild(vault)
+    for line in todoist.summary(res):
+        print(line)
+    return 0
+
+
 # ---------------------------------------------------------------- agenda
 
 def cmd_agenda(vault: Vault, args) -> int:
@@ -613,6 +639,11 @@ def build_parser() -> argparse.ArgumentParser:
     csub = cp.add_subparsers(dest="calendar_command", required=True)
     sp = csub.add_parser("pull", help="one-way pull of configured Google/iCal URLs")
     sp.set_defaults(func=cmd_calendar_pull)
+
+    tp = sub.add_parser("todoist", help="Todoist import")
+    tsub = tp.add_subparsers(dest="todoist_command", required=True)
+    sp = tsub.add_parser("import", help="one-time import of active Todoist projects and tasks")
+    sp.set_defaults(func=cmd_todoist_import)
 
     sp = sub.add_parser("agenda", help="events and due tasks")
     sp.add_argument("--days", type=int, default=7)
