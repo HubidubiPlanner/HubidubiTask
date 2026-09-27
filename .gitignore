@@ -17,3 +17,6 @@ iso/workstation/omarchy-pkgs/
 # Build outputs
 *.pkg.tar.zst
 dist-update/
+
+# macOS folder metadata
+.DS_Store
