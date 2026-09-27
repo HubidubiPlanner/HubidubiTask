@@ -20,7 +20,9 @@ class SyncWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
-        Sync.open(applicationContext).syncNow()
+        // Each on its own: an unreachable Mac must not stop the workstation sync.
+        runCatching { Sync.open(applicationContext).syncNow() }
+        runCatching { Sync.syncMac(applicationContext) }
         Result.success()
     } catch (e: Exception) {
         Result.retry() // durable outbox; safe to retry later

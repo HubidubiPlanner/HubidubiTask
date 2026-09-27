@@ -4,7 +4,8 @@ import com.hubidubios.core.EntityRecord
 
 /**
  * The Projects view: a flat list of projects, each holding its items — notes
- * and tasks alike. Projects do not nest inside each other; they are the
+ * and tasks alike. A task may hold sub-tasks, which are not listed here but
+ * open with it ([children]). Projects do not nest inside each other; they are the
  * containers, and the items are what moves between them.
  *
  * The shape and the move rules are pure functions rather than logic inside a
@@ -76,7 +77,9 @@ object ProjectTree {
         val projectIdBySlug = projects.associate { slugOf(it.fields["title"] ?: it.id) to it.id }
 
         val itemsOf = HashMap<String?, MutableList<EntityRecord>>()
-        records.filter { it.type != "project" }.forEach { rec ->
+        // Sub-tasks are not rows of their own: they open with their parent,
+        // so the list stays one line per thing to do.
+        records.filter { it.type != "project" && !isSubItem(it, records) }.forEach { rec ->
             val parent = parentOf(rec, projectIdBySlug)?.takeIf { it in projectIds }
             itemsOf.getOrPut(parent) { mutableListOf() }.add(rec)
         }
@@ -97,6 +100,24 @@ object ProjectTree {
         itemsOf[null].orEmpty().sortedWith(itemOrder).forEach { out += Node(it, 0, false) }
         return out
     }
+
+    /**
+     * An item whose parent is another item (a Todoist sub-task, say) rather
+     * than a project. One whose parent no longer exists is not one: it is
+     * shown at the top level rather than lost.
+     */
+    fun isSubItem(rec: EntityRecord, records: List<EntityRecord>): Boolean {
+        if (rec.type == "project") return false
+        val parent = rec.fields["parent"]?.takeIf { it.isNotBlank() } ?: return false
+        val holder = records.firstOrNull { it.id == parent } ?: return false
+        return holder.type != "project"
+    }
+
+    /** The items directly under [id]: a task's sub-tasks, notes first, then by name. */
+    fun children(id: String, records: List<EntityRecord>): List<EntityRecord> =
+        records.filter { it.type != "project" && it.fields["parent"] == id }
+            .sortedWith(compareByDescending<EntityRecord> { it.type == "note" }
+                .thenBy { (it.fields["title"] ?: it.fields["text"] ?: it.id).lowercase() })
 
     /**
      * Whether [id] may be filed under [newParent] (null = no project).

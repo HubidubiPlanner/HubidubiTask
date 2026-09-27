@@ -58,7 +58,9 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                             val current by nav.currentBackStackEntryAsState()
                             val route = current?.destination?.route
                             dests.forEach { d ->
-                                val selected = route == d.route
+                                // Import is reached from Settings, so Settings stays lit.
+                                val selected = route == d.route ||
+                                    (d.route == "settings" && route == "import")
                                 NavigationBarItem(
                                     selected = selected,
                                     onClick = {
@@ -102,7 +104,10 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                     composable("home") { HomeScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }
                     composable("chat") { ChatScreen(state, vm) }
-                    composable("settings") { SettingsScreen(state, vm) }
+                    composable("settings") {
+                        SettingsScreen(state, vm, onImport = { nav.navigate("import") })
+                    }
+                    composable("import") { ImportScreen(vm, onBack = { nav.popBackStack() }) }
                 }
             }
         }

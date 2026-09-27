@@ -39,11 +39,13 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Link
@@ -99,9 +101,6 @@ import com.hubidubios.mobile.tree.ProjectTree
 import java.io.File
 import kotlinx.coroutines.launch
 
-/** The agent server proposed on a fresh install. A saved setting always wins;
- *  this only fills the form so Save works on arrival. */
-private const val DEFAULT_AGENT_ENDPOINT = "https://192.168.1.50:8443"
 
 /** Task or note, at a glance: an empty box is something to do, lines are something kept. */
 @Composable
@@ -131,6 +130,44 @@ private fun AttachmentTag(record: EntityRecord) {
         Icon(Icons.Filled.AttachFile, contentDescription = null, tint = c.muted,
             modifier = Modifier.size(14.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, color = c.muted)
+    }
+}
+
+/** Something that can be finished: a task or a capture, not a note or an event. */
+private fun isTask(r: EntityRecord) = r.type == "next_action" || r.type == "inbox_item"
+
+/** "3 notes" beside a task's title: says there is more inside without listing it. */
+@Composable
+private fun SubtaskTag(count: Int) {
+    if (count == 0) return
+    val c = HubidubiOsTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null, tint = c.muted,
+            modifier = Modifier.size(14.dp))
+        Text(if (count == 1) "1 note" else "$count notes",
+            style = MaterialTheme.typography.labelMedium, color = c.muted)
+    }
+}
+
+/** Write a note under a task: a title, and optionally more. */
+@Composable
+private fun AddNoteSheet(task: EntityRecord?, vm: HubidubiOsViewModel, onDismiss: () -> Unit) {
+    task ?: return
+    val c = HubidubiOsTheme.colors
+    var title by remember(task.id) { mutableStateOf("") }
+    var body by remember(task.id) { mutableStateOf("") }
+    AppSheet(onDismiss) {
+        SheetTitle("Add a note", overline = ReviewBrowse.labelOf(task))
+        OutlinedTextField(value = title, onValueChange = { title = it },
+            label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = body, onValueChange = { body = it },
+            label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+            colors = appFieldColors(), shape = RectangleShape,
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
+        PrimaryButton("Save", { vm.addNote(task.id, title, body); onDismiss() },
+            Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }
 
@@ -196,6 +233,7 @@ private fun ItemActionsMenu(
     onReview: (EntityRecord) -> Unit,
     onDelete: (EntityRecord) -> Unit,
     onDismiss: () -> Unit,
+    onAddNote: ((EntityRecord) -> Unit)? = null,
 ) {
     record ?: return
     val c = HubidubiOsTheme.colors
@@ -212,6 +250,11 @@ private fun ItemActionsMenu(
             ActionRow(Icons.AutoMirrored.Outlined.DriveFileMove, "Move to a project") {
                 onDismiss(); onMove(record)
             }
+        }
+        if (isTask(record)) {
+            ActionRow(Icons.Outlined.Check, "Mark done") { onDismiss(); vm.complete(record) }
+            if (onAddNote != null)
+                ActionRow(Icons.AutoMirrored.Filled.Notes, "Add a note") { onDismiss(); onAddNote(record) }
         }
         ActionRow(Icons.Outlined.CalendarToday, if (due.isBlank()) "Set a date" else "Date",
             meta = due.takeIf { it.isNotBlank() }?.let(::shortDate)) { picking = true }
@@ -262,8 +305,9 @@ private fun DatePickerFor(
 
 /** The small tracked heading inside a sheet or card: REVIEW, AGENT. */
 @Composable
-private fun Overline(text: String, color: Color, icon: ImageVector? = null) {
-    Row(verticalAlignment = Alignment.CenterVertically,
+private fun Overline(text: String, color: Color, icon: ImageVector? = null,
+                     modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(14.dp)) }
         Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color)
@@ -280,6 +324,9 @@ private fun DetailSheet(
     record: EntityRecord?,
     onReview: (EntityRecord) -> Unit,
     onDismiss: () -> Unit,
+    subtasks: List<EntityRecord> = emptyList(),
+    onOpen: (EntityRecord) -> Unit = {},
+    onDone: ((EntityRecord) -> Unit)? = null,
 ) {
     record ?: return
     val c = HubidubiOsTheme.colors
@@ -311,6 +358,25 @@ private fun DetailSheet(
                 Text(it, style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 16.dp))
             }
+            // A task's notes show here and only here: the lists stay one line
+            // per thing to do, and what you need to know is one tap away.
+            if (subtasks.isNotEmpty()) {
+                Overline("Notes · ${subtasks.size}", c.accent,
+                    modifier = Modifier.padding(top = 20.dp, bottom = 6.dp))
+                Column(Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line)) {
+                    subtasks.forEachIndexed { i, sub ->
+                        ListRow(onClick = { onOpen(sub) }, last = i == subtasks.lastIndex,
+                            leading = { KindGlyph(sub) }) {
+                            Text(ReviewBrowse.labelOf(sub), style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f))
+                            sub.fields["due"]?.takeIf { it.isNotBlank() }?.let {
+                                Text(shortDate(it), fontFamily = Mono,
+                                    style = MaterialTheme.typography.bodySmall, color = c.muted)
+                            }
+                        }
+                    }
+                }
+            }
             Column(
                 Modifier.padding(top = 20.dp).fillMaxWidth()
                     .background(c.raised).border(1.dp, c.line)
@@ -325,9 +391,14 @@ private fun DetailSheet(
                 )
             }
         }
+        // Finishing is what a task is opened for most often, so it is the
+        // filled button. No Close: the sheet goes with a swipe down or Back.
         Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SecondaryButton("Close", onDismiss, Modifier.weight(1f))
-            PrimaryButton(if (review == null) "Review" else "Review again",
+            if (onDone != null && isTask(record)) {
+                PrimaryButton("Mark done", { val r = record; onDismiss(); onDone(r) },
+                    Modifier.weight(1f), icon = Icons.Outlined.Check)
+            }
+            SecondaryButton(if (review == null) "Review" else "Review again",
                 { val r = record; onDismiss(); onReview(r) },
                 Modifier.weight(1f), icon = Icons.Outlined.RateReview)
         }
@@ -671,18 +742,32 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     // ranges are for planning, one tap away.
     var range by rememberSaveable { mutableStateOf(Agenda.Range.DAY) }
     val today = remember { todayIso() }
-    val view = remember(state.dated, today, range) { Agenda.view(state.dated, today, range) }
-    val strip = remember(state.dated, today) { Agenda.counts(state.dated, today) }
+    // Events sit in the same days as tasks. They go first so, within a day,
+    // what happens at a set time reads before what can happen any time.
+    val agenda = remember(state.dated, state.events, today) {
+        eventsAsDated(state.events, today) + state.dated
+    }
+    val view = remember(agenda, today, range) { Agenda.view(agenda, today, range) }
+    val strip = remember(agenda, today) { Agenda.counts(agenda, today) }
     val projectTitle = remember(state.projects) { projectTitles(state.projects) }
 
+    var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = false, vm = vm,
         onMove = {}, onReview = { rec -> reviewing = rec },
         onDelete = { rec -> pendingDelete = rec }, onDismiss = { menuFor = null },
+        onAddNote = { rec -> addingNoteTo = rec },
     )
+    AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
+    val allItems = remember(state.nextActions, state.inbox, state.notes) {
+        state.nextActions + state.inbox + state.notes
+    }
     DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
-        onDismiss = { detailFor = null })
+        onDismiss = { detailFor = null },
+        subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
+        onOpen = { detailFor = it },
+        onDone = { vm.complete(it) })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     Column(Modifier.fillMaxSize()) {
@@ -726,8 +811,12 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
                     SectionLabel(group.title, tone, group.items.size)
                     CardGroup(border = if (overdue) c.danger else c.line) {
                         group.items.forEachIndexed { i, rec ->
+                            val event = rec.type == "event"
                             ListRow(
-                                onClick = { detailFor = rec }, onLongClick = { menuFor = rec },
+                                onClick = { detailFor = rec },
+                                // An event's date is the calendar's, not something to
+                                // re-date here.
+                                onLongClick = if (event) null else ({ menuFor = rec }),
                                 last = i == group.items.lastIndex,
                             ) {
                                 // Name left, date hard right: the dates line up in a
@@ -735,7 +824,12 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
                                 Text(ReviewBrowse.labelOf(rec),
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f))
-                                if (showDate) {
+                                if (event) {
+                                    val time = rec.fields["time"] ?: "All day"
+                                    Text(if (showDate) "${shortDate(rec.fields["due"].orEmpty())} $time" else time,
+                                        fontFamily = Mono, style = MaterialTheme.typography.bodySmall,
+                                        color = c.accent)
+                                } else if (showDate) {
                                     Text(shortDate(rec.fields["due"].orEmpty()), fontFamily = Mono,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = if (overdue) c.danger else c.muted)
@@ -812,6 +906,27 @@ private fun WeekStrip(days: List<Pair<java.time.LocalDate, Int>>) {
     }
 }
 
+/**
+ * Calendar events as rows Next can group: dated by the local day they start,
+ * named by their summary, with their start time. Past ones are left out — an
+ * event that already happened isn't overdue, it's over.
+ */
+private fun eventsAsDated(events: List<EntityRecord>, today: String): List<EntityRecord> {
+    val zone = java.time.ZoneId.systemDefault()
+    val hm = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+    return events.mapNotNull { e ->
+        val start = e.fields["dtstart"] ?: return@mapNotNull null
+        val instant = com.hubidubios.mobile.importer.Ics.instantOf(start)
+        val (day, time) = if (instant != null) {
+            val z = instant.atZone(zone); z.toLocalDate().toString() to z.format(hm)
+        } else start.take(10) to null
+        if (day < today) return@mapNotNull null
+        e.copy(fields = e.fields + buildMap {
+            put("due", day); put("text", e.fields["summary"] ?: ""); time?.let { put("time", it) }
+        })
+    }.sortedWith(compareBy({ it.fields["due"] }, { it.fields["time"] ?: "" }))
+}
+
 /** "26 Sep – 2 Oct": the stretch a range covers, under the title. */
 private fun rangeSpan(today: String, days: Int): String {
     val start = java.time.LocalDate.parse(today)
@@ -833,7 +948,7 @@ fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     var asked by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-    val online = state.paired && state.inference.connected
+    val online = state.inference.connected
 
     // Dictation uses the phone's own recogniser: a spoken question is text by
     // the time it leaves the device, so nothing new travels and nothing new
@@ -875,7 +990,7 @@ fun ChatScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (!online) {
-                Text("Online only — needs the workstation and a connected inference server.",
+                Text("Needs the agent server — set it in Settings, and be on its network.",
                     style = MaterialTheme.typography.bodyMedium, color = c.muted,
                     modifier = Modifier.fillMaxWidth().background(c.raised)
                         .border(1.dp, c.line).padding(14.dp))
@@ -971,55 +1086,39 @@ private fun StatusRow(label: String, value: String, good: Boolean, last: Boolean
 }
 
 @Composable
-fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+fun SettingsScreen(
+    state: HubidubiOsViewModel.UiState,
+    vm: HubidubiOsViewModel,
+    onImport: () -> Unit = {},
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val c = HubidubiOsTheme.colors
 
-    // The inference endpoint lives on the workstation (it holds the URL and the
-    // pinned certificate), so the phone edits it through the sync API rather
-    // than keeping a second copy that could drift.
-    // Everything is proposed, nothing demanded: the form arrives filled in and
-    // Save works on arrival. Deriving this from the paired workstation was a
-    // worse guess than a fixed one — the agent runs on its own box here, so
-    // proposing the workstation just made a wrong address easy to save.
-    val defaultEndpoint = DEFAULT_AGENT_ENDPOINT
-    var endpoint by remember(defaultEndpoint) { mutableStateOf(defaultEndpoint) }
-    var protocol by remember { mutableStateOf("selfhostedai") }
+    // The agent is asked directly, so its address is this phone's own
+    // setting. Everything is proposed, nothing demanded: the form arrives
+    // filled in and Save works on arrival.
+    val saved = remember { vm.agentConfig() }
+    val defaultEndpoint = com.hubidubios.core.agent.AgentConfig.DEFAULT_ENDPOINT
+    var endpoint by remember { mutableStateOf(saved.endpoint) }
+    var protocol by remember { mutableStateOf(saved.protocol) }
     // The default is filled in rather than hinted at: an empty box reads as
     // "you must supply this", which is exactly what it is not.
-    val defaultModel = if (protocol == "selfhostedai") "fast" else "local"
-    var model by remember { mutableStateOf(defaultModel) }
+    val defaultModel = com.hubidubios.core.agent.AgentConfig.defaultModel(protocol)
+    var model by remember { mutableStateOf(saved.model) }
     // Switching protocol swaps the default, unless the user typed their own.
     LaunchedEffect(protocol) {
         if (model.isBlank() || model == "fast" || model == "local") model = defaultModel
     }
-    var loaded by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(state.paired) {
-        if (state.paired && !loaded) {
-            // A null here means the workstation did not answer, so the fields
-            // keep their proposed values rather than silently blanking.
-            vm.agentConfig()?.let {
-                if (it.endpoint.isNotBlank()) endpoint = it.endpoint
-                protocol = it.protocol
-                // An unset model on the workstation means "use the default",
-                // so show the default rather than an empty box.
-                model = it.model?.takeIf { m -> m.isNotBlank() }
-                    ?: if (it.protocol == "selfhostedai") "fast" else "local"
-            }
-            loaded = true
-        }
-    }
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader("Settings")
         SectionLabel("Connection", modifier = Modifier.padding(top = 0.dp))
         CardGroup {
             StatusRow("Workstation", if (state.paired) "Paired" else "Not paired", state.paired)
-            StatusRow("Inference", state.inference.server ?: "not configured",
+            StatusRow("Agent", state.inference.server ?: "not configured",
                 state.inference.connected, last = true)
         }
         val openPairing = { context.startActivity(Intent(context, PairingActivity::class.java)) }
@@ -1037,15 +1136,38 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             }
         }
 
+        // The Mac app: the phone keeps it up to date directly, every minute.
+        var pairingMac by remember { mutableStateOf(false) }
+        PairMacSheet(pairingMac, vm) { pairingMac = false }
+        SectionLabel("Mac", modifier = Modifier.padding(top = 10.dp))
+        val mac = state.mac
+        if (mac != null) {
+            CardGroup {
+                StatusRow(mac.name, mac.lastSync?.let { "synced " + it.take(16).replace('T', ' ') + " UTC" }
+                    ?: "paired, not synced yet", mac.lastSync != null, last = true)
+            }
+            Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton("Sync now", { vm.syncMacNow() }, Modifier.weight(1f),
+                    icon = Icons.Outlined.Sync)
+                SecondaryButton("Unpair", { vm.unpairMac() }, Modifier.weight(1f))
+            }
+        } else {
+            Row(Modifier.padding(start = 12.dp, end = 12.dp)) {
+                SecondaryButton("Pair with a Mac", { pairingMac = true }, Modifier.weight(1f),
+                    icon = Icons.Outlined.Link)
+            }
+        }
+
         SectionLabel("Agent server", modifier = Modifier.padding(top = 10.dp))
-        Text("Where the workstation sends questions and captures for summarising.",
+        Text("Where this phone sends questions and reviews. Asked directly — the workstation isn't involved.",
             style = MaterialTheme.typography.bodySmall, color = c.muted,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp))
 
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             LabeledField("Server address", endpoint, { endpoint = it; message = null },
                 helper = if (endpoint == defaultEndpoint) "Default agent server" else "",
-                enabled = state.paired, placeholder = "https://192.168.1.50:8443")
+                enabled = true, placeholder = "https://192.168.1.50:8443")
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Protocol", style = MaterialTheme.typography.bodySmall,
@@ -1059,30 +1181,28 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
             LabeledField("Model", model, { model = it; message = null },
                 helper = if (model == defaultModel) "Default for this protocol"
                          else "Custom — the default is $defaultModel",
-                enabled = state.paired, placeholder = defaultModel)
+                enabled = true, placeholder = defaultModel)
 
             PrimaryButton(
                 if (saving) "Saving…" else "Save agent server",
                 {
                     saving = true; message = null
+                    vm.setAgentConfig(saved.copy(endpoint = endpoint.trim(), protocol = protocol,
+                        model = model.ifBlank { defaultModel }))
                     scope.launch {
-                        val err = vm.setAgentConfig(endpoint, protocol, model.ifBlank { null })
-                        message = if (err != null) err else {
-                            // Saving is not the same as working. Writing an address
-                            // nothing answers on looks identical to writing a good
-                            // one until something later fails, so probe it now and
-                            // say plainly which happened.
-                            message = "Saved — checking…"
-                            val h = vm.checkInference()
-                            if (h.connected) "Connected to ${h.server ?: endpoint}"
-                            else "Saved, but nothing answered at $endpoint — check " +
-                                "the address and that the agent is running there."
-                        }
+                        // Saving is not the same as working. An address nothing
+                        // answers on looks identical to a good one until a question
+                        // fails, so probe it now and say plainly which happened.
+                        message = "Saved — checking…"
+                        val h = vm.checkInference()
+                        message = if (h.connected) "Connected to ${h.server ?: endpoint}"
+                            else "Saved, but nothing answered at $endpoint — check the " +
+                                "address and that the agent is running there."
                         saving = false
                     }
                 },
                 Modifier.fillMaxWidth(),
-                enabled = state.paired && !saving && endpoint.isNotBlank(),
+                enabled = !saving && endpoint.isNotBlank(),
             )
 
             message?.let {
@@ -1092,13 +1212,13 @@ fun SettingsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                     Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
-            if (!state.paired) {
-                Text("Pair with a workstation first — it is the workstation that talks "
-                    + "to the agent server.",
-                    style = MaterialTheme.typography.bodySmall, color = c.muted)
-            }
         }
-        Spacer(Modifier.height(24.dp))
+        // Kept quiet at the very end: something done once, when moving in,
+        // not a setting anyone looks for day to day.
+        SecondaryButton("Import from another app", onImport,
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 28.dp),
+            icon = Icons.Outlined.FileDownload)
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -1140,7 +1260,12 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         out
     }
     val free = remember(nodes) { nodes.filter { it.isFree } }
+    // How many sub-tasks each item holds: shown as a count, opened on tap.
+    val subCount = remember(records) {
+        records.mapNotNull { it.fields["parent"] }.groupingBy { it }.eachCount()
+    }
 
+    var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,
@@ -1148,9 +1273,17 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         onReview = { rec -> reviewing = rec },
         onDelete = { rec -> pendingDelete = rec },
         onDismiss = { menuFor = null },
+        onAddNote = { rec -> addingNoteTo = rec },
     )
+    AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
+    val allItems = remember(state.nextActions, state.inbox, state.notes) {
+        state.nextActions + state.inbox + state.notes
+    }
     DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
-        onDismiss = { detailFor = null })
+        onDismiss = { detailFor = null },
+        subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
+        onOpen = { detailFor = it },
+        onDone = { vm.complete(it) })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     moving?.let { node ->
@@ -1250,6 +1383,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                                 Text(node.title, style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f))
                                 AttachmentTag(node.record)
+                                SubtaskTag(subCount[node.id] ?: 0)
                             }
                         }
                     }
@@ -1272,6 +1406,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                                 Text(node.title, style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f))
                                 AttachmentTag(node.record)
+                                SubtaskTag(subCount[node.id] ?: 0)
                             }
                         }
                     }

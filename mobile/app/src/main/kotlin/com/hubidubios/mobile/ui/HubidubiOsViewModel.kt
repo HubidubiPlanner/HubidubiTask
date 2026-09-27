@@ -4,9 +4,18 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hubidubios.core.EntityRecord
-import com.hubidubios.mobile.net.AgentClient
+import com.hubidubios.core.agent.Agent
+import com.hubidubios.core.agent.AgentConfig
+import com.hubidubios.core.agent.Health
+import com.hubidubios.core.agent.ModelClient
+import com.hubidubios.mobile.net.AgentSettings
 import com.hubidubios.mobile.net.PairedServer
 import com.hubidubios.mobile.sync.Sync
+import com.hubidubios.mobile.importer.Ics
+import com.hubidubios.mobile.importer.Todoist
+import com.hubidubios.mobile.importer.fetchCalendarText
+import com.hubidubios.mobile.sync.eventId
+import com.hubidubios.mobile.tree.ProjectTree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +33,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
     data class UiState(
         val paired: Boolean = false,
         val syncing: Boolean = false,
-        val inference: AgentClient.Health = AgentClient.Health(false, null, emptyList()),
+        val inference: Health = Health(false, null, emptyList()),
         val inbox: List<EntityRecord> = emptyList(),
         val nextActions: List<EntityRecord> = emptyList(),
         val staleProjects: List<EntityRecord> = emptyList(),
@@ -32,6 +41,10 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val projects: List<EntityRecord> = emptyList(),
         /** Everything carrying a date, soonest first — what Next shows. */
         val dated: List<EntityRecord> = emptyList(),
+        /** Calendar events (imported or from the workstation), for Next. */
+        val events: List<EntityRecord> = emptyList(),
+        /** The paired Mac, if any. */
+        val mac: com.hubidubios.mobile.net.MacLink.Mac? = null,
         /** Host of the paired workstation, to propose a default endpoint. */
         val workstationHost: String? = null,
     )
@@ -39,7 +52,64 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-    init { refresh() }
+    init {
+        refresh()
+        // The Mac gets this phone's changes, and sends its own, every minute
+        // while the app is open. (In the background Android allows far less;
+        // the periodic worker catches up.)
+        viewModelScope.launch {
+            while (true) {
+                val r = withContext(Dispatchers.IO) { runCatching { Sync.syncMac(getApplication()) }.getOrNull() }
+                if (r != null) refresh()
+                kotlinx.coroutines.delay(60_000)
+            }
+        }
+    }
+
+    /** Sync with the Mac now, not at the next minute. */
+    fun syncMacNow() = viewModelScope.launch {
+        withContext(Dispatchers.IO) { runCatching { Sync.syncMac(getApplication()) } }
+        refresh()
+    }
+
+    fun unpairMac() {
+        com.hubidubios.mobile.net.MacLink.forget(getApplication()); refresh()
+    }
+
+    /**
+     * Keep trying to pair until a Mac takes [code] or ten minutes pass: the code
+     * may be typed on the Mac after it is shown here, and the Mac may be found by
+     * Bonjour or at a typed [address]. Returns a line to show.
+     */
+    suspend fun pairMac(code: String, address: String?, shownHere: Boolean): String =
+        withContext(Dispatchers.IO) {
+            val ctx = getApplication<Application>()
+            val name = android.os.Build.MODEL ?: "Phone"
+            val until = System.currentTimeMillis() + com.hubidubios.core.peer.PeerPairing.CODE_TTL_MS
+            while (System.currentTimeMillis() < until) {
+                val candidates = listOfNotNull(address?.let(com.hubidubios.mobile.net.MacLink::parseAddress)) +
+                    com.hubidubios.mobile.net.MacLink.discover(ctx)
+                for (at in candidates) {
+                    when (val out = com.hubidubios.mobile.net.MacLink.pair(ctx, code, at, name)) {
+                        is com.hubidubios.mobile.net.MacLink.PairOutcome.Paired -> {
+                            runCatching { Sync.syncMac(ctx) }
+                            withContext(Dispatchers.Main) { refresh() }
+                            return@withContext "Paired with ${out.mac.name}."
+                        }
+                        // Typed on this phone and the Mac refused it: wrong code.
+                        com.hubidubios.mobile.net.MacLink.PairOutcome.WrongCode ->
+                            if (!shownHere) return@withContext "The Mac didn't accept that code."
+                        else -> {}
+                    }
+                }
+                if (!kotlinx.coroutines.currentCoroutineContext().isActiveSafe()) break
+                Thread.sleep(2500)
+            }
+            "No Mac took the code in time."
+        }
+
+    private fun kotlin.coroutines.CoroutineContext.isActiveSafe() =
+        this[kotlinx.coroutines.Job]?.isActive != false
 
     private fun sync() = Sync.open(getApplication())
 
@@ -54,35 +124,58 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 notes = sync.notes(),
                 projects = sync.projects(),
                 dated = sync.dated(),
-                inference = health(),
+                events = sync.events(),
+                mac = com.hubidubios.mobile.net.MacLink.load(getApplication()),
+                inference = _state.value.inference,
                 workstationHost = PairedServer.load(getApplication())?.host,
             )
         }
         _state.value = s
-    }
-
-    private fun health(): AgentClient.Health {
-        val server = PairedServer.load(getApplication())
-            ?: return AgentClient.Health(false, null, emptyList())
-        return AgentClient(server).health()
-    }
-
-    /** The inference settings held by the workstation, for the settings form. */
-    suspend fun agentConfig(): AgentClient.AgentConfig? = withContext(Dispatchers.IO) {
-        PairedServer.load(getApplication())?.let { AgentClient(it).config() }
-    }
-
-    /** Re-probe the inference server and report what came back. */
-    suspend fun checkInference(): AgentClient.Health = withContext(Dispatchers.IO) { health() }
-
-    /** Point the agent at an inference server. Returns null on success. */
-    suspend fun setAgentConfig(endpoint: String, protocol: String, model: String?): String? =
-        withContext(Dispatchers.IO) {
-            val server = PairedServer.load(getApplication())
-                ?: return@withContext "pair with a workstation first"
-            AgentClient(server).setConfig(endpoint.trim(), protocol, model)
-                ?: run { refresh(); null }
+        // The agent is asked about apart: an unreachable one would otherwise
+        // hold the lists back for a whole connection timeout.
+        viewModelScope.launch {
+            val h = withContext(Dispatchers.IO) { health() }
+            _state.value = _state.value.copy(inference = h)
         }
+    }
+
+    // --- the agent, asked directly (no workstation in between). One client is
+    // kept while the settings stay the same, so its session stays warm.
+
+    @Volatile private var agentConfig: AgentConfig? = null
+    @Volatile private var agent: ModelClient? = null
+
+    private fun agent(): Pair<AgentConfig, ModelClient> = synchronized(this) {
+        val cfg = AgentSettings.load(getApplication())
+        val cur = agent
+        if (cur != null && cfg == agentConfig) return cfg to cur
+        cur?.close()
+        agentConfig = cfg
+        Agent.clientFor(cfg).also { agent = it }.let { cfg to it }
+    }
+
+    // A health probe opens a session; refresh() runs after every tap, so the
+    // answer is reused for a minute rather than asked for each time.
+    @Volatile private var lastHealth: Pair<Long, Health>? = null
+
+    private fun health(force: Boolean = false): Health {
+        val now = System.currentTimeMillis()
+        lastHealth?.let { (at, h) -> if (!force && now - at < 60_000) return h }
+        return agent().second.health().also { lastHealth = now to it }
+    }
+
+    /** The agent settings this phone holds, for the settings form. */
+    fun agentConfig(): AgentConfig = AgentSettings.load(getApplication())
+
+    /** Re-probe the agent and report what came back. */
+    suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(force = true) }
+        .also { h -> _state.value = _state.value.copy(inference = h) }
+
+    /** Point the phone at an agent. */
+    fun setAgentConfig(config: AgentConfig) {
+        AgentSettings.save(getApplication(), config)
+        lastHealth = null
+    }
 
     fun capture(text: String, due: String? = null) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().capture(text, due) }
@@ -165,6 +258,31 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    /**
+     * Close a task as done. Its notes stay: they are reference, not work, so
+     * they move up to the task's project (or out to the loose items) instead
+     * of vanishing with it.
+     *
+     * An inbox capture has no "done" on the workstation (its line has no
+     * checkbox), so marking it would come back undone on the next sync;
+     * finishing one removes it instead.
+     */
+    fun complete(rec: EntityRecord) = viewModelScope.launch {
+        withContext(Dispatchers.IO) {
+            val sync = sync()
+            val up = rec.fields["parent"]?.takeIf { it.isNotBlank() }
+            ProjectTree.children(rec.id, sync.notes()).forEach { sync.moveTo(it.id, up) }
+            if (rec.type == "inbox_item") sync.delete(rec.id) else sync.markDone(rec.id)
+        }
+        refresh()
+    }
+
+    /** A note under a task. */
+    fun addNote(parentId: String, title: String, body: String = "") = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteText(title.trim(), body.trim(), parent = parentId) }
+        refresh()
+    }
+
     fun syncNow() = viewModelScope.launch {
         _state.value = _state.value.copy(syncing = true)
         withContext(Dispatchers.IO) { runCatching { sync().syncNow() } }
@@ -172,10 +290,96 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(syncing = false)
     }
 
+    /**
+     * Ask the agent. A review ([plain]) sends the item alone; a chat question
+     * goes with a short picture of what is open, since the agent no longer has
+     * the workstation's vault to look things up in.
+     */
     suspend fun ask(query: String, plain: Boolean = false): String =
         withContext(Dispatchers.IO) {
-            val server = PairedServer.load(getApplication())
-                ?: return@withContext "not paired"
-            AgentClient(server).ask(query, plain)
+            val (cfg, client) = agent()
+            Agent.ask(client, cfg, query, if (plain) null else chatContext(_state.value))
         }
+
+    private fun chatContext(s: UiState): String {
+        val projectTitle = s.projects.associate { it.id to (it.fields["title"] ?: it.id) }
+        val lines = ArrayList<String>()
+        lines += "What the user has open (tasks with their project and date):"
+        for (t in (s.nextActions + s.inbox).sortedBy { it.fields["due"] ?: "~" }) {
+            val text = t.fields["text"] ?: t.fields["title"] ?: continue
+            val project = t.fields["parent"]?.let { projectTitle[it] }
+            lines += "- " + text + (project?.let { " [$it]" } ?: "") +
+                (t.fields["due"]?.takeIf { it.isNotBlank() }?.let { " (due $it)" } ?: "")
+        }
+        // The server keeps only the front of an over-long prompt; the list is
+        // cut here, soonest first, so the question itself is never what goes.
+        val out = StringBuilder()
+        for (l in lines) { if (out.length + l.length > 1500) break; out.append(l).append('\n') }
+        return out.toString().trimEnd()
+    }
+
+    // --- one-time import. Nothing here is kept: the token and the calendar
+    // address live only as long as the call that uses them.
+
+    /** Read Todoist and work out what an import would add. Throws on failure. */
+    suspend fun planTodoist(token: String): Todoist.Plan = withContext(Dispatchers.IO) {
+        val (projects, tasks) = Todoist.fetch(token.trim())
+        val s = _state.value
+        val titleOf = s.projects.associate { it.id to (it.fields["title"] ?: it.id) }
+        val idBySlug = s.projects.associate { ProjectTree.slugOf(it.fields["title"] ?: it.id) to it.id }
+        val existing = (s.nextActions + s.inbox + s.notes).associate { rec ->
+            (ProjectTree.parentOf(rec, idBySlug)?.let { titleOf[it] ?: parentProject(it, s) } to
+                (rec.fields["text"] ?: rec.fields["title"] ?: "")) to rec.id
+        }
+        Todoist.plan(projects, tasks, titleOf.values, existing)
+    }
+
+    /** The project a sub-task's parent sits in, by name. */
+    private fun parentProject(parentId: String, s: UiState): String? {
+        val parent = (s.nextActions + s.inbox).firstOrNull { it.id == parentId } ?: return null
+        return parent.fields["parent"]?.let { pid -> s.projects.firstOrNull { it.id == pid } }
+            ?.let { it.fields["title"] ?: it.id }
+    }
+
+    /** Write a plan's projects and tasks, then sync them out. Returns tasks written. */
+    suspend fun importTodoist(plan: Todoist.Plan): Int = withContext(Dispatchers.IO) {
+        val sync = sync()
+        val idByName = HashMap<String, String>()
+        sync.projects().forEach { idByName[(it.fields["title"] ?: it.id).trim().lowercase()] = it.id }
+        plan.newProjects.forEach { idByName[it.trim().lowercase()] = sync.createProject(it) }
+        val idByKey = HashMap<String, String>()   // todoist id -> the id it got here
+        plan.tasks.forEach { t ->   // parents come first
+            val projectId = t.project?.let { idByName[it.trim().lowercase()] }
+            val task = t.parentKey?.let { idByKey[it] ?: t.existingParent }
+            idByKey[t.key] = if (t.parentKey != null && task != null) {
+                // A Todoist sub-task is a note under its task here.
+                sync.noteText(t.text, t.body.orEmpty(), t.due, parent = task)
+            } else {
+                sync.addNextAction(t.text, projectId,
+                    t.project?.let(ProjectTree::slugOf), t.due, t.body)
+            }
+        }
+        plan.tasks.size
+    }.also { refresh(); syncNow() }
+
+    data class CalendarPlan(
+        val events: List<Ics.Occurrence>,
+        val alreadyHere: Int,
+        val unsupportedRules: Int,
+    )
+
+    /** Read a calendar feed: occurrences from today through the next twelve months. */
+    suspend fun planCalendar(url: String): CalendarPlan = withContext(Dispatchers.IO) {
+        val zone = java.time.ZoneId.systemDefault()
+        val today = java.time.LocalDate.now(zone)
+        val res = Ics.parse(fetchCalendarText(url), today, today.plusMonths(12), zone)
+        val known = sync().events().map { it.id }.toHashSet()
+        val (here, fresh) = res.occurrences.partition { eventId(it.uid) in known }
+        CalendarPlan(fresh, here.size, res.unsupportedRules)
+    }
+
+    suspend fun importCalendar(plan: CalendarPlan): Int = withContext(Dispatchers.IO) {
+        val sync = sync()
+        plan.events.count { sync.addEvent(it, "google") }
+    }.also { refresh(); syncNow() }
 }

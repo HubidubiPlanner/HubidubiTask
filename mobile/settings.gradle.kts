@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "hubidubios-mobile"
-include(":core", ":app")
+include(":core", ":app", ":desktop")

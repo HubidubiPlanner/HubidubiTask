@@ -53,6 +53,7 @@ object ItemDetail {
         }
         "next_action" -> "Next action"
         "project" -> "Project"
+        "event" -> "Event"
         else -> record.type.replace('_', ' ')
     }
 

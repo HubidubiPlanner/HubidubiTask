@@ -55,9 +55,23 @@ interface BlobUploadDao {
     fun remove(sha: String)
 }
 
+@Dao
+interface PeerLogDao {
+    @Insert
+    fun add(row: PeerLogRow): Long
+
+    /** Each entity's latest log entry past [since] — it carries the current state. */
+    @Query("SELECT * FROM peer_log l WHERE l.seq > :since AND l.seq = (SELECT MAX(seq) FROM peer_log WHERE id = l.id) ORDER BY l.seq")
+    fun latestSince(since: Long): List<PeerLogRow>
+
+    @Query("SELECT COALESCE(MAX(seq), 0) FROM peer_log")
+    fun lastSeq(): Long
+}
+
 @Database(
-    entities = [EntityRow::class, OutboxRow::class, SyncStateRow::class, BlobUploadRow::class],
-    version = 2,
+    entities = [EntityRow::class, OutboxRow::class, SyncStateRow::class, BlobUploadRow::class,
+                PeerLogRow::class],
+    version = 3,
     exportSchema = false,
 )
 abstract class HubidubiOsDatabase : RoomDatabase() {
@@ -65,4 +79,5 @@ abstract class HubidubiOsDatabase : RoomDatabase() {
     abstract fun outbox(): OutboxDao
     abstract fun syncState(): SyncStateDao
     abstract fun blobUploads(): BlobUploadDao
+    abstract fun peerLog(): PeerLogDao
 }

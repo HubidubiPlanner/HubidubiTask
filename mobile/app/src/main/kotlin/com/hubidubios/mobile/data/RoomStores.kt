@@ -9,6 +9,7 @@ import com.hubidubios.core.OutboxStore
 class RoomLocalStore(private val db: HubidubiOsDatabase) : LocalStore {
     private val dao = db.entities()
     private val state = db.syncState()
+    private val log = db.peerLog()
 
     override fun get(id: String): EntityRecord? =
         dao.get(id)?.takeIf { !it.is_conflict_copy }?.let { rowToRecord(it) }
@@ -26,6 +27,17 @@ class RoomLocalStore(private val db: HubidubiOsDatabase) : LocalStore {
                 is_conflict_copy = existing?.is_conflict_copy ?: false,
             )
         )
+        // Every change, from any source, is logged for the Mac. One taken in
+        // from the Mac itself is logged by [putFromPeer] with its origin instead.
+        log.add(PeerLogRow(id = record.id, origin = null))
+    }
+
+    /** A record that arrived from a peer: stored like any other, logged with its origin. */
+    fun putFromPeer(record: EntityRecord, peer: String) {
+        val existing = dao.get(record.id)
+        dao.put(EntityRow(record.id, record.type, record.updated, Json.fieldsToJson(record.fields),
+            record.deleted, existing?.base_json, existing?.is_conflict_copy ?: false))
+        log.add(PeerLogRow(id = record.id, origin = peer))
     }
 
     override fun base(id: String): EntityRecord? =

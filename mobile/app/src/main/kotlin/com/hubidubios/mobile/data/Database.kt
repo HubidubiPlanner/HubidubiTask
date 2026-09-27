@@ -28,8 +28,19 @@ object Database {
         val factory = SupportOpenHelperFactory(passphrase)
         return Room.databaseBuilder(context, HubidubiOsDatabase::class.java, "hubidubios-mirror.db")
             .openHelperFactory(factory as SupportSQLiteOpenHelper.Factory)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
+    }
+
+    // v3 adds the change log peer sync with the Mac reads. Everything already
+    // on the phone is logged once, so a newly paired Mac gets all of it.
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS peer_log (" +
+                "seq INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, id TEXT NOT NULL, origin TEXT)")
+            db.execSQL("INSERT INTO peer_log (id, origin) SELECT id, NULL FROM entities " +
+                "WHERE is_conflict_copy = 0 ORDER BY updated")
+        }
     }
 
     // v2 adds the durable media-blob upload queue; the mirror + outbox are kept.

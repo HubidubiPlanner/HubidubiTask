@@ -45,3 +45,13 @@ data class BlobUploadRow(
     val mime: String,
     val note_id: String,
 )
+
+/** Every change to an entity, numbered: what peer sync (phone <-> Mac) reads to
+ *  find the delta. [origin] names the peer a change came from, so it is never
+ *  sent back there. */
+@Entity(tableName = "peer_log")
+data class PeerLogRow(
+    @PrimaryKey(autoGenerate = true) val seq: Long = 0,
+    val id: String,
+    val origin: String?,
+)

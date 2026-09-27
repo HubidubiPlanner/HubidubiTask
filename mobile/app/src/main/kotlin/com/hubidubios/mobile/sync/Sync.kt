@@ -74,10 +74,13 @@ class Sync private constructor(
     // ---- notes: text / image / audio (each uploaded to the workstation) ----
 
     /** A plain text note. */
-    fun noteText(title: String, body: String = "", due: String? = null): String {
+    fun noteText(title: String, body: String = "", due: String? = null,
+                 parent: String? = null): String {
         val id = "n_" + randomSuffix()
         val f = hashMapOf<String, String?>("title" to title, "kind" to "text", "body" to body)
         if (!due.isNullOrBlank()) f["due"] = due
+        // A note under a task: what the task needs you to know or check.
+        if (!parent.isNullOrBlank()) f["parent"] = parent
         upsert("note", id, f, com.hubidubios.core.nowUtc())
         return id
     }
@@ -169,15 +172,15 @@ class Sync private constructor(
             "trash" -> {}
             "next_action" -> {
                 val f = HashMap<String, String?>()
-                f["text"] = text; f["done"] = "false"
+                f["text"] = text   // no "done": absent means open (see addNextAction)
                 f["project"] = project ?: "inbox"
                 if (context != null) f["context"] = context
                 upsert("next_action", "t_" + randomSuffix(), f, now)
             }
             "waiting_for" -> upsert("waiting_for", "t_" + randomSuffix(),
-                hashMapOf("text" to text, "done" to "false"), now)
+                hashMapOf("text" to text), now)
             "someday" -> upsert("someday", "t_" + randomSuffix(),
-                hashMapOf("text" to text, "done" to "false"), now)
+                hashMapOf("text" to text), now)
             "project" -> upsert("project", "p_" + randomSuffix(),
                 hashMapOf("title" to text, "status" to "active"), now)
         }
@@ -269,6 +272,45 @@ class Sync private constructor(
         return true
     }
 
+    /** A next action filed under a project (or loose when [parentId] is null). */
+    fun addNextAction(text: String, parentId: String?, projectSlug: String?, due: String?,
+                      body: String? = null): String {
+        val id = "t_" + randomSuffix()
+        val f = HashMap<String, String?>()
+        // No "done": absent means open. An explicit "false" is a truthy string
+        // to a workstation that predates the fix for it.
+        f["text"] = text
+        // Both: `parent` is what the Projects view nests by; the slug decides
+        // which current/<slug>.md file the workstation writes it into.
+        f["project"] = projectSlug ?: "inbox"
+        if (parentId != null) f["parent"] = parentId
+        if (due != null) f["due"] = due
+        // Longer than a line: the workstation keeps it in details/<id>.md.
+        if (body != null) f["body"] = body
+        upsert("next_action", id, f, com.hubidubios.core.nowUtc())
+        return id
+    }
+
+    fun events(): List<EntityRecord> = store.byType("event")
+
+    /**
+     * A calendar event. Its id is derived from the UID exactly as the
+     * workstation's indexer derives it, so the phone's copy and the one read
+     * back from the .ics file are the same record, and importing the same
+     * event twice is a no-op.
+     */
+    fun addEvent(o: com.hubidubios.mobile.importer.Ics.Occurrence, calendar: String): Boolean {
+        val id = eventId(o.uid)
+        if (store.get(id) != null) return false
+        val f = HashMap<String, String?>()
+        f["uid"] = o.uid; f["summary"] = o.summary; f["dtstart"] = o.dtstart
+        f["calendar"] = calendar; f["all_day"] = o.allDay.toString()
+        o.dtend?.let { f["dtend"] = it }
+        o.location?.let { f["location"] = it }
+        upsert("event", id, f, com.hubidubios.core.nowUtc())
+        return true
+    }
+
     private fun upsert(type: String, id: String, fields: Map<String, String?>, now: String) {
         val rec = EntityRecord(id = id, type = type, updated = now, fields = fields)
         store.put(rec)
@@ -289,6 +331,18 @@ class Sync private constructor(
             return Sync(store, outbox, engine, transport, db.blobUploads(), blobsDir)
         }
 
+        /**
+         * One round with the paired Mac, if there is one. What comes from the
+         * Mac is queued for the workstation too, so the phone relays between them.
+         */
+        fun syncMac(context: Context): com.hubidubios.mobile.net.MacLink.Round? {
+            val db = Database.get(context)
+            val store = RoomLocalStore(db)
+            val peers = com.hubidubios.mobile.data.PhonePeerStore(db, store,
+                Outbox(RoomOutboxStore(db)))
+            return com.hubidubios.mobile.net.MacLink.sync(context, peers, File(context.filesDir, "blobs"))
+        }
+
         private fun deviceIdFor(context: Context): String =
             com.hubidubios.mobile.security.Keystore.getSecret(context, "device-id") ?: "phone"
     }
@@ -306,3 +360,9 @@ private fun time(): String =
     java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(java.util.Date())
 private fun date(): String =
     java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+
+/** "e_" + the first 16 hex of sha256(uid): the workstation's formats/ics.py rule. */
+fun eventId(uid: String): String {
+    val d = java.security.MessageDigest.getInstance("SHA-256").digest(uid.toByteArray(Charsets.UTF_8))
+    return "e_" + d.joinToString("") { "%02x".format(it) }.take(16)
+}

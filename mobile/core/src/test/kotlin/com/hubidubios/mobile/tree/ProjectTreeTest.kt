@@ -224,4 +224,25 @@ class ProjectTreeFreeItemsTest {
 
         assertEquals(2, nodes.count { it.isFree })
     }
+
+    @Test
+    fun `sub-tasks are not rows, they open with their parent`() {
+        val records = listOf(
+            rec("p", "project", mapOf("title" to "Home")),
+            rec("t1", "next_action", mapOf("text" to "Renovate", "parent" to "p")),
+            rec("t2", "next_action", mapOf("text" to "Buy paint", "parent" to "t1")),
+            rec("t3", "next_action", mapOf("text" to "Hire painter", "parent" to "t1")),
+        )
+
+        val rows = ProjectTree.build(records).map { it.id }
+
+        assertEquals(listOf("p", "t1"), rows)
+        assertEquals(listOf("t2", "t3"), ProjectTree.children("t1", records).map { it.id })
+    }
+
+    @Test
+    fun `a sub-task whose parent was deleted is shown, not lost`() {
+        val records = listOf(rec("t2", "next_action", mapOf("text" to "Buy paint", "parent" to "t_gone")))
+        assertEquals(listOf("t2"), ProjectTree.build(records).map { it.id })
+    }
 }
