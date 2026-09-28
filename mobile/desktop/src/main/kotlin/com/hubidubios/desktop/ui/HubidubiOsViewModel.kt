@@ -117,6 +117,14 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
         write("project", id("p"), mapOf("title" to title.trim(), "status" to "active", "parent" to parentId))
     }
 
+    /** As on the phone: a task filed straight into [project], skipping the inbox. */
+    fun addTask(project: EntityRecord, text: String, due: String? = null) = io {
+        write("next_action", id("t"), mapOf("text" to text.trim(), "parent" to project.id,
+            "project" to ProjectTree.slugOf(project.fields["title"] ?: project.id), "due" to due))
+    }
+
+    fun renameProject(id: String, title: String) = io { edit(id) { it + ("title" to title.trim()) } }
+
     fun move(id: String, parentId: String?) = io {
         edit(id) { f -> if (parentId.isNullOrBlank()) f - "parent" else f + ("parent" to parentId) }
     }

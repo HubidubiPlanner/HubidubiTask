@@ -63,6 +63,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -159,6 +160,105 @@ private fun AddNoteSheet(task: EntityRecord?, vm: HubidubiOsViewModel, onDismiss
     }
 }
 
+/** A task straight into a project: what to do, and when, if you know. */
+@Composable
+private fun AddTaskSheet(
+    project: EntityRecord?,
+    vm: HubidubiOsViewModel,
+    onAdded: (EntityRecord) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    project ?: return
+    val c = HubidubiOsTheme.colors
+    var text by remember(project.id) { mutableStateOf("") }
+    var due by remember(project.id) { mutableStateOf<String?>(null) }
+    var picking by remember(project.id) { mutableStateOf(false) }
+    if (picking) {
+        val dateState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { picking = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    dateState.selectedDateMillis?.let { ms ->
+                        // UTC, as in DatePickerFor: the picker hands back UTC midnight.
+                        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        due = fmt.format(java.util.Date(ms))
+                    }
+                    picking = false
+                }) { Text("Set") }
+            },
+            dismissButton = {
+                TextButton(onClick = { due = null; picking = false }) { Text("No date") }
+            },
+        ) { DatePicker(state = dateState) }
+    }
+    AppSheet(onDismiss) {
+        SheetTitle("Add a task", overline = ReviewBrowse.labelOf(project))
+        OutlinedTextField(value = text, onValueChange = { text = it },
+            label = { Text("Task") }, singleLine = true, colors = appFieldColors(),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+        Row(
+            Modifier.padding(top = 12.dp).fillMaxWidth()
+                .defaultMinSize(minHeight = 52.dp)
+                .border(1.dp, c.glyph)
+                .clickable(role = Role.Button) { picking = true }
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
+                modifier = Modifier.size(20.dp))
+            Text(due?.let { "Due ${shortDate(it)}" } ?: "Add a date",
+                style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                color = c.accent, modifier = Modifier.weight(1f))
+            if (due == null)
+                Text("optional", style = MaterialTheme.typography.bodySmall, color = c.muted)
+        }
+        PrimaryButton("Add", { vm.addTask(project, text, due); onAdded(project); onDismiss() },
+            Modifier.fillMaxWidth().padding(top = 18.dp), enabled = text.isNotBlank())
+    }
+}
+
+/** Give a project a new name, starting from the one it has. */
+@Composable
+private fun RenameProjectDialog(project: EntityRecord?, vm: HubidubiOsViewModel, onDismiss: () -> Unit) {
+    project ?: return
+    val c = HubidubiOsTheme.colors
+    val current = project.fields["title"].orEmpty()
+    // Opens focused with the whole name selected: typing replaces it, a tap
+    // places the cursor to edit it.
+    var field by remember(project.id) {
+        mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(current,
+            androidx.compose.ui.text.TextRange(0, current.length)))
+    }
+    val title = field.text
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(project.id) { focus.requestFocus() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = c.paper,
+        title = { Text("Rename project", style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            OutlinedTextField(
+                value = field, onValueChange = { field = it },
+                label = { Text("Project name") }, singleLine = true,
+                colors = appFieldColors(), shape = RectangleShape,
+                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+            )
+        },
+        confirmButton = {
+            PrimaryButton("Rename", { vm.renameProject(project.id, title); onDismiss() },
+                enabled = title.isNotBlank() && title.trim() != current)
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = c.ink, style = MaterialTheme.typography.labelLarge)
+            }
+        },
+    )
+}
+
 /**
  * Confirm before deleting. Long-press alone is too easy to do by accident for
  * something irreversible, and the attachment goes with the item, so the sheet
@@ -222,6 +322,8 @@ private fun ItemActionsMenu(
     onDelete: (EntityRecord) -> Unit,
     onDismiss: () -> Unit,
     onAddNote: ((EntityRecord) -> Unit)? = null,
+    onAddTask: ((EntityRecord) -> Unit)? = null,
+    onRename: ((EntityRecord) -> Unit)? = null,
 ) {
     record ?: return
     val c = HubidubiOsTheme.colors
@@ -234,6 +336,12 @@ private fun ItemActionsMenu(
     }
     AppSheet(onDismiss) {
         SheetTitle(ReviewBrowse.labelOf(record), overline = ItemDetail.typeLabel(record))
+        if (record.type == "project") {
+            if (onAddTask != null)
+                ActionRow(Icons.Filled.Add, "Add a task") { onDismiss(); onAddTask(record) }
+            if (onRename != null)
+                ActionRow(Icons.Outlined.Edit, "Rename") { onDismiss(); onRename(record) }
+        }
         if (canMove) {
             ActionRow(Icons.AutoMirrored.Outlined.DriveFileMove, "Move to a project") {
                 onDismiss(); onMove(record)
@@ -1022,6 +1130,8 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     }
 
     var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
+    var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
+    var renaming by remember { mutableStateOf<EntityRecord?>(null) }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,
@@ -1030,8 +1140,13 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         onDelete = { rec -> pendingDelete = rec },
         onDismiss = { menuFor = null },
         onAddNote = { rec -> addingNoteTo = rec },
+        onAddTask = { rec -> addingTaskTo = rec },
+        onRename = { rec -> renaming = rec },
     )
     AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
+    // Open the project the task went into, so the new task is seen landing.
+    AddTaskSheet(addingTaskTo, vm, onAdded = { collapsed = collapsed - it.id }) { addingTaskTo = null }
+    RenameProjectDialog(renaming, vm) { renaming = null }
     val allItems = remember(state.nextActions, state.inbox, state.notes) {
         state.nextActions + state.inbox + state.notes
     }

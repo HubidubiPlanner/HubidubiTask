@@ -258,6 +258,16 @@ class Sync private constructor(
         return id
     }
 
+    /** Rename a project. Its items point at it by id, so they stay inside it. */
+    fun renameProject(id: String, title: String): Boolean {
+        val rec = store.get(id)?.takeIf { it.type == "project" } ?: return false
+        val updated = rec.copy(updated = com.hubidubios.core.nowUtc(),
+            fields = rec.fields + ("title" to title.trim()))
+        store.put(updated)
+        outbox.enqueueUpsert(updated)
+        return true
+    }
+
     /** Re-nest an item under [parentId] (null = top level).
      *
      *  Only the parent pointer changes; the item keeps its text, state and any

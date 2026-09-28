@@ -247,6 +247,20 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    /** A task filed straight into [project], skipping the inbox. */
+    fun addTask(project: EntityRecord, text: String, due: String? = null) = viewModelScope.launch {
+        withContext(Dispatchers.IO) {
+            sync().addNextAction(text.trim(), project.id,
+                ProjectTree.slugOf(project.fields["title"] ?: project.id), due)
+        }
+        refresh()
+    }
+
+    fun renameProject(id: String, title: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().renameProject(id, title) }
+        refresh()
+    }
+
     /** Re-nest an item in the Projects tree. */
     fun move(id: String, parentId: String?) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().moveTo(id, parentId) }
