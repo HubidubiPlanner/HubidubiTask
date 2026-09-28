@@ -1,12 +1,46 @@
-hubidubios mobile is the pocket client for a local-first productivity OS. It keeps
-a full offline mirror of your vault, syncs only over your own LAN to your own
-workstation, and hosts plugin views. No cloud is ever contacted.
+HubidubiOS is a task app built around one idea: what you capture should get done, not pile up.
 
-- Capture works offline, from a home-screen widget or the share sheet, and
-  never fails.
-- Tasks, notes, events and the GTD inbox are all available in airplane mode.
-- Sync happens automatically when you are home on the LAN; changes are
-  field-merged and note conflicts are preserved, never silently discarded.
-- Traffic is protected by a pinned self-signed certificate established at
-  pairing — stronger than public-CA trust, and unreadable to anything on the
-  network.
+Your tasks, notes and calendar live on your own devices. Your phone and your Mac sync directly with each other over your own Wi-Fi. There is no account, no cloud service and no server of ours in between.
+
+GET IT OUT OF YOUR HEAD
+• Capture four ways: type a thought, take or pick a photo, record a voice memo, or attach a document.
+• One question when you save: task or note? Only you know whether a photo means "do something about this" or "keep this".
+• Add a date right there, while you still remember it, or skip it.
+• Capture text from the home-screen widget or from any app's share menu, without opening HubidubiOS.
+
+KNOW WHAT IS NEXT
+• Next opens on today. Overdue items get their own heading at the top, because "should already have happened" calls for a different decision than "happens today".
+• Switch to Week or Month when you plan. Week shows a seven-day strip with a dot for everything due.
+• Weeks roll from today, so on a Saturday "this week" still means seven days, not one.
+• Tomorrow never ambushes you: the Day view tells you how much more is due this week.
+
+A CALENDAR THAT BEHAVES LIKE A CALENDAR
+• Events sit in the same days as your tasks, with their start time, ahead of the things that can happen any time.
+• An event that already happened is not "overdue". It is over, so it leaves the list.
+• Events keep the date the calendar gave them; tasks are what you re-date.
+
+DONE MEANS DONE
+• Mark an item done from a long-press or from the item itself.
+• Projects are plain containers of tasks and notes. Put a note under a task to keep the details where the work is.
+• Open any item to see what it is, when it is due, and what is filed under it.
+
+SYNC WITHOUT A CLOUD
+• Pair the phone with the HubidubiOS Mac app by typing a short code. Both on the same Wi-Fi is all it takes.
+• From then on they keep each other current on their own. Every edit carries a time; the newest one wins, and deletions travel too, so nothing you removed comes back.
+• Everything works offline. The phone keeps a full copy of your data in an encrypted database.
+• Traffic between your devices is encrypted and pinned to the certificate exchanged when you paired.
+
+AN ASSISTANT ON YOUR TERMS (OPTIONAL)
+• Ask about your projects, typed or spoken, or ask for a review of a single item.
+• The phone talks directly to a model server you run on your own network (any OpenAI-compatible endpoint). Nothing passes through us.
+• No server? Everything else works exactly the same.
+
+COMING FROM ANOTHER APP?
+• One-time import from Todoist (with your API token) or Google Calendar (with your private iCal address). The token is used once and not kept.
+
+PRIVACY
+• No account, no sign-in, no ads, no analytics, no trackers.
+• We run no servers, so we never receive your data.
+• The camera is used only when you take a photo; the microphone only while you record a voice memo.
+
+Plain paper by day, moss green by night: HubidubiOS follows your system's light and dark theme.

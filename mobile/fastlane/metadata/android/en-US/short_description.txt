@@ -1,1 +1,1 @@
-Local-first, LAN-only productivity client. No cloud, ever.
+Capture it, see what is next, get it done. Syncs between devices with no cloud.

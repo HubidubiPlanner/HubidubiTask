@@ -1,0 +1,48 @@
+HubidubiOS to aplikacja do zadań zbudowana wokół jednej myśli: to, co zapiszesz, ma zostać zrobione, a nie odkładać się w stosie.
+
+Zadania, notatki i kalendarz żyją na Twoich urządzeniach. Telefon i Mac synchronizują się bezpośrednio ze sobą przez Twoje Wi-Fi. Nie ma konta, nie ma chmury i nie ma po drodze żadnego naszego serwera.
+
+WYRZUĆ TO Z GŁOWY
+• Cztery sposoby zapisu: wpisz myśl, zrób lub wybierz zdjęcie, nagraj notatkę głosową albo dołącz dokument.
+• Jedno pytanie przy zapisie: zadanie czy notatka? Tylko Ty wiesz, czy zdjęcie znaczy „trzeba coś z tym zrobić”, czy „zachowaj to”.
+• Dodaj datę od razu, póki ją pamiętasz, albo pomiń.
+• Zapisuj tekst z widżetu na ekranie głównym lub z menu udostępniania dowolnej aplikacji, bez otwierania HubidubiOS.
+
+WIEDZ, CO DALEJ
+• Widok Next otwiera się na dzisiejszym dniu. Zaległe rzeczy mają własny nagłówek na górze, bo „powinno już się stać” wymaga innej decyzji niż „dzieje się dziś”.
+• Przełącz na Week lub Month, gdy planujesz. Week pokazuje pasek siedmiu dni z kropką przy wszystkim, co ma termin.
+• Tygodnie liczą się od dziś, więc w sobotę „ten tydzień” to nadal siedem dni, a nie jeden.
+• Jutro Cię nie zaskoczy: widok Day mówi, ile jeszcze czeka w tym tygodniu.
+
+KALENDARZ, KTÓRY DZIAŁA JAK KALENDARZ
+• Wydarzenia stoją w tych samych dniach co zadania, z godziną rozpoczęcia, przed rzeczami, które mogą się wydarzyć o dowolnej porze.
+• Wydarzenie, które już minęło, nie jest „zaległe”. Minęło, więc znika z listy.
+• Wydarzenia mają datę nadaną przez kalendarz; to zadania przesuwasz w czasie.
+
+ZROBIONE ZNACZY ZROBIONE
+• Oznacz rzecz jako zrobioną przytrzymaniem albo z poziomu samej rzeczy.
+• Projekty to proste pojemniki na zadania i notatki. Dodaj notatkę pod zadaniem, żeby szczegóły były tam, gdzie praca.
+• Otwórz dowolną rzecz, by zobaczyć, czym jest, kiedy ma termin i co jest pod nią.
+
+SYNCHRONIZACJA BEZ CHMURY
+• Sparuj telefon z aplikacją HubidubiOS na Maca, wpisując krótki kod. Wystarczy to samo Wi-Fi.
+• Od tej chwili urządzenia same dbają o aktualność. Każda zmiana ma swój czas; wygrywa najnowsza, a usunięcia też się przenoszą, więc nic, co usunięte, nie wraca.
+• Wszystko działa offline. Telefon trzyma pełną kopię danych w zaszyfrowanej bazie.
+• Ruch między urządzeniami jest szyfrowany i przypięty do certyfikatu wymienionego przy parowaniu.
+
+ASYSTENT NA TWOICH WARUNKACH (OPCJONALNIE)
+• Pytaj o swoje projekty, pisząc lub mówiąc, albo poproś o przegląd pojedynczej rzeczy.
+• Telefon łączy się bezpośrednio z serwerem modelu, który uruchamiasz we własnej sieci (dowolny punkt końcowy zgodny z OpenAI). Nic nie przechodzi przez nas.
+• Bez serwera? Cała reszta działa dokładnie tak samo.
+
+PRZECHODZISZ Z INNEJ APLIKACJI?
+• Jednorazowy import z Todoist (Twoim tokenem API) lub Kalendarza Google (Twoim prywatnym adresem iCal). Token jest użyty raz i nie jest przechowywany.
+
+PRYWATNOŚĆ
+• Bez konta, bez logowania, bez reklam, bez analityki, bez śledzenia.
+• Nie prowadzimy żadnych serwerów, więc nigdy nie dostajemy Twoich danych.
+• Aparat działa tylko, gdy robisz zdjęcie; mikrofon tylko podczas nagrywania notatki głosowej.
+
+Papier w dzień, mech nocą: HubidubiOS podąża za jasnym i ciemnym motywem systemu.
+
+Interfejs aplikacji jest na razie w języku angielskim.

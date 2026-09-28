@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — HubidubiOS</title>
+  <meta name="description" content="HubidubiOS has no servers and collects no data. What the app stores, where it sends it, and why.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://hubidubios.example/privacy.html">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/favicon.svg" alt="" width="28" height="28">HubidubiOS</a>
+    <nav class="site-nav" aria-label="Main">
+      <a class="keep" href="index.html">Home</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective 28 September 2026 · applies to the HubidubiOS apps for Android and macOS, and this website</p>
+
+  <h2>The short version</h2>
+  <p>HubidubiOS has no servers. We, the developer, do not collect, receive, store, sell or share any of your data. Your tasks, notes, photos, recordings, documents and calendar events stay on your own devices and travel only between devices you have paired yourself, and to services you choose to connect.</p>
+
+  <h2>What the app stores, and where</h2>
+  <p>Everything you put into HubidubiOS is stored on the device you put it on. On Android it lives in an encrypted database whose key is protected by the Android Keystore. The app opts out of Android's cloud backup, so your data is not copied to a backup service either.</p>
+
+  <h2>Where data goes, and only when you make it go</h2>
+  <table>
+    <thead><tr><th>When</th><th>What is sent</th><th>To whom</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>You pair and sync devices</td>
+        <td>Your items and their attachments</td>
+        <td>Your own paired devices, directly over your local network. The connection is encrypted and pinned to the certificate exchanged at pairing.</td>
+      </tr>
+      <tr>
+        <td>You use the assistant (optional)</td>
+        <td>Your question and the items it concerns</td>
+        <td>The model server whose address you entered in Settings — a server you run or choose. We are not involved and never see this traffic.</td>
+      </tr>
+      <tr>
+        <td>You import from Todoist (one time)</td>
+        <td>The API token you paste, to read your tasks</td>
+        <td>Todoist's servers. The token is used for that import only and is not saved.</td>
+      </tr>
+      <tr>
+        <td>You import a calendar (one time)</td>
+        <td>A request for the iCal address you paste</td>
+        <td>The host of that address, e.g. Google Calendar. The address is not saved.</td>
+      </tr>
+      <tr>
+        <td>You ask the assistant by voice</td>
+        <td>Your spoken question</td>
+        <td>Your phone's built-in speech recognition service (provided by your device maker or Google), under that provider's own privacy terms. HubidubiOS receives only the resulting text.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="margin-top:14px">Nothing else leaves your device. The app contains no advertising, analytics, crash-reporting or tracking code, and needs no account.</p>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li><strong>Camera</strong> — to take a photo you want to capture, and to scan a pairing QR code. Used only while you are doing so.</li>
+    <li><strong>Microphone</strong> — to record a voice memo. Used only while you are recording.</li>
+    <li><strong>Network access, Wi-Fi state and multicast</strong> — to find your other devices on the local network and sync with them, and to reach an assistant server or import source you configured.</li>
+  </ul>
+  <p>Camera and microphone are optional; the app works without them.</p>
+
+  <h2>Deleting your data</h2>
+  <p>Delete any item in the app and the deletion syncs to your paired devices. Uninstalling the app removes everything it stored on that device. Because we hold no copy, there is nothing for us to delete on our side — and nothing we could recover for you, so keep a second paired device if you want a copy.</p>
+
+  <h2>Children</h2>
+  <p>HubidubiOS is a general productivity tool and is not directed at children under 13.</p>
+
+  <h2>This website</h2>
+  <p>This site sets no cookies and runs no analytics. Fonts and images are served from this site, not from third parties. If you use the light/dark switch, your choice is remembered in your own browser's local storage and never sent anywhere. The web host may keep standard access logs (such as IP addresses) for security, as all web servers do.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the new version will be published on this page with a new effective date. Because we collect nothing, a change can only concern what the app does on your devices.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy: <a href="mailto:hello@hubidubios.example">hello@hubidubios.example</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/favicon.svg" alt="" width="22" height="22">HubidubiOS</a>
+    <span class="spacer"></span>
+    <span>© 2026</span>
+  </div>
+</footer>
+</body>
+</html>

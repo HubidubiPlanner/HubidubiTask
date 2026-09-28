@@ -1,0 +1,6 @@
+First release.
+• Capture text, photos, voice memos and documents; file each as a task or a note, with an optional date.
+• Next: today by default, a week or a month on request. Calendar events sit beside your tasks.
+• Projects, notes under tasks, Mark done.
+• Pair with the HubidubiOS Mac app and sync over your own Wi-Fi. No account, no cloud.
+• One-time import from Todoist or Google Calendar.

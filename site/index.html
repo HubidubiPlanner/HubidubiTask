@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HubidubiOS — Get it done. Keep it yours.</title>
+  <meta name="description" content="A task app built to get things done. Capture anything, see what is next, and sync your phone and Mac over your own Wi-Fi — no account, no cloud.">
+  <meta name="theme-color" content="#E9E1CF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1C1D18" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://hubidubios.example/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="HubidubiOS — Get it done. Keep it yours.">
+  <meta property="og:description" content="Tasks, notes and a calendar that behaves like one. Synced between your devices with no cloud.">
+  <meta property="og:image" content="https://hubidubios.example/assets/og-image.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="fonts/source_serif_semibold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Keep a chosen theme across visits. The page is complete without this.
+    try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="HubidubiOS home"><img src="assets/favicon.svg" alt="" width="28" height="28">HubidubiOS</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#capture">Capture</a>
+      <a href="#next">Next</a>
+      <a href="#sync">Sync</a>
+      <a href="#privacy">Privacy</a>
+      <a class="keep" href="#get">Get it</a>
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch light or dark theme">Sand / Moss</button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="overline">Tasks · Notes · Calendar</p>
+        <h1>Get it done.<br>Keep it yours.</h1>
+        <p class="lede">A task app where what you capture ends up done, not piled up. Your phone and your Mac keep each other current over your own Wi-Fi. No account, no cloud, nobody in between.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=com.hubidubios.mobile">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3.2v17.6c0 .5.5.8.9.6l15.3-8.8c.4-.3.4-.9 0-1.2L4.9 2.6c-.4-.2-.9.1-.9.6z"/></svg>
+            <span><small>Get it on</small>Google Play</span>
+          </a>
+          <a class="btn btn-secondary" href="#get">The Mac app</a>
+        </div>
+        <ul class="facts">
+          <li>Works fully offline</li>
+          <li>No sign-in, ever</li>
+          <li>Android 8.0 and newer</li>
+        </ul>
+      </div>
+      <div class="phone">
+        <img class="only-light" src="assets/screens/next-day-light.jpg" alt="The Next screen: an overdue task on its own, then today's tasks and how many more are due this week." width="1080" height="2160">
+        <img class="only-dark" src="assets/screens/next-day-dark.jpg" alt="The Next screen in the dark theme." width="1080" height="2160">
+      </div>
+    </div>
+  </section>
+
+  <section class="pillars" aria-label="What makes it different">
+    <div class="wrap">
+      <div class="pillar">
+        <span class="num">01</span>
+        <h3>Synced, without a cloud</h3>
+        <p>Phone and Mac talk to each other directly on your network. There is no server of ours to sign up to, pay for, or lose your data to.</p>
+      </div>
+      <div class="pillar">
+        <span class="num">02</span>
+        <h3>Built to finish things</h3>
+        <p>Every screen points at the same question: what do I do next? Capturing is fast, filing is one tap, and done means gone from the list.</p>
+      </div>
+      <div class="pillar">
+        <span class="num">03</span>
+        <h3>A calendar that acts like one</h3>
+        <p>Events sit beside your tasks with their times. Yesterday's meeting isn't "overdue" — it's over. Weeks roll from today, not from Monday.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="capture">
+    <div class="wrap split">
+      <div>
+        <p class="overline">Capture</p>
+        <h2>Get it out of your head. Sort it later.</h2>
+        <p class="lede">Four big buttons within thumb reach: text, photo, voice memo, document. One question when you save, and you're back to what you were doing.</p>
+        <ul class="points">
+          <li><strong>Task or note?</strong> The same photo can mean "do something about this" or "keep this". Only you know which, so the app asks.</li>
+          <li><strong>A date at the moment you know it.</strong> Add one while it's still in your head — or skip it.</li>
+          <li><strong>Without opening the app.</strong> A home-screen widget and the share menu drop text straight in, even offline.</li>
+          <li><strong>Projects as plain containers.</strong> File tasks and notes into them, put a note under a task, keep the details where the work is.</li>
+        </ul>
+      </div>
+      <div class="shots">
+        <div class="phone small">
+          <img class="only-light" src="assets/screens/capture-light.jpg" alt="The Capture screen with Text, Image, Audio and Document buttons." width="1080" height="2160" loading="lazy">
+          <img class="only-dark" src="assets/screens/capture-dark.jpg" alt="The Capture screen in the dark theme." width="1080" height="2160" loading="lazy">
+        </div>
+        <div class="phone small">
+          <img class="only-light" src="assets/screens/task-or-note-light.jpg" alt="The Task or note sheet, with an optional date." width="1080" height="2160" loading="lazy">
+          <img class="only-dark" src="assets/screens/task-or-note-dark.jpg" alt="The Task or note sheet in the dark theme." width="1080" height="2160" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="next">
+    <div class="wrap split flip">
+      <div>
+        <p class="overline">Next</p>
+        <h2>Opens on today. Plans a week or a month when you ask.</h2>
+        <p class="lede">A flat list sorted by date makes you read every row to find where today ends. Next does that reading for you.</p>
+        <ul class="points">
+          <li><strong>Overdue on its own.</strong> "Should already have happened" calls for a different decision than "happens today", so it gets its own heading — in every view.</li>
+          <li><strong>Tomorrow never ambushes you.</strong> The Day view tells you how many more things are due this week, one tap from seeing them.</li>
+          <li><strong>A week at a glance.</strong> Seven days in a strip, a dot for each thing due.</li>
+          <li><strong>Mark done</strong> from a long-press or from the item itself — and it leaves the list.</li>
+        </ul>
+      </div>
+      <div class="shots">
+        <div class="phone small">
+          <img class="only-light" src="assets/screens/next-week-light.jpg" alt="The Next screen's Week view with a seven-day strip." width="1080" height="2160" loading="lazy">
+          <img class="only-dark" src="assets/screens/next-week-dark.jpg" alt="The Week view in the dark theme." width="1080" height="2160" loading="lazy">
+        </div>
+        <div class="phone small">
+          <img class="only-light" src="assets/screens/projects-light.jpg" alt="The Projects screen: projects as headings with their tasks and notes." width="1080" height="2160" loading="lazy">
+          <img class="only-dark" src="assets/screens/projects-dark.jpg" alt="The Projects screen in the dark theme." width="1080" height="2160" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="calendar">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <p class="overline">Calendar</p>
+          <h2>The calendar works the way a calendar should.</h2>
+          <p class="lede">Events and tasks share the same days, because that's how your day actually looks. But they are not the same thing, and the app never pretends they are.</p>
+        </div>
+        <div class="mini-next" role="img" aria-label="Example: Monday's overdue task, today's events with times, and yesterday's dentist appointment gone rather than overdue.">
+          <div class="label overdue"><span>Overdue</span><span>1</span></div>
+          <div class="row"><span>Renew passport</span><span class="t" style="color:var(--danger)">Fri 25</span></div>
+          <div class="label today"><span>Today</span><span>4</span></div>
+          <div class="row"><span>Team sync</span><span class="t">14:00</span></div>
+          <div class="row"><span>Flight TP1331</span><span class="t">18:25</span></div>
+          <div class="row"><span>Order worktop samples</span><span class="t" style="color:var(--muted)">Kitchen</span></div>
+          <div class="row"><span>Draft Q3 summary</span><span class="t" style="color:var(--muted)">Report</span></div>
+          <div class="label" style="color:var(--muted)"><span>Not shown</span><span></span></div>
+          <div class="row gone"><span>Dentist — yesterday 09:30</span><span class="t" style="color:var(--muted)">over</span></div>
+        </div>
+      </div>
+      <div class="compare" role="table" aria-label="How HubidubiOS treats dates compared with typical task apps">
+        <div class="compare-row head" role="row"><div role="columnheader"></div><div role="columnheader" style="color:var(--muted)">Typical task apps</div><div role="columnheader" style="color:var(--accent)">HubidubiOS</div></div>
+        <div class="compare-row" role="row"><div class="case" role="rowheader">An event that already happened</div><div class="else" role="cell">Shows up red, as "overdue".</div><div class="here" role="cell">It's over. It leaves the list.</div></div>
+        <div class="compare-row" role="row"><div class="case" role="rowheader">"This week" on a Saturday</div><div class="else" role="cell">One day left.</div><div class="here" role="cell">Seven days, rolling from today.</div></div>
+        <div class="compare-row" role="row"><div class="case" role="rowheader">A task that slipped</div><div class="else" role="cell">Folded into today and lost in it.</div><div class="here" role="cell">Its own Overdue heading, in every view.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="sync">
+    <div class="wrap split">
+      <div>
+        <p class="overline">Sync</p>
+        <h2>Every device current. No cloud in the middle.</h2>
+        <p class="lede">Pair your phone with the Mac app once, by typing a short code. From then on they keep each other up to date whenever they share a network — at home or at the office.</p>
+        <ul class="points">
+          <li><strong>Direct and encrypted.</strong> Traffic between your devices is encrypted and pinned to the certificate they exchanged when you paired.</li>
+          <li><strong>Nothing comes back from the dead.</strong> Every edit carries a time and the newest one wins; deletions travel too.</li>
+          <li><strong>Offline is normal.</strong> The phone keeps a full copy of your data in an encrypted database. On a plane, in a basement — it just works.</li>
+        </ul>
+      </div>
+      <svg class="diagram" viewBox="0 0 520 380" role="img" aria-labelledby="sync-title">
+        <title id="sync-title">A phone and a Mac on your own Wi-Fi sync directly with each other. The cloud outside is crossed out.</title>
+        <rect class="net" x="10" y="90" width="500" height="270"/>
+        <text class="small" x="28" y="118">Your Wi-Fi</text>
+        <!-- phone -->
+        <rect class="dev" x="60" y="160" width="92" height="170"/>
+        <rect class="screen" x="70" y="174" width="72" height="130"/>
+        <text x="106" y="350" text-anchor="middle" font-size="15" font-weight="600">Phone</text>
+        <!-- mac -->
+        <rect class="dev" x="316" y="170" width="160" height="110"/>
+        <rect class="screen" x="328" y="182" width="136" height="86"/>
+        <path class="dev" d="M296 296h200l-14 20h-172z"/>
+        <text x="396" y="350" text-anchor="middle" font-size="15" font-weight="600">Mac</text>
+        <!-- link -->
+        <path class="link" d="M166 232H300"/>
+        <path class="head" d="M300 225l12 7-12 7z"/>
+        <path class="head" d="M166 225l-12 7 12 7z"/>
+        <text class="mono" x="233" y="220" text-anchor="middle">pinned TLS</text>
+        <text class="small" x="233" y="258" text-anchor="middle">newest edit wins</text>
+        <!-- cloud, not used -->
+        <path class="cloud" d="M214 62c-18 0-30-12-28-26 2-12 14-20 27-18 5-12 18-18 31-16 14 2 23 12 24 24 13-1 24 8 24 19 0 10-9 17-20 17z"/>
+        <path class="cross" d="M216 12l76 56M292 12l-76 56"/>
+        <text class="small" x="318" y="46">no server of ours</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section" id="more">
+    <div class="wrap">
+      <p class="overline">And also</p>
+      <h2>The rest, briefly.</h2>
+      <div class="cards four">
+        <div class="card">
+          <h3>An assistant on your terms</h3>
+          <p>Ask about your projects, typed or spoken, or ask for a review of one item. The phone talks straight to a model server you run on your network. Optional — everything else works without it.</p>
+        </div>
+        <div class="card">
+          <h3>Leaving Todoist?</h3>
+          <p>A one-time import brings your tasks across. Google Calendar comes in the same way from your private iCal address. Tokens are used once and not kept.</p>
+        </div>
+        <div class="card">
+          <h3>Open an item, see it all</h3>
+          <p>What it is, when it's due, the photo or memo it carries, and the notes filed under it — on one sheet.</p>
+        </div>
+        <div class="card">
+          <h3>Sand by day, moss by night</h3>
+          <p>Two themes drawn from five earth tones, following your system. Plain text on plain paper, and square edges. Try the toggle at the top.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section privacy-band" id="privacy">
+    <div class="wrap">
+      <p class="overline">Privacy</p>
+      <h2>We can't lose your data. We never have it.</h2>
+      <p class="lede" style="margin-top:18px">HubidubiOS has no servers. Your tasks, notes, photos and recordings stay on your devices and travel only between them. The camera and microphone are used only when you take a photo or record a memo.</p>
+      <ul class="nolist">
+        <li>No account or sign-in</li>
+        <li>No ads, analytics or trackers</li>
+        <li>No cloud, no server of ours</li>
+      </ul>
+      <p style="margin-top:28px; color:var(--muted); font-size:15px">This website doesn't track you either: no cookies, no analytics, and the fonts are served from here. <a href="privacy.html">Read the privacy policy</a>.</p>
+    </div>
+  </section>
+
+  <section class="section" id="get">
+    <div class="wrap">
+      <p class="overline">Get it</p>
+      <h2>Start on your phone. Add the Mac when you want it.</h2>
+      <p class="lede" style="margin-top:18px">The Android app is complete on its own. Pair the Mac app to have everything on a big screen and a second copy of your data.</p>
+      <div class="get">
+        <div class="platform">
+          <h3>Android</h3>
+          <p>Capture, Next, Projects, the assistant and import. Widget and share menu included.</p>
+          <p class="req">Android 8.0+ · camera and microphone optional</p>
+          <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=com.hubidubios.mobile">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3.2v17.6c0 .5.5.8.9.6l15.3-8.8c.4-.3.4-.9 0-1.2L4.9 2.6c-.4-.2-.9.1-.9.6z"/></svg>
+            <span><small>Get it on</small>Google Play</span>
+          </a>
+        </div>
+        <div class="platform">
+          <h3>Mac</h3>
+          <p>The same screens with a keyboard. Pair it with your phone by a typed code, on the same Wi-Fi.</p>
+          <p class="req">macOS · same network as the phone</p>
+          <a class="btn btn-secondary" href="downloads/HubidubiOS.dmg">Download for Mac</a>
+        </div>
+      </div>
+
+      <div class="faq">
+        <details>
+          <summary>Do I need a Mac?</summary>
+          <p>No. The phone app works entirely on its own. Sync starts when you pair a second device.</p>
+        </details>
+        <details>
+          <summary>Does sync work over the internet?</summary>
+          <p>Devices sync when they can reach each other on the same network. That is the point: there's no relay server in the middle to trust or to go down.</p>
+        </details>
+        <details>
+          <summary>What happens if I edit the same task on both devices?</summary>
+          <p>Each edit carries the time it was made, and the newer one wins on both sides. A deletion is an edit too, so something you removed stays removed.</p>
+        </details>
+        <details>
+          <summary>What if I lose my phone?</summary>
+          <p>If you had it paired, your Mac still has everything; pair a new phone and it fills back up. The data on the lost phone sits in an encrypted database.</p>
+        </details>
+        <details>
+          <summary>What is the assistant, and where does my data go?</summary>
+          <p>It's an optional chat about your projects. You point the app at a model server you run yourself — any OpenAI-compatible endpoint on your network — and the phone sends your question and the relevant items there directly. We never see any of it.</p>
+        </details>
+        <details>
+          <summary>Can I bring my tasks from Todoist or my Google Calendar?</summary>
+          <p>Yes, once. In Settings → Import, paste a Todoist API token or your calendar's private iCal address, preview what would come in, and confirm. The token isn't stored and there's no ongoing link to the other service.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/favicon.svg" alt="" width="22" height="22">HubidubiOS</a>
+    <span class="spacer"></span>
+    <a href="privacy.html">Privacy policy</a>
+    <a href="mailto:hello@hubidubios.example">Contact</a>
+    <span>© 2026</span>
+  </div>
+</footer>
+
+<script>
+  // Flip between Sand (light) and Moss (dark), remembered per visitor.
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var root = document.documentElement;
+    var dark = root.dataset.theme
+      ? root.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+  });
+</script>
+</body>
+</html>

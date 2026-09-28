@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Play Store feature graphic (1024x500, no alpha). Mech palette: moss taken
+     nearly to black, cream ink, clay accent. Keep text clear of the outer
+     ~15% — Play may overlay a play button or crop on some surfaces. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#1C1D18"/>
+  <rect x="0" y="0" width="1024" height="500" fill="none" stroke="#3A3C33" stroke-width="2"/>
+  <!-- the mark -->
+  <g transform="translate(150 150) scale(2.4)">
+    <rect x="18" y="18" width="72" height="72" fill="#56594D" transform="translate(-18 -18)"/>
+    <g transform="translate(-18 -18)">
+      <path fill="#D3C9AF" d="M27,29h9v15h14v-15h9v38h-9v-15h-14v15h-9z"/>
+      <circle cx="69" cy="69" r="13" fill="#56594D"/>
+      <circle cx="69" cy="69" r="10.5" fill="#B4997E"/>
+      <path d="M64,69.5L67.5,73L74.5,65" fill="none" stroke="#56594D" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <text x="380" y="222" font-family="Source Serif 4 Subhead, serif" font-weight="600"
+        font-size="64" fill="#D3C9AF">HubidubiOS</text>
+  <text x="382" y="276" font-family="IBM Plex Sans, sans-serif" font-size="30" fill="#B4997E">Get it done. Keep it yours.</text>
+  <text x="382" y="330" font-family="IBM Plex Mono, monospace" font-size="18" fill="#9A9686"
+        letter-spacing="1">TASKS · CALENDAR · SYNC WITHOUT A CLOUD</text>
+</svg>
