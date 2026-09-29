@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -636,7 +635,7 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         ScreenHeader("Capture", "Get it out of your head. Sort it later.") {
             StatusChip(if (state.paired) "Phone paired" else "No phone paired", state.paired)
         }
-        Column(Modifier.padding(horizontal = 20.dp).widthIn(max = 640.dp),
+        Column(Modifier.padding(horizontal = 20.dp).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(value = text, onValueChange = { text = it },
                 label = { Text("What's on your mind?") }, minLines = 4, colors = appFieldColors(),

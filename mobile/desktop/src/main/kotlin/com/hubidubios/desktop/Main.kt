@@ -2,7 +2,6 @@ package com.hubidubios.desktop
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
@@ -97,8 +96,9 @@ fun App(vm: HubidubiOsViewModel, start: String = "projects") {
                     }
                 }
                 VerticalDivider(color = c.line, modifier = Modifier.fillMaxHeight())
-                // A page as wide as a big window reads badly; keep a column.
-                Box(Modifier.fillMaxHeight().widthIn(max = 820.dp)) { when (route) {
+                // The page takes the whole window: long titles get the room
+                // instead of wrapping beside empty space.
+                Box(Modifier.fillMaxSize()) { when (route) {
                     "projects" -> ProjectsScreen(state, vm)
                     "home" -> HomeScreen(state, vm)
                     "next" -> NextScreen(state, vm)
