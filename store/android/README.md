@@ -33,18 +33,17 @@ Re-render the icon and feature graphic after editing their SVGs:
 
 These stop an upload or a review; none of them are listing work.
 
-- [ ] **Target SDK.** `mobile/app/build.gradle.kts` has `compileSdk = 34`,
-      `targetSdk = 34`. Play rejects new apps below its current target
-      requirement (API 35 since Aug 2025; Google's yearly cadence moves new
-      submissions to API 36 around 31 Aug 2026 — confirm on Play Console's
-      *Target API level requirements* page). Bumping means re-testing: from API
-      35 the app is drawn edge-to-edge whether it asks or not, so check the
-      bottom bar and sheets against system insets.
-- [ ] **Signed App Bundle.** Play takes `.aab`, not APK:
-      `cd mobile && ./gradlew :app:bundleRelease`. There is no release
-      `signingConfig` yet — create an upload key (keep it offline, as the
-      Fastfile already says), and enrol in **Play App Signing** when creating
-      the app, so a lost upload key can be reset instead of ending the app.
+- [x] **Target SDK.** `compileSdk`/`targetSdk` 36 (Play's level for new apps
+      from 31 Aug 2026). Checked on a tablet running Android 16.
+- [x] **16 KB pages.** Play rejects apps targeting Android 15+ whose native
+      libraries assume 4 KB pages. CameraX moved to 1.4.2 for this; every
+      64-bit `.so` in the bundle is 16 KB-aligned.
+- [x] **Signed App Bundle.** `cd mobile && ./gradlew :app:bundleRelease` signs
+      with the PRIVATE key (`~/.keystores/hubidubitask-upload.jks`,
+      alias `private`, password read from the Keychain entry
+      `android-keystore-hubidubitask-upload`; CI sets `HUBIDUBIOS_KEYSTORE` and
+      `HUBIDUBIOS_KEYSTORE_PASSWORD`). Still enrol in **Play App Signing** when
+      creating the app: this key then acts as the upload key.
 - [ ] **Version.** `versionCode = 1`, `versionName = "0.1.0"`. Every upload
       needs a higher `versionCode`; add `changelogs/<versionCode>.txt` each time.
 - [ ] **The package name is permanent.** `com.hubidubios.mobile` can never be

@@ -7,19 +7,43 @@ plugins {
 
 android {
     namespace = "com.hubidubios.mobile"
-    compileSdk = 34
+    // Play takes new apps only at its current target level (API 36 from 31 Aug 2026).
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.hubidubios.mobile"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release builds are signed with the PRIVATE key, which never enters the
+    // repo: the keystore sits in ~/.keystores and its password in the macOS
+    // Keychain. Elsewhere (CI), point HUBIDUBIOS_KEYSTORE and
+    // HUBIDUBIOS_KEYSTORE_PASSWORD at them instead.
+    signingConfigs {
+        create("release") {
+            val path = System.getenv("HUBIDUBIOS_KEYSTORE")
+                ?: "${System.getProperty("user.home")}/.keystores/hubidubitask-upload.jks"
+            val password = providers.environmentVariable("HUBIDUBIOS_KEYSTORE_PASSWORD").orElse(
+                providers.exec {
+                    commandLine("security", "find-generic-password", "-s", "android-keystore-hubidubitask-upload", "-w")
+                    isIgnoreExitValue = true
+                }.standardOutput.asText.map { it.trim() })
+            if (file(path).exists()) {
+                storeFile = file(path)
+                storePassword = password.get()
+                keyAlias = "private"
+                keyPassword = password.get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -75,10 +99,10 @@ dependencies {
     // CameraX (androidx) supplies the preview + frame stream; ZXing decodes the
     // Y plane of each frame. Nothing here pulls in Google Play Services.
     implementation("com.google.zxing:core:3.5.3")
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("androidx.camera:camera-core:1.4.2")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
+    implementation("androidx.camera:camera-view:1.4.2")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
