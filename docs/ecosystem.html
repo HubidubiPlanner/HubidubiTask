@@ -227,7 +227,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     </article>
     <article class="machine">
       <h3>Inference box</h3>
-      <p class="role">A separate machine that runs the language model. The workstation's agent, the phone and the Mac all send their questions here.</p>
+      <p class="role">A separate machine that runs the language model. The workstation's agent sends its questions here. The phone and the Mac can use it too, or Claude, or a local model.</p>
       <dl>
         <dt>Speaks</dt><dd>selfhostedai's encrypted protocol on :8443, or a plain OpenAI-style API</dd>
         <dt>Set in</dt><dd><span class="path">~/vault/.hubidubios/config.toml</span>, and in each app's Settings</dd>
@@ -244,7 +244,8 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <tbody>
         <tr><td>Phone and workstation</td><td>Cursor-based change feed, plus attachment uploads</td><td>5233</td><td>Address in the pairing QR code</td><td>Self-signed certificate pinned by fingerprint; a token per phone</td></tr>
         <tr><td>Phone and Mac</td><td>Peer sync: both send changes since the other's last cursor, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Pinned certificate; a pairing code shown on the Mac</td></tr>
-        <tr><td>Apps and model</td><td>Chat and item reviews, with a short summary of what is open</td><td>8443</td><td>Typed in Settings</td><td>Encrypted session (ECDH and AES-GCM) or a pinned TLS certificate</td></tr>
+        <tr><td>Apps and Claude</td><td>Chat and item reviews, through Anthropic's SDK. The first choice in Settings</td><td>443</td><td>api.anthropic.com</td><td>An Anthropic API key, kept in the Android Keystore or the macOS Keychain</td></tr>
+        <tr><td>Apps and own model</td><td>Chat and item reviews, with a short summary of what is open</td><td>8443</td><td>Typed in Settings</td><td>Encrypted session (ECDH and AES-GCM) or a pinned TLS certificate</td></tr>
         <tr><td>Agent and model</td><td>One skill call per turn, checked against the skill's schema</td><td>8443</td><td><span class="path">config.toml</span></td><td>As above</td></tr>
         <tr><td>Desktop apps and workstation</td><td>CalDAV, for calendar apps on a laptop</td><td>5232</td><td>Avahi</td><td>LAN only</td></tr>
         <tr><td>Thin client and workstation</td><td>ssh, mosh and tmux</td><td>22</td><td>Hostname given at setup</td><td>SSH keys</td></tr>
@@ -331,7 +332,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <section aria-labelledby="status-h">
   <h2 id="status-h">Current state</h2>
   <ul class="status">
-    <li><span class="pill ok">Works</span><span>Phone and Mac apps, peer sync between them, the "+" for every kind of new item, file drops on the Mac. The Mac app is at 1.3.1.</span></li>
+    <li><span class="pill ok">Works</span><span>Phone and Mac apps, peer sync between them, the "+" for every kind of new item, file drops on the Mac. Claude is the first agent choice in both apps. The Mac app is at 1.4.0.</span></li>
     <li><span class="pill ok">Works</span><span>211 Python tests and all Gradle tests pass after the restructure, with results identical to before it.</span></li>
     <li><span class="pill warn">Open</span><span>Five acceptance tests in <span class="path">tests/acceptance/test_phase1.py</span> fail because they still expect the old <span class="path">tasks/</span> vault folder. They failed the same way before the restructure.</span></li>
     <li><span class="pill warn">Open</span><span>Ten lint findings in the Python code, nine of them auto-fixable. Also unchanged by the restructure.</span></li>
