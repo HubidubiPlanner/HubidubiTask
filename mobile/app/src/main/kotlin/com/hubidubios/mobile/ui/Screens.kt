@@ -424,8 +424,9 @@ private fun Overline(text: String, color: Color, icon: ImageVector? = null,
 
 /**
  * One item, opened with a single press: what it is, when it is due, and what
- * the agent made of it last time. Reading, not editing — the long press is
- * still where things are moved, dated and deleted.
+ * the agent made of it last time. Reading, mostly — the long press is still
+ * where things are moved, dated and deleted. A note is the exception: its
+ * words are the note, so a tap on the title or the body edits them in place.
  */
 @Composable
 private fun DetailSheet(
@@ -435,17 +436,43 @@ private fun DetailSheet(
     subtasks: List<EntityRecord> = emptyList(),
     onOpen: (EntityRecord) -> Unit = {},
     onDone: ((EntityRecord) -> Unit)? = null,
+    onEdit: ((EntityRecord) -> Unit)? = null,
 ) {
     record ?: return
     val c = HubidubiOsTheme.colors
     val review = ItemDetail.reviewOf(record)
     val due = ItemDetail.dueOf(record)
     val overdue = due != null && due < todayIso()
+    val editable = onEdit != null && record.type == "note"
+    var editing by remember(record.id) { mutableStateOf(false) }
+    var title by remember(record.id) { mutableStateOf(record.fields["title"].orEmpty()) }
+    var body by remember(record.id) { mutableStateOf(record.fields["body"].orEmpty()) }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    fun startEditing() { if (editable) editing = true }
+    fun save() {
+        editing = false
+        onEdit?.invoke(record.copy(fields = record.fields + ("title" to title.trim()) + ("body" to body.trim())))
+    }
+    fun cancel() {
+        title = record.fields["title"].orEmpty()
+        body = record.fields["body"].orEmpty()
+        editing = false
+    }
     AppSheet(onDismiss) {
         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             Overline(ItemDetail.typeLabel(record), c.accent)
-            Text(ReviewBrowse.labelOf(record), style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+            if (editing) {
+                OutlinedTextField(value = title, onValueChange = { title = it },
+                    label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+                    shape = RectangleShape,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)
+                        .focusRequester(focus))
+                LaunchedEffect(Unit) { focus.requestFocus() }
+            } else {
+                Text(ReviewBrowse.labelOf(record), style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        .clickable(enabled = editable, onClickLabel = "Edit") { startEditing() })
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 due?.let {
@@ -462,9 +489,22 @@ private fun DetailSheet(
                     Text("Captured $it", style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
-            record.fields["body"]?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 16.dp))
+            if (editing) {
+                OutlinedTextField(value = body, onValueChange = { body = it },
+                    label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+                    colors = appFieldColors(), shape = RectangleShape,
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
+            } else {
+                val shown = record.fields["body"]?.takeIf { it.isNotBlank() }
+                if (shown != null) {
+                    Text(shown, style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 16.dp)
+                            .clickable(enabled = editable, onClickLabel = "Edit") { startEditing() })
+                } else if (editable) {
+                    // Nothing written yet: name the place, so the tap has a target.
+                    Text("Add more…", style = MaterialTheme.typography.bodyLarge, color = c.muted,
+                        modifier = Modifier.padding(top = 16.dp).clickable { startEditing() })
+                }
             }
             // A task's notes show here and only here: the lists stay one line
             // per thing to do, and what you need to know is one tap away.
@@ -502,13 +542,19 @@ private fun DetailSheet(
         // Finishing is what a task is opened for most often, so it is the
         // filled button. No Close: the sheet goes with a swipe down or Back.
         Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (onDone != null && isTask(record)) {
-                PrimaryButton("Mark done", { val r = record; onDismiss(); onDone(r) },
-                    Modifier.weight(1f), icon = Icons.Outlined.Check)
+            if (editing) {
+                PrimaryButton("Save", { save() }, Modifier.weight(1f), icon = Icons.Outlined.Check,
+                    enabled = title.isNotBlank())
+                SecondaryButton("Cancel", { cancel() }, Modifier.weight(1f))
+            } else {
+                if (onDone != null && isTask(record)) {
+                    PrimaryButton("Mark done", { val r = record; onDismiss(); onDone(r) },
+                        Modifier.weight(1f), icon = Icons.Outlined.Check)
+                }
+                SecondaryButton(if (review == null) "Review" else "Review again",
+                    { val r = record; onDismiss(); onReview(r) },
+                    Modifier.weight(1f), icon = Icons.Outlined.RateReview)
             }
-            SecondaryButton(if (review == null) "Review" else "Review again",
-                { val r = record; onDismiss(); onReview(r) },
-                Modifier.weight(1f), icon = Icons.Outlined.RateReview)
         }
     }
 }
@@ -875,7 +921,12 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         onDismiss = { detailFor = null },
         subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
         onOpen = { detailFor = it },
-        onDone = { vm.complete(it) })
+        onDone = { vm.complete(it) },
+        // The sheet keeps showing the edited copy: the lists refresh behind it.
+        onEdit = { edited ->
+            vm.editNote(edited.id, edited.fields["title"].orEmpty(), edited.fields["body"].orEmpty())
+            detailFor = edited
+        })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     Column(Modifier.fillMaxSize()) {
@@ -1339,7 +1390,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     val records = remember(state.projects, state.nextActions, state.notes, state.inbox) {
         ProjectTree.records(state.projects, state.nextActions, state.notes, state.inbox)
     }
-    var collapsed by remember { mutableStateOf(setOf<String>()) }
+    // Every project starts closed: the view opens as a list of projects, and a
+    // tap opens the one being looked for. Only the ones opened are remembered,
+    // so a project that arrives later (a sync, a new one) is closed too.
+    var expanded by remember { mutableStateOf(setOf<String>()) }
     var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
     var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
@@ -1347,7 +1401,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
     var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
     var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
-    val nodes = remember(records, collapsed) { ProjectTree.build(records, collapsed) }
+    val nodes = remember(records, expanded) {
+        val closed = records.filter { it.type == "project" }.mapTo(HashSet()) { it.id } - expanded
+        ProjectTree.build(records, closed)
+    }
     // Counted from the full tree, so a collapsed project still says how much it holds.
     val counts = remember(records) {
         val out = HashMap<String, Int>()
@@ -1389,7 +1446,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     )
     AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
     // Open the project the task went into, so the new task is seen landing.
-    AddTaskSheet(addingTaskTo, vm, onAdded = { collapsed = collapsed - it.id }) { addingTaskTo = null }
+    AddTaskSheet(addingTaskTo, vm, onAdded = { expanded = expanded + it.id }) { addingTaskTo = null }
     RenameProjectDialog(renaming, vm) { renaming = null }
     val allItems = remember(state.nextActions, state.inbox, state.notes) {
         state.nextActions + state.inbox + state.notes
@@ -1398,7 +1455,12 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         onDismiss = { detailFor = null },
         subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
         onOpen = { detailFor = it },
-        onDone = { vm.complete(it) })
+        onDone = { vm.complete(it) },
+        // The sheet keeps showing the edited copy: the lists refresh behind it.
+        onEdit = { edited ->
+            vm.editNote(edited.id, edited.fields["title"].orEmpty(), edited.fields["body"].orEmpty())
+            detailFor = edited
+        })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     moving?.let { node ->
@@ -1476,11 +1538,11 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                     CardGroup(Modifier.padding(bottom = 10.dp)) {
                         ProjectHeader(
                             project, counts[project.id] ?: 0,
-                            expanded = project.id !in collapsed,
+                            expanded = project.id in expanded,
                             onToggle = {
                                 if (project.hasChildren) {
-                                    collapsed = if (project.id in collapsed)
-                                        collapsed - project.id else collapsed + project.id
+                                    expanded = if (project.id in expanded)
+                                        expanded - project.id else expanded + project.id
                                 }
                             },
                             onLongClick = { menuFor = project.record },

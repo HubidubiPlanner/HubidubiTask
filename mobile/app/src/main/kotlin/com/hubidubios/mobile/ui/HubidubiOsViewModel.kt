@@ -261,6 +261,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    /** A note's title and body, rewritten where they were read. */
+    fun editNote(id: String, title: String, body: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().editNote(id, title, body) }
+        refresh()
+    }
+
     /** Re-nest an item in the Projects tree. */
     fun move(id: String, parentId: String?) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().moveTo(id, parentId) }

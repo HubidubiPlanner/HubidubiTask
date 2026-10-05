@@ -268,6 +268,17 @@ class Sync private constructor(
         return true
     }
 
+    /** Rewrite a note's words in place. Only a note: a task's text is its line
+     *  in the workstation's list, and the menu is where tasks are changed. */
+    fun editNote(id: String, title: String, body: String): Boolean {
+        val rec = store.get(id)?.takeIf { it.type == "note" } ?: return false
+        val updated = rec.copy(updated = com.hubidubios.core.nowUtc(),
+            fields = rec.fields + ("title" to title.trim()) + ("body" to body.trim()))
+        store.put(updated)
+        outbox.enqueueUpsert(updated)
+        return true
+    }
+
     /** Re-nest an item under [parentId] (null = top level).
      *
      *  Only the parent pointer changes; the item keeps its text, state and any

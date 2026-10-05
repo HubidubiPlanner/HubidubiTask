@@ -125,6 +125,10 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
 
     fun renameProject(id: String, title: String) = io { edit(id) { it + ("title" to title.trim()) } }
 
+    fun editNote(id: String, title: String, body: String) = io {
+        edit(id) { it + ("title" to title.trim()) + ("body" to body.trim()) }
+    }
+
     fun move(id: String, parentId: String?) = io {
         edit(id) { f -> if (parentId.isNullOrBlank()) f - "parent" else f + ("parent" to parentId) }
     }
