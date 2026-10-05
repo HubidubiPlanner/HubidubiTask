@@ -50,13 +50,19 @@ fun main() {
     val server = PeerServer(store, deviceName = macName()) { vm?.refresh() }
     server.start()
     vm = HubidubiOsViewModel(store, server)
-    application {
+    // The window goes the moment it is closed. Withdrawing the LAN
+    // announcement (JmDNS) can take seconds, so it runs after, with a limit:
+    // the phone copes with a Mac that vanished without saying goodbye.
+    application(exitProcessOnExit = false) {
         Window(
-            onCloseRequest = { server.stop(); exitApplication() },
+            onCloseRequest = ::exitApplication,
             title = "HubidubiOS",
             state = rememberWindowState(size = DpSize(1080.dp, 780.dp)),
         ) { App(vm) }
     }
+    val goodbye = Thread { runCatching { server.stop() } }.apply { isDaemon = true; start() }
+    goodbye.join(1500)
+    kotlin.system.exitProcess(0)
 }
 
 private fun macName(): String = runCatching {
