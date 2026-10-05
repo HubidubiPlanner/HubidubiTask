@@ -167,6 +167,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
     /** The agent settings this phone holds, for the settings form. */
     fun agentConfig(): AgentConfig = AgentSettings.load(getApplication())
 
+    fun claudeKey(): String? = AgentSettings.claudeKey(getApplication())
+
     /** Re-probe the agent and report what came back. */
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(force = true) }
         .also { h -> _state.value = _state.value.copy(inference = h) }

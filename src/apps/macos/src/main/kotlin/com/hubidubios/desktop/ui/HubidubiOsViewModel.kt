@@ -186,6 +186,7 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
             endpoint = store.kv("agent_endpoint") ?: AgentConfig.DEFAULT_ENDPOINT,
             protocol = p,
             model = store.kv("agent_model") ?: AgentConfig.defaultModel(p),
+            apiKey = if (p == "claude") claudeKey() else null,
             tlsFingerprint = store.kv("agent_fp"),
         )
     }
@@ -193,8 +194,14 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
     fun setAgentConfig(c: AgentConfig) {
         store.setKv("agent_endpoint", c.endpoint); store.setKv("agent_protocol", c.protocol)
         store.setKv("agent_model", c.model); store.setKv("agent_fp", c.tlsFingerprint)
+        if (c.protocol == "claude") c.apiKey?.let { Keychain.put(CLAUDE_KEY, it) }
         lastHealth = null
     }
+
+    /** Claude's key, from the macOS Keychain rather than the app's database. */
+    fun claudeKey(): String? = Keychain.get(CLAUDE_KEY)
+
+    private companion object { const val CLAUDE_KEY = "claude-api-key" }
 
     @Synchronized
     private fun agent(): Pair<AgentConfig, ModelClient> {

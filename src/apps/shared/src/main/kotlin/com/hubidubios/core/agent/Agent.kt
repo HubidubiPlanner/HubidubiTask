@@ -11,14 +11,15 @@ import javax.net.ssl.X509TrustManager
  * Where the agent lives and how to speak to it. Held by each app itself — the
  * phone and the Mac ask the agent directly, with no workstation in between.
  *
- * [protocol] "selfhostedai" is selfhostedai-agent's encrypted API (usually :8443);
- * "openai" is any OpenAI-compatible server. [tlsFingerprint], when set, pins a
- * self-signed certificate (sha256 hex of the DER).
+ * [protocol] "claude" is Anthropic's Claude API, reached with an API key and
+ * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually
+ * :8443); "openai" is any OpenAI-compatible server. [tlsFingerprint], when
+ * set, pins a self-signed certificate (sha256 hex of the DER).
  */
 data class AgentConfig(
     val endpoint: String,
     val protocol: String = "selfhostedai",
-    val model: String = if (protocol == "selfhostedai") "fast" else "local",
+    val model: String = defaultModel(protocol),
     val apiKey: String? = null,
     val tlsFingerprint: String? = null,
     /** "auto" answers in the material's language; "en" / "pl" force one. */
@@ -26,7 +27,16 @@ data class AgentConfig(
 ) {
     companion object {
         const val DEFAULT_ENDPOINT = "https://192.168.1.50:8443"
-        fun defaultModel(protocol: String) = if (protocol == "selfhostedai") "fast" else "local"
+        const val CLAUDE_MODEL = "claude-opus-5-5"
+
+        /** Every agent the apps can use, in the order Settings offers them. */
+        val PROTOCOLS = listOf("claude" to "Claude", "selfhostedai" to "selfhostedai", "openai" to "Local model")
+
+        fun defaultModel(protocol: String) = when (protocol) {
+            "claude" -> CLAUDE_MODEL
+            "selfhostedai" -> "fast"
+            else -> "local"
+        }
     }
 }
 
@@ -46,8 +56,11 @@ interface ModelClient {
 
 object Agent {
 
-    fun clientFor(config: AgentConfig): ModelClient =
-        if (config.protocol == "openai") OpenAiClient(config) else SelfhostedaiClient(config)
+    fun clientFor(config: AgentConfig): ModelClient = when (config.protocol) {
+        "claude" -> ClaudeClient(config)
+        "openai" -> OpenAiClient(config)
+        else -> SelfhostedaiClient(config)
+    }
 
     private val LANGUAGE = mapOf(
         "au" to "Answer in the same language as the material.",

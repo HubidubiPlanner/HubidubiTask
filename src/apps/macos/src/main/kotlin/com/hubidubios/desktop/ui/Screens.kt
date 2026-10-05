@@ -588,7 +588,7 @@ private fun AnalysisSheet(
         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             when {
                 !connected -> Text(
-                    "Agent not connected. Set the server in Settings.",
+                    "Agent not connected. Set it up in Settings.",
                     style = MaterialTheme.typography.bodyMedium, color = c.muted)
                 busy -> Text("Thinking… a cold model can take a minute.",
                     style = MaterialTheme.typography.bodyMedium, color = c.muted)
@@ -924,12 +924,16 @@ private fun LabeledField(
     helper: String,
     enabled: Boolean,
     placeholder: String? = null,
+    secret: Boolean = false,
 ) {
     val c = HubidubiOsTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value, onValueChange = onValueChange,
+            visualTransformation = if (secret)
+                androidx.compose.ui.text.input.PasswordVisualTransformation()
+                else androidx.compose.ui.text.input.VisualTransformation.None,
             placeholder = placeholder?.let { { Text(it, color = c.muted) } },
             textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
             singleLine = true, enabled = enabled, colors = appFieldColors(),
@@ -982,8 +986,13 @@ fun SettingsScreen(
     var model by remember { mutableStateOf(saved.model) }
     // Switching protocol swaps the default, unless the user typed their own.
     LaunchedEffect(protocol) {
-        if (model.isBlank() || model == "fast" || model == "local") model = defaultModel
+        if (model.isBlank() || model in setOf("fast", "local",
+                com.hubidubios.core.agent.AgentConfig.CLAUDE_MODEL)) model = defaultModel
     }
+    // Claude's key is kept apart from the other agents' settings, in the
+    // system's secret store.
+    var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
+    val claude = protocol == "claude"
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
 
@@ -1002,24 +1011,25 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Link)
         }
 
-        SectionLabel("Agent server", modifier = Modifier.padding(top = 10.dp))
-        Text("Where this Mac sends questions and reviews. Asked directly — nothing in between.",
-            style = MaterialTheme.typography.bodySmall, color = c.muted,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp))
+        SectionLabel("Agent", modifier = Modifier.padding(top = 10.dp))
 
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            LabeledField("Server address", endpoint, { endpoint = it; message = null },
-                helper = if (endpoint == defaultEndpoint) "Default agent server" else "",
-                enabled = true, placeholder = "https://192.168.1.50:8443")
-
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Protocol", style = MaterialTheme.typography.bodySmall,
+                Text("Agent", style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold)
                 Segmented(
-                    listOf("selfhostedai" to "selfhostedai (encrypted)", "openai" to "OpenAI-compatible"),
+                    com.hubidubios.core.agent.AgentConfig.PROTOCOLS,
                     protocol, { protocol = it; message = null },
                 )
             }
+
+            if (claude)
+                LabeledField("Claude API key", claudeKey, { claudeKey = it; message = null },
+                    helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
+            else
+                LabeledField("Server address", endpoint, { endpoint = it; message = null },
+                    helper = if (endpoint == defaultEndpoint) "Default agent server" else "",
+                    enabled = true, placeholder = "https://192.168.1.50:8443")
 
             LabeledField("Model", model, { model = it; message = null },
                 helper = if (model == defaultModel) "Default for this protocol"
@@ -1027,11 +1037,12 @@ fun SettingsScreen(
                 enabled = true, placeholder = defaultModel)
 
             PrimaryButton(
-                if (saving) "Saving…" else "Save agent server",
+                if (saving) "Saving…" else "Save agent",
                 {
                     saving = true; message = null
                     vm.setAgentConfig(saved.copy(endpoint = endpoint.trim(), protocol = protocol,
-                        model = model.ifBlank { defaultModel }))
+                        model = model.ifBlank { defaultModel },
+                        apiKey = if (claude) claudeKey.trim() else null))
                     scope.launch {
                         // Saving is not the same as working. An address nothing
                         // answers on looks identical to a good one until a question
@@ -1039,13 +1050,14 @@ fun SettingsScreen(
                         message = "Saved — checking…"
                         val h = vm.checkInference()
                         message = if (h.connected) "Connected to ${h.server ?: endpoint}"
+                            else if (claude) "Saved, but Claude did not answer: ${h.error ?: "no reply"}"
                             else "Saved, but nothing answered at $endpoint — check the " +
                                 "address and that the agent is running there."
                         saving = false
                     }
                 },
                 Modifier.fillMaxWidth(),
-                enabled = !saving && endpoint.isNotBlank(),
+                enabled = !saving && (if (claude) claudeKey.isNotBlank() else endpoint.isNotBlank()),
             )
 
             message?.let {

@@ -6,6 +6,12 @@ plugins {
 }
 
 android {
+    // The Claude SDK's dependencies each carry the same licence metadata;
+    // none of it is read at runtime.
+    packaging {
+        resources.excludes += setOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*",
+            "META-INF/INDEX.LIST")
+    }
     namespace = "com.hubidubios.mobile"
     // Play takes new apps only at its current target level (API 36 from 31 Aug 2026).
     compileSdk = 36
