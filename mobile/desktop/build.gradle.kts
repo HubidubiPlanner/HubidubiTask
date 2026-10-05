@@ -29,7 +29,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg)
             packageName = "HubidubiOS"
-            packageVersion = "1.0.0"
+            packageVersion = "1.1.0"
             description = "HubidubiOS for macOS"
             // The embedded HTTPS server, SQLite (JDBC) and the TLS/crypto the
             // peer protocol needs, kept in the bundled runtime.

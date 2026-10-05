@@ -1188,6 +1188,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
     var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
     var renaming by remember { mutableStateOf<EntityRecord?>(null) }
+    // The plus asks what is wanted first: a project, or a task into one.
+    var choosingKind by remember { mutableStateOf(false) }
+    var pickingProjectForTask by remember { mutableStateOf(false) }
+    val projects = remember(nodes) { nodes.filter { it.isProject } }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,
@@ -1236,6 +1240,42 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         }
     }
 
+    if (choosingKind) {
+        AppSheet(onDismiss = { choosingKind = false }) {
+            SheetTitle("New", overline = "What is it?")
+            ActionRow(Icons.Outlined.Folder, "A project",
+                meta = "holds tasks and notes", color = c.accent) {
+                choosingKind = false; creating = true
+            }
+            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task",
+                meta = if (projects.isEmpty()) "start a project first" else "into a project",
+                color = c.accent, enabled = projects.isNotEmpty(), last = true) {
+                choosingKind = false
+                // One project: nothing to choose, go straight to the task.
+                if (projects.size == 1) addingTaskTo = projects.single().record
+                else pickingProjectForTask = true
+            }
+            SecondaryButton("Cancel", { choosingKind = false },
+                Modifier.fillMaxWidth().padding(top = 16.dp))
+        }
+    }
+
+    if (pickingProjectForTask) {
+        AppSheet(onDismiss = { pickingProjectForTask = false }) {
+            SheetTitle("A task", overline = "Into which project?")
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                projects.forEachIndexed { i, p ->
+                    ActionRow(Icons.Outlined.Folder, p.title, color = c.accent,
+                        last = i == projects.lastIndex) {
+                        pickingProjectForTask = false; addingTaskTo = p.record
+                    }
+                }
+            }
+            SecondaryButton("Cancel", { pickingProjectForTask = false },
+                Modifier.fillMaxWidth().padding(top = 16.dp))
+        }
+    }
+
     if (creating) {
         AlertDialog(
             onDismissRequest = { creating = false; newTitle = "" },
@@ -1264,10 +1304,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Projects") {
-            // The plus alone, no box around it: on a screen called Projects it
-            // can only mean one thing. The tap target stays 48dp.
+            // The plus alone, no box around it. It asks whether a project or a
+            // task is wanted before anything opens. The tap target stays 48dp.
             IconButton(
-                onClick = { creating = true },
+                onClick = { choosingKind = true },
                 // Reports only the title's line height, centred on it, so the
                 // 48dp touch target doesn't make this header taller than the
                 // other tabs' and push the title down.
@@ -1277,7 +1317,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
                     layout(p.width, h) { p.place(0, (h - p.height) / 2) }
                 }.size(48.dp),
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "New project", tint = c.accent,
+                Icon(Icons.Filled.Add, contentDescription = "New project or task", tint = c.accent,
                     modifier = Modifier.size(30.dp))
             }
         }
