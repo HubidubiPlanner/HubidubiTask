@@ -25,6 +25,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="sensorLandscape"
             android:exported="true"
             android:launchMode="singleTask">
             <intent-filter>
@@ -37,6 +38,7 @@
              this writes to the outbox directly, no WebView needed. -->
         <activity
             android:name=".capture.ShareCaptureActivity"
+            android:screenOrientation="sensorLandscape"
             android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
@@ -48,13 +50,14 @@
 
         <activity
             android:name=".pairing.PairingActivity"
+            android:screenOrientation="sensorLandscape"
             android:exported="false" />
 
         <!-- QR scanner for pairing (CameraX + ZXing core, no Play Services). -->
         <activity
             android:name=".pairing.ScanActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="sensorLandscape"
+            android:exported="false" />
 
         <!-- Home-screen capture widget: one tap to capture, app never opened. -->
         <receiver
@@ -70,6 +73,7 @@
 
         <activity
             android:name=".capture.WidgetCaptureActivity"
+            android:screenOrientation="sensorLandscape"
             android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true" />
