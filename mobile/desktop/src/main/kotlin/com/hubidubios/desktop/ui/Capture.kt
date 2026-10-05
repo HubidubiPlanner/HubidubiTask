@@ -149,17 +149,25 @@ private class AudioRecorder {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class,
-    androidx.compose.material3.ExperimentalMaterial3Api::class)
+/** What the "+" offers that needs the Mac itself: the file panel, the
+ *  microphone, and files dropped on the window. Each ends in the same
+ *  "Task or note?" sheet. */
+internal class CaptureActions(
+    val picture: () -> Unit,
+    val voice: () -> Unit,
+    val file: () -> Unit,
+    /** A file dropped on the window; false if it can't be taken. */
+    val drop: (List<File>) -> Boolean,
+)
+
+/** Draws the sheets those captures need and hands back the ways to start one. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+internal fun rememberCaptureActions(vm: HubidubiOsViewModel): CaptureActions {
     val c = HubidubiOsTheme.colors
-    var textMode by remember { mutableStateOf(false) }
-    var text by remember { mutableStateOf("") }
     var recording by remember { mutableStateOf(false) }
     val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
     var pending by remember { mutableStateOf<PendingCapture?>(null) }
-    var dragging by remember { mutableStateOf(false) }
 
     fun startRecording() {
         runCatching { AudioRecorder().also { it.start(); recorder.value = it } }
@@ -171,10 +179,8 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
             pending = PendingCapture("audio", "Voice memo", bytes, "audio/wav")
     }
 
-    // Ask before filing: the same file is a task ("do something about this") or
-    // a note ("keep this"), and only the user knows which. A date is offered at
-    // the same moment — it is the one fact you still have in mind at capture
-    // time and the thing that decides whether the item ever resurfaces.
+    // A date is offered with the question: the one fact still in mind at
+    // capture time, and what decides whether the item ever resurfaces.
     var captureDue by remember { mutableStateOf<String?>(null) }
     var pickingDate by remember { mutableStateOf(false) }
 
@@ -198,11 +204,22 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         ) { DatePicker(state = dateState) }
     }
 
+    if (recording) {
+        AppSheet(onDismiss = { stopRecording() }) {
+            SheetTitle("Recording…")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton("Discard", {
+                    recorder.value?.stop(); recorder.value = null; recording = false
+                }, Modifier.weight(1f))
+                PrimaryButton("Stop", { stopRecording() }, Modifier.weight(1f),
+                    icon = Icons.Outlined.Stop)
+            }
+        }
+    }
+
     pending?.let { p ->
         AppSheet(onDismiss = { pending = null }) {
             SheetTitle("Task or note?")
-            Text("Act on it, or keep it as a note.", style = MaterialTheme.typography.bodyMedium,
-                color = c.muted, modifier = Modifier.padding(bottom = 18.dp))
             // What is being filed, so the choice is made looking at it.
             Row(
                 Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line).padding(12.dp),
@@ -266,105 +283,50 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         }
     }
 
-    // Anything dropped on the screen is a capture, the same as choosing it.
-    val dropTarget = remember {
-        object : DragAndDropTarget {
-            override fun onEntered(event: DragAndDropEvent) { dragging = true }
-            override fun onExited(event: DragAndDropEvent) { dragging = false }
-            override fun onEnded(event: DragAndDropEvent) { dragging = false }
-            override fun onDrop(event: DragAndDropEvent): Boolean {
-                dragging = false
-                val t = event.awtTransferable
-                if (!t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return false
-                @Suppress("UNCHECKED_CAST")
-                val files = t.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
-                pending = files.firstNotNullOfOrNull { pendingFrom(it) } ?: return false
-                return true
-            }
-        }
-    }
-
-    Column(
-        Modifier.fillMaxSize()
-            .dragAndDropTarget(shouldStartDragAndDrop = { true }, target = dropTarget)
-            .border(2.dp, if (dragging) c.accent else androidx.compose.ui.graphics.Color.Transparent)
-    ) {
-        ScreenHeader("Capture", "Get it out of your head. Sort it later.") {
-            StatusChip(if (state.paired) "Phone paired" else "No phone paired", state.paired)
-        }
-        Column(
-            Modifier.padding(horizontal = 20.dp).widthIn(max = 640.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CaptureTile("Text", "Type a thought", Icons.Outlined.Edit, primary = true,
-                    modifier = Modifier.weight(1f)) { textMode = !textMode }
-                CaptureTile("Image", "Choose a picture", Icons.Outlined.Image,
-                    modifier = Modifier.weight(1f)) {
-                    textMode = false
-                    chooseFile("Choose a picture")?.let { pending = pendingFrom(it) }
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CaptureTile(
-                    if (recording) "Stop" else "Audio",
-                    if (recording) "Recording… click to stop" else "Record a memo",
-                    if (recording) Icons.Outlined.Stop else Icons.Outlined.Mic,
-                    alert = recording, modifier = Modifier.weight(1f),
-                ) { if (recording) stopRecording() else startRecording() }
-                CaptureTile("Document", "Attach a file", Icons.Outlined.Description,
-                    modifier = Modifier.weight(1f)) {
-                    textMode = false
-                    chooseFile("Attach a file")?.let { pending = pendingFrom(it) }
-                }
-            }
-            if (textMode) {
-                OutlinedTextField(value = text, onValueChange = { text = it },
-                    label = { Text("What's on your mind?") }, minLines = 3, colors = appFieldColors(),
-                    shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-                PrimaryButton("Save", {
-                    if (text.isNotBlank()) {
-                        pending = PendingCapture("text", text.trim()); text = ""; textMode = false
-                    }
-                }, Modifier.fillMaxWidth(), enabled = text.isNotBlank())
-            }
-            Text(
-                if (dragging) "Drop it here." else "Or drop a file anywhere on this screen.",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (dragging) c.accent else c.muted,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-        Spacer(Modifier.height(24.dp))
-    }
+    return CaptureActions(
+        picture = { chooseFile("Choose a picture")?.let { pending = pendingFrom(it) } },
+        voice = { startRecording() },
+        file = { chooseFile("Attach a file")?.let { pending = pendingFrom(it) } },
+        drop = { files ->
+            files.firstNotNullOfOrNull { pendingFrom(it) }?.let { pending = it; true } ?: false
+        },
+    )
 }
 
-/** One way in: a large square, the label saying what it takes. As on the phone. */
-@Composable
-private fun CaptureTile(
-    label: String,
-    hint: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    primary: Boolean = false,
-    alert: Boolean = false,
-    onClick: () -> Unit,
-) {
-    val c = HubidubiOsTheme.colors
-    val bg = when { alert -> c.danger; primary -> c.button; else -> c.raised }
-    val fg = if (alert || primary) c.onButton else c.ink
-    val sub = if (alert || primary) c.onButtonMuted else c.muted
-    Column(
-        modifier.height(148.dp).background(bg)
-            .border(1.dp, if (alert || primary) bg else c.line)
-            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
-            .padding(18.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(30.dp))
-        Column {
-            Text(label, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp, color = fg)
-            Text(hint, style = MaterialTheme.typography.bodySmall, color = sub)
+/** Files dropped anywhere on [Modifier]'s area go to [onFiles]; [onHover]
+ *  says while something is being dragged over it. */
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+internal fun Modifier.fileDrop(onHover: (Boolean) -> Unit, onFiles: (List<File>) -> Boolean): Modifier =
+    dragAndDropTarget(shouldStartDragAndDrop = { true }, target = object : DragAndDropTarget {
+        override fun onEntered(event: DragAndDropEvent) = onHover(true)
+        override fun onExited(event: DragAndDropEvent) = onHover(false)
+        override fun onEnded(event: DragAndDropEvent) = onHover(false)
+        override fun onDrop(event: DragAndDropEvent): Boolean {
+            onHover(false)
+            val t = event.awtTransferable
+            if (!t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return false
+            @Suppress("UNCHECKED_CAST")
+            return onFiles(t.getTransferData(DataFlavor.javaFileListFlavor) as List<File>)
         }
+    })
+
+/** A note written straight in: a title, and more below it if there is more. */
+@Composable
+internal fun NewNoteSheet(open: Boolean, vm: HubidubiOsViewModel, onDismiss: () -> Unit) {
+    if (!open) return
+    val c = HubidubiOsTheme.colors
+    var title by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf("") }
+    AppSheet(onDismiss) {
+        SheetTitle("A note")
+        OutlinedTextField(value = title, onValueChange = { title = it },
+            label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = body, onValueChange = { body = it },
+            label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+            colors = appFieldColors(), shape = RectangleShape,
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
+        PrimaryButton("Save", { vm.noteText(title.trim(), body = body.trim()); onDismiss() },
+            Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }

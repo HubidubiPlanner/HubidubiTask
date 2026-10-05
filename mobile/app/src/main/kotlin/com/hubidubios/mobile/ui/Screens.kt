@@ -48,6 +48,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -178,13 +179,16 @@ private fun AddTaskSheet(
     project: EntityRecord?,
     vm: HubidubiOsViewModel,
     onAdded: (EntityRecord) -> Unit,
+    // No project: the task goes to the inbox, as a capture did.
+    loose: Boolean = false,
     onDismiss: () -> Unit,
 ) {
-    project ?: return
+    if (project == null && !loose) return
+    val key = project?.id ?: "loose"
     val c = HubidubiOsTheme.colors
-    var text by remember(project.id) { mutableStateOf("") }
-    var due by remember(project.id) { mutableStateOf<String?>(null) }
-    var picking by remember(project.id) { mutableStateOf(false) }
+    var text by remember(key) { mutableStateOf("") }
+    var due by remember(key) { mutableStateOf<String?>(null) }
+    var picking by remember(key) { mutableStateOf(false) }
     if (picking) {
         val dateState = rememberDatePickerState()
         DatePickerDialog(
@@ -206,7 +210,7 @@ private fun AddTaskSheet(
         ) { DatePicker(state = dateState) }
     }
     AppSheet(onDismiss) {
-        SheetTitle("Add a task", overline = ReviewBrowse.labelOf(project))
+        SheetTitle("Add a task", overline = project?.let { ReviewBrowse.labelOf(it) } ?: "No project")
         OutlinedTextField(value = text, onValueChange = { text = it },
             label = { Text("Task") }, singleLine = true, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth())
@@ -227,7 +231,11 @@ private fun AddTaskSheet(
             if (due == null)
                 Text("optional", style = MaterialTheme.typography.bodySmall, color = c.muted)
         }
-        PrimaryButton("Add", { vm.addTask(project, text, due); onAdded(project); onDismiss() },
+        PrimaryButton("Add", {
+            if (project != null) { vm.addTask(project, text, due); onAdded(project) }
+            else vm.capture(text.trim(), due)
+            onDismiss()
+        },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = text.isNotBlank())
     }
 }
@@ -643,13 +651,20 @@ private data class PendingCapture(
     val mime: String = "",
 )
 
+/** What the "+" offers that needs the phone itself: camera, gallery,
+ *  microphone, files. Each ends in the same "Task or note?" sheet. */
+private class CaptureActions(
+    val photo: () -> Unit,
+    val gallery: () -> Unit,
+    val voice: () -> Unit,
+    val file: () -> Unit,
+)
+
+/** Draws the sheets those captures need and hands back the ways to start one. */
 @Composable
-fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
+private fun rememberCaptureActions(vm: HubidubiOsViewModel): CaptureActions {
     val context = LocalContext.current
     val c = HubidubiOsTheme.colors
-    var textMode by remember { mutableStateOf(false) }
-    var text by remember { mutableStateOf("") }
-    var showImageChoice by remember { mutableStateOf(false) }
     var recording by remember { mutableStateOf(false) }
     val recorder = remember { mutableStateOf<AudioRecorder?>(null) }
     var pending by remember { mutableStateOf<PendingCapture?>(null) }
@@ -732,8 +747,6 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
     pending?.let { p ->
         AppSheet(onDismiss = { pending = null }) {
             SheetTitle("Task or note?")
-            Text("Act on it, or keep it as a note.", style = MaterialTheme.typography.bodyMedium,
-                color = c.muted, modifier = Modifier.padding(bottom = 18.dp))
             // What is being filed, so the choice is made looking at it.
             Row(
                 Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line).padding(12.dp),
@@ -792,95 +805,51 @@ fun HomeScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
         }
     }
 
-    Column(Modifier.fillMaxSize().imePadding()) {
-        ScreenHeader("Capture", "Get it out of your head. Sort it later.") {
-            StatusChip(if (state.paired) "Synced" else "Not paired", state.paired)
-        }
-        // The buttons are the screen's whole purpose, so they sit low on it,
-        // within thumb reach, rather than tucked under the title.
-        Spacer(Modifier.weight(1f))
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    if (recording) {
+        AppSheet(onDismiss = { stopRecording() }) {
+            SheetTitle("Recording…")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CaptureTile("Text", "Type a thought", Icons.Outlined.Edit, primary = true,
-                    modifier = Modifier.weight(1f)) {
-                    textMode = !textMode; showImageChoice = false
-                }
-                CaptureTile("Image", "Camera or gallery", Icons.Outlined.Image,
-                    modifier = Modifier.weight(1f)) {
-                    showImageChoice = !showImageChoice; textMode = false
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CaptureTile(
-                    if (recording) "Stop" else "Audio",
-                    if (recording) "Recording… tap to stop" else "Record a memo",
-                    if (recording) Icons.Outlined.Stop else Icons.Outlined.Mic,
-                    alert = recording, modifier = Modifier.weight(1f),
-                ) {
-                    if (recording) stopRecording()
-                    else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                        == PackageManager.PERMISSION_GRANTED) startRecording()
-                    else micPermission.launch(Manifest.permission.RECORD_AUDIO)
-                }
-                CaptureTile("Document", "Attach a file", Icons.Outlined.Description,
-                    modifier = Modifier.weight(1f)) {
-                    textMode = false; showImageChoice = false
-                    pickDocument.launch("*/*")
-                }
-            }
-            if (showImageChoice) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SecondaryButton("Gallery", {
-                        showImageChoice = false
-                        pickImage.launch(PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }, Modifier.weight(1f), icon = Icons.Outlined.PhotoLibrary)
-                    SecondaryButton("Camera", { showImageChoice = false; launchCamera() },
-                        Modifier.weight(1f), icon = Icons.Outlined.CameraAlt)
-                }
-            }
-            if (textMode) {
-                OutlinedTextField(value = text, onValueChange = { text = it },
-                    label = { Text("Text note") }, colors = appFieldColors(),
-                    shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-                PrimaryButton("Save", {
-                    if (text.isNotBlank()) {
-                        pending = PendingCapture("text", text.trim()); text = ""; textMode = false
-                    }
-                }, Modifier.fillMaxWidth())
+                SecondaryButton("Discard", {
+                    recorder.value?.stop()?.delete(); recorder.value = null; recording = false
+                }, Modifier.weight(1f))
+                PrimaryButton("Stop", { stopRecording() }, Modifier.weight(1f),
+                    icon = Icons.Outlined.Stop)
             }
         }
-        Spacer(Modifier.height(24.dp))
     }
+
+    return CaptureActions(
+        photo = { launchCamera() },
+        gallery = {
+            pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
+        voice = {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) startRecording()
+            else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+        },
+        file = { pickDocument.launch("*/*") },
+    )
 }
 
-/** One way in: a large square the thumb can't miss, the label saying what it takes. */
+/** A note written straight in: a title, and more below it if there is more. */
 @Composable
-private fun CaptureTile(
-    label: String,
-    hint: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    primary: Boolean = false,
-    alert: Boolean = false,
-    onClick: () -> Unit,
-) {
+private fun NewNoteSheet(open: Boolean, vm: HubidubiOsViewModel, onDismiss: () -> Unit) {
+    if (!open) return
     val c = HubidubiOsTheme.colors
-    val bg = when { alert -> c.danger; primary -> c.button; else -> c.raised }
-    val fg = if (alert || primary) c.onButton else c.ink
-    val sub = if (alert || primary) c.onButtonMuted else c.muted
-    Column(
-        modifier.height(148.dp).background(bg)
-            .border(1.dp, if (alert || primary) bg else c.line)
-            .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
-            .padding(18.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(30.dp))
-        Column {
-            Text(label, style = MaterialTheme.typography.titleMedium, fontSize = 18.sp, color = fg)
-            Text(hint, style = MaterialTheme.typography.bodySmall, color = sub)
-        }
+    var title by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf("") }
+    AppSheet(onDismiss) {
+        SheetTitle("A note")
+        OutlinedTextField(value = title, onValueChange = { title = it },
+            label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = body, onValueChange = { body = it },
+            label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+            colors = appFieldColors(), shape = RectangleShape,
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
+        PrimaryButton("Save", { vm.noteText(title.trim(), body = body.trim()); onDismiss() },
+            Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }
 
@@ -1434,6 +1403,9 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     // The plus asks what is wanted first: a project, or a task into one.
     var choosingKind by remember { mutableStateOf(false) }
     var pickingProjectForTask by remember { mutableStateOf(false) }
+    var addingLooseTask by remember { mutableStateOf(false) }
+    var writingNote by remember { mutableStateOf(false) }
+    val capture = rememberCaptureActions(vm)
     val projects = remember(nodes) { nodes.filter { it.isProject } }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
@@ -1449,6 +1421,8 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
     // Open the project the task went into, so the new task is seen landing.
     AddTaskSheet(addingTaskTo, vm, onAdded = { expanded = expanded + it.id }) { addingTaskTo = null }
+    AddTaskSheet(null, vm, onAdded = {}, loose = addingLooseTask) { addingLooseTask = false }
+    NewNoteSheet(writingNote, vm) { writingNote = false }
     RenameProjectDialog(renaming, vm) { renaming = null }
     val allItems = remember(state.nextActions, state.inbox, state.notes) {
         state.nextActions + state.inbox + state.notes
@@ -1486,15 +1460,28 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     if (choosingKind) {
         AppSheet(onDismiss = { choosingKind = false }) {
             SheetTitle("New")
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             ActionRow(Icons.Outlined.Folder, "A project", color = c.accent) {
                 choosingKind = false; creating = true
             }
-            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task",
-                color = c.accent, enabled = projects.isNotEmpty(), last = true) {
-                choosingKind = false
-                // One project: nothing to choose, go straight to the task.
-                if (projects.size == 1) addingTaskTo = projects.single().record
-                else pickingProjectForTask = true
+            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task", color = c.accent) {
+                choosingKind = false; pickingProjectForTask = true
+            }
+            ActionRow(Icons.AutoMirrored.Filled.Notes, "A note", color = c.accent) {
+                choosingKind = false; writingNote = true
+            }
+            ActionRow(Icons.Outlined.CameraAlt, "A photo", color = c.accent) {
+                choosingKind = false; capture.photo()
+            }
+            ActionRow(Icons.Outlined.PhotoLibrary, "From the gallery", color = c.accent) {
+                choosingKind = false; capture.gallery()
+            }
+            ActionRow(Icons.Outlined.Mic, "A voice memo", color = c.accent) {
+                choosingKind = false; capture.voice()
+            }
+            ActionRow(Icons.Outlined.Description, "A file", color = c.accent, last = true) {
+                choosingKind = false; capture.file()
+            }
             }
             SecondaryButton("Cancel", { choosingKind = false },
                 Modifier.fillMaxWidth().padding(top = 16.dp))
@@ -1505,6 +1492,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         AppSheet(onDismiss = { pickingProjectForTask = false }) {
             SheetTitle("Which project?")
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                ActionRow(Icons.Outlined.Inbox, "No project", color = c.accent,
+                    last = projects.isEmpty()) {
+                    pickingProjectForTask = false; addingLooseTask = true
+                }
                 projects.forEachIndexed { i, p ->
                     ActionRow(Icons.Outlined.Folder, p.title, color = c.accent,
                         last = i == projects.lastIndex) {

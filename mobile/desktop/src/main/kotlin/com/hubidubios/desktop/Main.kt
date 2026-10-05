@@ -35,7 +35,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.hubidubios.desktop.ui.ChatScreen
-import com.hubidubios.desktop.ui.HomeScreen
 import com.hubidubios.desktop.ui.HubidubiOsTheme
 import com.hubidubios.desktop.ui.HubidubiOsViewModel
 import com.hubidubios.desktop.ui.ImportScreen
@@ -72,7 +71,6 @@ fun App(vm: HubidubiOsViewModel, start: String = "projects") {
         var route by remember { mutableStateOf(start) }
         val dests = listOf(
             Dest("projects", "Projects", Icons.Outlined.Folder),
-            Dest("home", "Capture", Icons.Filled.Add),
             Dest("next", "Next", Icons.Outlined.CheckCircle),
             Dest("chat", "Agent", Icons.Outlined.ChatBubbleOutline),
             Dest("settings", "Settings", Icons.Outlined.Tune),
@@ -100,7 +98,6 @@ fun App(vm: HubidubiOsViewModel, start: String = "projects") {
                 // instead of wrapping beside empty space.
                 Box(Modifier.fillMaxSize()) { when (route) {
                     "projects" -> ProjectsScreen(state, vm)
-                    "home" -> HomeScreen(state, vm)
                     "next" -> NextScreen(state, vm)
                     "chat" -> ChatScreen(state, vm)
                     "settings" -> SettingsScreen(state, vm, onImport = { route = "import" })

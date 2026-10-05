@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -165,13 +166,16 @@ private fun AddTaskSheet(
     project: EntityRecord?,
     vm: HubidubiOsViewModel,
     onAdded: (EntityRecord) -> Unit,
+    // No project: the task goes to the inbox, as a capture did.
+    loose: Boolean = false,
     onDismiss: () -> Unit,
 ) {
-    project ?: return
+    if (project == null && !loose) return
+    val key = project?.id ?: "loose"
     val c = HubidubiOsTheme.colors
-    var text by remember(project.id) { mutableStateOf("") }
-    var due by remember(project.id) { mutableStateOf<String?>(null) }
-    var picking by remember(project.id) { mutableStateOf(false) }
+    var text by remember(key) { mutableStateOf("") }
+    var due by remember(key) { mutableStateOf<String?>(null) }
+    var picking by remember(key) { mutableStateOf(false) }
     if (picking) {
         val dateState = rememberDatePickerState()
         DatePickerDialog(
@@ -193,7 +197,7 @@ private fun AddTaskSheet(
         ) { DatePicker(state = dateState) }
     }
     AppSheet(onDismiss) {
-        SheetTitle("Add a task", overline = ReviewBrowse.labelOf(project))
+        SheetTitle("Add a task", overline = project?.let { ReviewBrowse.labelOf(it) } ?: "No project")
         OutlinedTextField(value = text, onValueChange = { text = it },
             label = { Text("Task") }, singleLine = true, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth())
@@ -214,7 +218,11 @@ private fun AddTaskSheet(
             if (due == null)
                 Text("optional", style = MaterialTheme.typography.bodySmall, color = c.muted)
         }
-        PrimaryButton("Add", { vm.addTask(project, text, due); onAdded(project); onDismiss() },
+        PrimaryButton("Add", {
+            if (project != null) { vm.addTask(project, text, due); onAdded(project) }
+            else vm.capture(text.trim(), due)
+            onDismiss()
+        },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = text.isNotBlank())
     }
 }
@@ -1112,6 +1120,9 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     // The plus asks what is wanted first: a project, or a task into one.
     var choosingKind by remember { mutableStateOf(false) }
     var pickingProjectForTask by remember { mutableStateOf(false) }
+    var addingLooseTask by remember { mutableStateOf(false) }
+    var writingNote by remember { mutableStateOf(false) }
+    val capture = rememberCaptureActions(vm)
     val projects = remember(nodes) { nodes.filter { it.isProject } }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
@@ -1127,6 +1138,8 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
     // Open the project the task went into, so the new task is seen landing.
     AddTaskSheet(addingTaskTo, vm, onAdded = { expanded = expanded + it.id }) { addingTaskTo = null }
+    AddTaskSheet(null, vm, onAdded = {}, loose = addingLooseTask) { addingLooseTask = false }
+    NewNoteSheet(writingNote, vm) { writingNote = false }
     RenameProjectDialog(renaming, vm) { renaming = null }
     val allItems = remember(state.nextActions, state.inbox, state.notes) {
         state.nextActions + state.inbox + state.notes
@@ -1164,15 +1177,25 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
     if (choosingKind) {
         AppSheet(onDismiss = { choosingKind = false }) {
             SheetTitle("New")
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             ActionRow(Icons.Outlined.Folder, "A project", color = c.accent) {
                 choosingKind = false; creating = true
             }
-            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task",
-                color = c.accent, enabled = projects.isNotEmpty(), last = true) {
-                choosingKind = false
-                // One project: nothing to choose, go straight to the task.
-                if (projects.size == 1) addingTaskTo = projects.single().record
-                else pickingProjectForTask = true
+            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task", color = c.accent) {
+                choosingKind = false; pickingProjectForTask = true
+            }
+            ActionRow(Icons.AutoMirrored.Filled.Notes, "A note", color = c.accent) {
+                choosingKind = false; writingNote = true
+            }
+            ActionRow(Icons.Outlined.Image, "A picture", color = c.accent) {
+                choosingKind = false; capture.picture()
+            }
+            ActionRow(Icons.Outlined.Mic, "A voice memo", color = c.accent) {
+                choosingKind = false; capture.voice()
+            }
+            ActionRow(Icons.Outlined.Description, "A file", color = c.accent, last = true) {
+                choosingKind = false; capture.file()
+            }
             }
             SecondaryButton("Cancel", { choosingKind = false },
                 Modifier.fillMaxWidth().padding(top = 16.dp))
@@ -1183,6 +1206,10 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         AppSheet(onDismiss = { pickingProjectForTask = false }) {
             SheetTitle("Which project?")
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                ActionRow(Icons.Outlined.Inbox, "No project", color = c.accent,
+                    last = projects.isEmpty()) {
+                    pickingProjectForTask = false; addingLooseTask = true
+                }
                 projects.forEachIndexed { i, p ->
                     ActionRow(Icons.Outlined.Folder, p.title, color = c.accent,
                         last = i == projects.lastIndex) {
@@ -1221,7 +1248,13 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
         )
     }
 
-    Column(Modifier.fillMaxSize()) {
+    // A file dropped anywhere here is a capture, the same as choosing it.
+    var dragging by remember { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxSize()
+            .fileDrop(onHover = { dragging = it }, onFiles = capture.drop)
+            .border(2.dp, if (dragging) c.accent else Color.Transparent)
+    ) {
         ScreenHeader("Projects") {
             // The plus alone, no box around it. It asks whether a project or a
             // task is wanted before anything opens. The tap target stays 48dp.

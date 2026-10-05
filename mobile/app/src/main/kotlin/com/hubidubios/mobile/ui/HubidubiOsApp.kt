@@ -44,7 +44,6 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
             val nav = rememberNavController()
             val dests = listOf(
                 Dest("projects", "Projects", Icons.Outlined.Folder),
-                Dest("home", "Capture", Icons.Filled.Add),
                 Dest("next", "Next", Icons.Outlined.CheckCircle),
                 Dest("chat", "Agent", Icons.Outlined.ChatBubbleOutline),
                 Dest("settings", "Settings", Icons.Outlined.Tune),
@@ -101,7 +100,6 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                 NavHost(nav, startDestination = "projects",
                     modifier = Modifier.padding(pad).consumeWindowInsets(pad)) {
                     composable("projects") { ProjectsScreen(state, vm) }
-                    composable("home") { HomeScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }
                     composable("chat") { ChatScreen(state, vm) }
                     composable("settings") {

@@ -184,8 +184,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
 
     // --- media notes: text / image / audio, uploaded to the workstation ---
 
-    fun noteText(title: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteText(title, due = due) }
+    fun noteText(title: String, due: String? = null, body: String = "") = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteText(title, body = body, due = due) }
         refresh()
     }
 

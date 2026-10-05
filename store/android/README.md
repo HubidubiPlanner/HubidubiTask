@@ -114,7 +114,7 @@ when editing.
 Choose **All functionality is available without special access**, and add
 this note so the reviewer does not flag sync or the assistant as broken:
 
-> No account or login exists. Capture, Next, Projects and Mark done work
+> No account or login exists. Projects, the + menu, Next and Mark done work
 > entirely on the device. Two optional features need the user's own
 > equipment on the same local network and cannot be reached by a reviewer:
 > (1) sync with the user's HubidubiOS Mac app, paired by a typed code;
