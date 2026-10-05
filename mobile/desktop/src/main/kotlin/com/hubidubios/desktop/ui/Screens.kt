@@ -1242,13 +1242,11 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     if (choosingKind) {
         AppSheet(onDismiss = { choosingKind = false }) {
-            SheetTitle("New", overline = "What is it?")
-            ActionRow(Icons.Outlined.Folder, "A project",
-                meta = "holds tasks and notes", color = c.accent) {
+            SheetTitle("New")
+            ActionRow(Icons.Outlined.Folder, "A project", color = c.accent) {
                 choosingKind = false; creating = true
             }
             ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task",
-                meta = if (projects.isEmpty()) "start a project first" else "into a project",
                 color = c.accent, enabled = projects.isNotEmpty(), last = true) {
                 choosingKind = false
                 // One project: nothing to choose, go straight to the task.
@@ -1262,7 +1260,7 @@ fun ProjectsScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) 
 
     if (pickingProjectForTask) {
         AppSheet(onDismiss = { pickingProjectForTask = false }) {
-            SheetTitle("A task", overline = "Into which project?")
+            SheetTitle("Which project?")
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 projects.forEachIndexed { i, p ->
                     ActionRow(Icons.Outlined.Folder, p.title, color = c.accent,
