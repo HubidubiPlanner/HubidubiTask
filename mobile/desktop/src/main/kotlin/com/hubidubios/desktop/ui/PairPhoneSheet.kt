@@ -68,7 +68,7 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiOsViewModel, state: HubidubiOsView
             }
             mode == "show" -> {
                 SheetTitle("Type this on the phone", overline = "Settings → Pair with a Mac")
-                Text(shown.orEmpty(), fontFamily = Mono, fontSize = 40.sp, fontWeight = FontWeight.Medium,
+                Text(shown.orEmpty(), fontSize = 40.sp, fontWeight = FontWeight.Medium,
                     color = c.ink, modifier = Modifier.fillMaxWidth().background(c.raised)
                         .border(1.dp, c.line).padding(vertical = 22.dp, horizontal = 20.dp))
                 Waiting(vm)
@@ -77,7 +77,7 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiOsViewModel, state: HubidubiOsView
                 SheetTitle("Enter the phone's code", overline = "Shown on the phone")
                 OutlinedTextField(value = code, onValueChange = { code = it.uppercase() },
                     singleLine = true, enabled = !waiting, placeholder = { Text("ABCD-EFGH") },
-                    textStyle = MaterialTheme.typography.titleMedium.copy(fontFamily = Mono),
+                    textStyle = MaterialTheme.typography.titleMedium,
                     colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
                 if (!waiting) PrimaryButton("Pair", { vm.acceptCode(code); waiting = true },
                     Modifier.fillMaxWidth().padding(top = 14.dp),

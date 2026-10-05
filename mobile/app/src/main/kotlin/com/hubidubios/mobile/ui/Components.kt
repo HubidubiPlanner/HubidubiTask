@@ -110,8 +110,7 @@ fun SectionLabel(
         Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color,
             modifier = Modifier.weight(1f))
         count?.let {
-            Text(it.toString(), fontFamily = Mono,
-                style = MaterialTheme.typography.labelMedium, color = HubidubiOsTheme.colors.muted)
+            Text(it.toString(), style = MaterialTheme.typography.labelMedium, color = HubidubiOsTheme.colors.muted)
         }
     }
 }
@@ -292,7 +291,7 @@ fun ActionRow(
             Text(label, style = MaterialTheme.typography.bodyMedium, color = tint,
                 modifier = Modifier.weight(1f))
             meta?.let {
-                Text(it, fontFamily = Mono, style = MaterialTheme.typography.bodySmall,
+                Text(it, style = MaterialTheme.typography.bodySmall,
                     color = c.muted)
             }
         }

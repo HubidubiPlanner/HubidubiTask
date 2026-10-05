@@ -7,8 +7,6 @@
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_medium.ttf") format("truetype"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_semibold.ttf") format("truetype"); font-weight: 600 700; font-display: swap; }
-@font-face { font-family: "Plex Mono"; src: url("fonts/plex_mono_regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Source Serif"; src: url("fonts/source_serif_semibold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
 
 :root {
   --paper: #E9E1CF;
@@ -27,9 +25,7 @@
   --ok: #5F7A4C;
   --bezel: #2E3028;
 
-  --serif: "Source Serif", Georgia, "Times New Roman", serif;
   --sans: "Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --measure: 1120px;
   --gutter: 16px;
   color-scheme: light;
@@ -77,7 +73,7 @@ a { color: var(--accent); text-underline-offset: 3px; }
 a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.12; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1, h2, h3 { font-family: var(--sans); font-weight: 600; line-height: 1.12; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
 h1 { font-size: clamp(40px, 7vw, 72px); }
 h2 { font-size: clamp(30px, 4.4vw, 44px); }
 h3 { font-size: 22px; line-height: 1.25; }
@@ -94,12 +90,12 @@ p { margin: 0; text-wrap: pretty; }
   margin-bottom: 14px;
 }
 .lede { font-size: clamp(18px, 2.2vw, 21px); color: var(--muted); max-width: 36em; }
-.mono { font-family: var(--mono); font-size: 0.86em; }
+.mono { font-family: var(--sans); font-size: 0.86em; }
 
 /* ---- header */
 .site-header { border-bottom: 1px solid var(--line); }
 .site-header .wrap { display: flex; align-items: center; gap: 16px; min-height: 64px; }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 20px/1 var(--serif); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 20px/1 var(--sans); }
 .brand img { width: 28px; height: 28px; }
 .site-nav { margin-left: auto; display: flex; gap: 22px; align-items: center; }
 .site-nav a { color: var(--muted); text-decoration: none; font-size: 15px; font-weight: 500; }
@@ -151,7 +147,7 @@ p { margin: 0; text-wrap: pretty; }
   .pillar:first-child { padding-left: 0; }
   .pillar:last-child { border-right: 0; padding-right: 0; }
 }
-.pillar .num { font: 400 13px/1 var(--mono); color: var(--accent); margin-bottom: 18px; display: block; }
+.pillar .num { font: 400 13px/1 var(--sans); color: var(--accent); margin-bottom: 18px; display: block; }
 .pillar h3 { margin-bottom: 10px; }
 .pillar p { color: var(--muted); font-size: 16px; }
 
@@ -200,7 +196,7 @@ p { margin: 0; text-wrap: pretty; }
 .mini-next { border: 1px solid var(--line); background: var(--raised); font-size: 15px; }
 .mini-next .label { font: 600 11px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; padding: 14px 16px 8px; display: flex; justify-content: space-between; }
 .mini-next .row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--line); }
-.mini-next .row .t { font-family: var(--mono); font-size: 13px; color: var(--accent); white-space: nowrap; }
+.mini-next .row .t { font-family: var(--sans); font-size: 13px; color: var(--accent); white-space: nowrap; }
 .mini-next .row.gone { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--glyph); }
 .mini-next .label.overdue { color: var(--danger); }
 .mini-next .label.today { color: var(--accent); }
@@ -214,7 +210,7 @@ p { margin: 0; text-wrap: pretty; }
 .diagram .head { fill: var(--accent); }
 .diagram text { font-family: var(--sans); fill: var(--ink); }
 .diagram .small { font-size: 13px; fill: var(--muted); }
-.diagram .mono { font-family: var(--mono); font-size: 12px; fill: var(--accent); }
+.diagram .mono { font-family: var(--sans); font-size: 12px; fill: var(--accent); }
 .diagram .cloud { fill: none; stroke: var(--muted); stroke-width: 1.5; }
 .diagram .cross { stroke: var(--danger); stroke-width: 2.5; }
 
@@ -239,7 +235,7 @@ p { margin: 0; text-wrap: pretty; }
 .platform h3 { font-size: 24px; }
 .platform p { color: var(--muted); font-size: 15.5px; }
 .platform .btn { align-self: flex-start; margin-top: auto; }
-.platform .req { font: 400 13px/1.5 var(--mono); color: var(--muted); }
+.platform .req { font: 400 13px/1.5 var(--sans); color: var(--muted); }
 
 /* ---- FAQ */
 .faq { margin-top: 36px; border-top: 1px solid var(--line); max-width: 820px; }
@@ -264,7 +260,7 @@ p { margin: 0; text-wrap: pretty; }
 .doc p + p { margin-top: 14px; }
 .doc ul { padding-left: 22px; }
 .doc li { margin: 6px 0; }
-.doc .meta { color: var(--muted); font: 400 14px/1.5 var(--mono); }
+.doc .meta { color: var(--muted); font: 400 14px/1.5 var(--sans); }
 .doc table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 15px; }
 .doc th, .doc td { text-align: left; vertical-align: top; padding: 10px 12px; border: 1px solid var(--line); }
 .doc th { background: var(--raised); font-weight: 600; }

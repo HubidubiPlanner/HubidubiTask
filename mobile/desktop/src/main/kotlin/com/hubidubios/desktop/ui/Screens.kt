@@ -505,8 +505,7 @@ private fun DetailSheet(
                             Text(ReviewBrowse.labelOf(sub), style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f))
                             sub.fields["due"]?.takeIf { it.isNotBlank() }?.let {
-                                Text(shortDate(it), fontFamily = Mono,
-                                    style = MaterialTheme.typography.bodySmall, color = c.muted)
+                                Text(shortDate(it), style = MaterialTheme.typography.bodySmall, color = c.muted)
                             }
                         }
                     }
@@ -716,11 +715,10 @@ fun NextScreen(state: HubidubiOsViewModel.UiState, vm: HubidubiOsViewModel) {
                                 if (event) {
                                     val time = rec.fields["time"] ?: "All day"
                                     Text(if (showDate) "${shortDate(rec.fields["due"].orEmpty())} $time" else time,
-                                        fontFamily = Mono, style = MaterialTheme.typography.bodySmall,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = c.accent)
                                 } else if (showDate) {
-                                    Text(shortDate(rec.fields["due"].orEmpty()), fontFamily = Mono,
-                                        style = MaterialTheme.typography.bodySmall,
+                                    Text(shortDate(rec.fields["due"].orEmpty()), style = MaterialTheme.typography.bodySmall,
                                         color = if (overdue) c.danger else c.muted)
                                 } else {
                                     projectTitle(rec)?.let {
@@ -924,8 +922,8 @@ private fun LabeledField(
         Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value, onValueChange = onValueChange,
-            placeholder = placeholder?.let { { Text(it, fontFamily = Mono, color = c.muted) } },
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = Mono, fontSize = 14.sp),
+            placeholder = placeholder?.let { { Text(it, color = c.muted) } },
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
             singleLine = true, enabled = enabled, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth(),
         )
@@ -1342,7 +1340,7 @@ private fun ProjectHeader(
             }
             Text(node.title, style = MaterialTheme.typography.titleMedium, color = c.accent,
                 modifier = Modifier.weight(1f))
-            Text(count.toString(), fontFamily = Mono, style = MaterialTheme.typography.labelMedium,
+            Text(count.toString(), style = MaterialTheme.typography.labelMedium,
                 color = c.muted)
         }
         if (expanded && node.hasChildren) HorizontalDivider(color = c.line, thickness = 1.dp)

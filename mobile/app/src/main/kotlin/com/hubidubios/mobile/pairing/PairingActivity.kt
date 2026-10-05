@@ -46,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubios.mobile.ui.HubidubiOsTheme
-import com.hubidubios.mobile.ui.Mono
 import com.hubidubios.mobile.ui.PrimaryButton
 import com.hubidubios.mobile.ui.SecondaryButton
 import com.hubidubios.mobile.ui.appFieldColors
@@ -188,7 +187,7 @@ private fun PairingScreen(
                     modifier = Modifier.padding(top = 6.dp, bottom = 26.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
                     Step(1, "On the workstation, run") {
-                        Text("hubidubios-sync pair", fontFamily = Mono, color = c.well,
+                        Text("hubidubios-sync pair", color = c.well,
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
                             modifier = Modifier.fillMaxWidth().background(c.ink)
                                 .padding(horizontal = 14.dp, vertical = 12.dp))
@@ -231,7 +230,7 @@ private fun Field(label: String, value: String, onChange: (String) -> Unit, mono
         Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value, onValueChange = onChange, singleLine = true,
-            textStyle = if (mono) MaterialTheme.typography.bodySmall.copy(fontFamily = Mono, fontSize = 14.sp)
+            textStyle = if (mono) MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp)
                         else MaterialTheme.typography.bodyMedium,
             colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth(),
         )

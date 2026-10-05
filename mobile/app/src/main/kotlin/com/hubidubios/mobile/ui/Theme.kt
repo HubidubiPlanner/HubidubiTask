@@ -118,28 +118,26 @@ private fun schemeOf(c: AppColors, dark: Boolean) = if (dark) darkColorScheme(
     error = c.danger,
 )
 
-// A serif for screen titles only, over a plain sans for everything read:
-// the title says where you are, the sans carries the content. Dates and
-// addresses are set in mono so they line up in a column.
+// One typeface for everything, IBM Plex Sans: titles are its semibold,
+// the rest its regular and medium. Its digits are all one width, so dates and
+// counts still line up in a column without a separate mono face.
 private val Sans = FontFamily(
     Font(R.font.plex_sans_regular, FontWeight.Normal),
     Font(R.font.plex_sans_medium, FontWeight.Medium),
     Font(R.font.plex_sans_semibold, FontWeight.SemiBold),
     Font(R.font.plex_sans_semibold, FontWeight.Bold),
 )
-private val Serif = FontFamily(Font(R.font.source_serif_semibold, FontWeight.SemiBold))
-val Mono = FontFamily(Font(R.font.plex_mono_regular, FontWeight.Normal))
 
 private val AppTypography = Typography().let { t ->
     fun TextStyle.sans() = copy(fontFamily = Sans)
     Typography(
         displayLarge = t.displayLarge.sans(), displayMedium = t.displayMedium.sans(),
         displaySmall = t.displaySmall.sans(),
-        headlineLarge = TextStyle(fontFamily = Serif, fontWeight = FontWeight.SemiBold,
+        headlineLarge = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
             fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.01).em),
-        headlineMedium = TextStyle(fontFamily = Serif, fontWeight = FontWeight.SemiBold,
+        headlineMedium = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
             fontSize = 24.sp, lineHeight = 29.sp),
-        headlineSmall = TextStyle(fontFamily = Serif, fontWeight = FontWeight.SemiBold,
+        headlineSmall = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,
             fontSize = 22.sp, lineHeight = 27.sp),
         titleLarge = t.titleLarge.sans(),
         titleMedium = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold,

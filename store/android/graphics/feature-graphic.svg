@@ -16,9 +16,9 @@
             stroke-linecap="round" stroke-linejoin="round"/>
     </g>
   </g>
-  <text x="380" y="222" font-family="Source Serif 4 Subhead, serif" font-weight="600"
+  <text x="380" y="222" font-family="IBM Plex Sans, sans-serif" font-weight="600"
         font-size="64" fill="#D3C9AF">HubidubiOS</text>
   <text x="382" y="276" font-family="IBM Plex Sans, sans-serif" font-size="30" fill="#B4997E">Get it done. Keep it yours.</text>
-  <text x="382" y="330" font-family="IBM Plex Mono, monospace" font-size="18" fill="#9A9686"
+  <text x="382" y="330" font-family="IBM Plex Sans, sans-serif" font-size="18" fill="#9A9686"
         letter-spacing="1">TASKS · CALENDAR · SYNC WITHOUT A CLOUD</text>
 </svg>

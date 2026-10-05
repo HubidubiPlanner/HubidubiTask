@@ -74,14 +74,14 @@ fun PairMacSheet(open: Boolean, vm: HubidubiOsViewModel, onDismiss: () -> Unit) 
             else -> {
                 if (mode == "show") {
                     SheetTitle("Type this on the Mac", overline = "Settings → Pair a phone → Enter the phone's code")
-                    Text(shown, fontFamily = Mono, fontSize = 34.sp, fontWeight = FontWeight.Medium,
+                    Text(shown, fontSize = 34.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line)
                             .padding(vertical = 18.dp, horizontal = 16.dp))
                 } else {
                     SheetTitle("Enter the Mac's code", overline = "Shown on the Mac")
                     OutlinedTextField(value = code, onValueChange = { code = it.uppercase() },
                         singleLine = true, enabled = job == null, placeholder = { Text("ABCD-EFGH") },
-                        textStyle = MaterialTheme.typography.titleMedium.copy(fontFamily = Mono),
+                        textStyle = MaterialTheme.typography.titleMedium,
                         colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
                 }
                 OutlinedTextField(value = address, onValueChange = { address = it },
