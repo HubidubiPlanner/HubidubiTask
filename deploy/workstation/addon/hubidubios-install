@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# hubidubios-install — add the HubidubiOS layer on top of a STOCK Omarchy install.
+#
+# Run this on your live Omarchy system, as your normal user (it uses sudo for
+# pacman). It is PURELY ADDITIVE and fully reversible — Omarchy is never limited
+# or reconfigured; removing our layer returns the system to pristine Omarchy:
+#
+#     sudo pacman -R hubidubios-workstation hubidubios-plugins-default \
+#                    hubidubios-desktop
+#     sudo rm -f /etc/motd            # if you want the Omarchy MOTD back
+#
+# Usage:
+#     hubidubios-install [path-to-hubidubios-repo-dir]
+#
+# The repo dir is a PRIVATE local directory of built hubidubios-*.pkg.tar.zst +
+# a hubidubios.db (repo-add). Nothing is ever published — it's served to pacman
+# over file://. Build it once on any Arch box:
+#     ./distribution/pacman/build-repo.sh        # -> ./repo/
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="${1:-$(cd "$HERE/../../.." && pwd)/repo}"
+
+command -v pacman >/dev/null || {
+  echo "hubidubios-install runs on Arch/Omarchy (pacman not found)." >&2; exit 1; }
+[ -d "$REPO_DIR" ] && ls "$REPO_DIR"/hubidubios*.pkg.tar.* >/dev/null 2>&1 || {
+  echo "No HubidubiOS package repo at: $REPO_DIR" >&2
+  echo "Build it first on an Arch box:  ./distribution/pacman/build-repo.sh" >&2; exit 1; }
+
+echo "==> Registering the private HubidubiOS repo (file://$REPO_DIR)"
+if ! grep -q '^\[hubidubios\]' /etc/pacman.conf; then
+  sudo tee -a /etc/pacman.conf >/dev/null <<REPO
+
+[hubidubios]
+SigLevel = Optional TrustAll
+Server = file://$REPO_DIR
+REPO
+fi
+
+echo "==> Installing the HubidubiOS layer (Omarchy stays untouched)"
+sudo pacman -Sy --needed --noconfirm hubidubios-workstation hubidubios-plugins-default
+
+echo "==> First-time setup: seed ~/vault, enable per-user services, wire the keybind"
+hubidubios-firstboot || true
+
+echo "==> Applying HubidubiOS branding (additive; MOTD only — no Omarchy file touched)"
+[ -f /usr/share/hubidubios/motd ] && sudo cp /usr/share/hubidubios/motd /etc/motd || true
+
+cat <<DONE
+
+==> HubidubiOS is now layered on your Omarchy. Omarchy itself is unchanged.
+    Bar widget:   add  import "/etc/hubidubios/quickshell"  then  HubidubiOsStatus {}
+    Capture:      Super+Shift+Space
+    Inference:    point [inference] in ~/vault/.hubidubios/config.toml at your
+                  selfhostedai OpenAI endpoint, then:  hubidubios-agent status
+    Pair a phone: hubidubios-sync pair
+    Remove all:   sudo pacman -R hubidubios-workstation hubidubios-plugins-default hubidubios-desktop
+DONE

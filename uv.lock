@@ -169,7 +169,7 @@ wheels = [
 [[package]]
 name = "hubidubios-agent"
 version = "0.1.0"
-source = { editable = "packages/hubidubios-agent" }
+source = { editable = "src/workstation/hubidubios-agent" }
 dependencies = [
     { name = "cryptography" },
     { name = "hubidubios-plugin-host" },
@@ -180,15 +180,15 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cryptography", specifier = ">=41.0" },
-    { name = "hubidubios-plugin-host", editable = "packages/hubidubios-plugin-host" },
-    { name = "hubidubios-vault", editable = "packages/hubidubios-vault" },
+    { name = "hubidubios-plugin-host", editable = "src/workstation/hubidubios-plugin-host" },
+    { name = "hubidubios-vault", editable = "src/workstation/hubidubios-vault" },
     { name = "jsonschema", specifier = ">=4.0" },
 ]
 
 [[package]]
 name = "hubidubios-plugin-host"
 version = "0.1.0"
-source = { editable = "packages/hubidubios-plugin-host" }
+source = { editable = "src/workstation/hubidubios-plugin-host" }
 dependencies = [
     { name = "hubidubios-vault" },
     { name = "jsonschema" },
@@ -197,7 +197,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "hubidubios-vault", editable = "packages/hubidubios-vault" },
+    { name = "hubidubios-vault", editable = "src/workstation/hubidubios-vault" },
     { name = "jsonschema", specifier = ">=4.0" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
@@ -205,7 +205,7 @@ requires-dist = [
 [[package]]
 name = "hubidubios-sync"
 version = "0.1.0"
-source = { editable = "packages/hubidubios-sync" }
+source = { editable = "src/workstation/hubidubios-sync" }
 dependencies = [
     { name = "hubidubios-vault" },
     { name = "qrcode" },
@@ -218,8 +218,8 @@ agent = [
 
 [package.metadata]
 requires-dist = [
-    { name = "hubidubios-agent", marker = "extra == 'agent'", editable = "packages/hubidubios-agent" },
-    { name = "hubidubios-vault", editable = "packages/hubidubios-vault" },
+    { name = "hubidubios-agent", marker = "extra == 'agent'", editable = "src/workstation/hubidubios-agent" },
+    { name = "hubidubios-vault", editable = "src/workstation/hubidubios-vault" },
     { name = "qrcode" },
 ]
 provides-extras = ["agent"]
@@ -227,7 +227,7 @@ provides-extras = ["agent"]
 [[package]]
 name = "hubidubios-vault"
 version = "0.1.0"
-source = { editable = "packages/hubidubios-vault" }
+source = { editable = "src/workstation/hubidubios-vault" }
 dependencies = [
     { name = "icalendar" },
     { name = "pyyaml" },

@@ -97,7 +97,7 @@ def test_imported_items_reach_the_index(vault):
     from hubidubios_plugin_host.registry import discover, export_entity_types
     from hubidubios_vault.index import indexer
 
-    reg = discover([Path(__file__).parents[2] / "plugins"])
+    reg = discover([Path(__file__).parents[2] / "src" / "plugins"])
     reg.plugins = {k: v for k, v in reg.plugins.items() if k in ("gtd", "calendar")}
     export_entity_types(vault, reg)
 

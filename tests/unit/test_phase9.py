@@ -10,7 +10,7 @@ from hubidubios_vault import apply as vault_apply
 from hubidubios_vault import cli
 from hubidubios_vault.index import indexer, queries
 
-REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 @pytest.fixture

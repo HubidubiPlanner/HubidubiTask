@@ -5,7 +5,7 @@
 # host, and drives pairing end to end via an instrumented test. Runs in CI with
 # a KVM-accelerated emulator; not on the macOS dev machine.
 #
-#   ./emulator_pairing.sh path/to/app-debug.apk
+#   ./emulator_pairing.sh path/to/android-debug.apk
 set -euo pipefail
 
 APK="${1:?usage: emulator_pairing.sh <apk>}"

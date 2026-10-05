@@ -20,9 +20,9 @@ chown -R builder /work-repo
 
 step "Build hubidubios packages (makepkg)"
 PKG_DIRS=(
-  packages/hubidubios-vault packages/hubidubios-plugin-host
-  packages/hubidubios-sync packages/hubidubios-agent
-  plugins/gtd plugins/calendar
+  src/workstation/hubidubios-vault src/workstation/hubidubios-plugin-host
+  src/workstation/hubidubios-sync src/workstation/hubidubios-agent
+  src/plugins/gtd src/plugins/calendar
 )
 for p in "${PKG_DIRS[@]}"; do
   ( cd "$p" && sudo -u builder makepkg -f --nodeps --skipinteg >/dev/null )
@@ -31,12 +31,12 @@ done
 
 step "Install via pacman -U (the real install path)"
 pacman -U --noconfirm --overwrite '*' \
-  packages/hubidubios-vault/*.pkg.tar.* \
-  packages/hubidubios-plugin-host/*.pkg.tar.* \
-  packages/hubidubios-sync/*.pkg.tar.* \
-  packages/hubidubios-agent/*.pkg.tar.* \
-  plugins/gtd/*.pkg.tar.* \
-  plugins/calendar/*.pkg.tar.* >/dev/null
+  src/workstation/hubidubios-vault/*.pkg.tar.* \
+  src/workstation/hubidubios-plugin-host/*.pkg.tar.* \
+  src/workstation/hubidubios-sync/*.pkg.tar.* \
+  src/workstation/hubidubios-agent/*.pkg.tar.* \
+  src/plugins/gtd/*.pkg.tar.* \
+  src/plugins/calendar/*.pkg.tar.* >/dev/null
 ok "packages installed"
 
 step "CLI smoke (installed entry points on PATH)"

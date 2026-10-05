@@ -1,0 +1,24 @@
+# Maintainer: hubidubios
+pkgname=hubidubios-agent
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="hubidubios agent: constrained skill-dispatch loop over a local llama.cpp endpoint"
+arch=('any')
+url="https://gitlab.local/hubidubios"
+license=('MIT')
+depends=('python' 'hubidubios-vault' 'hubidubios-plugin-host' 'python-jsonschema'
+         'python-cryptography')
+optdepends=('llama.cpp: local inference server on :8080'
+            'selfhostedai-agent: encrypted LAN inference API (:8443, protocol="selfhostedai")')
+makedepends=('python-build' 'python-installer' 'python-hatchling' 'python-wheel')
+source=()
+
+build() {
+  cd "$startdir"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$startdir"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from hubidubios_vault import cli
 
-REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 @pytest.fixture

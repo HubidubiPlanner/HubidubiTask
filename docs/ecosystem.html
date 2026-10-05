@@ -1,0 +1,345 @@
+<title>HubidubiOS Ecosystem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column on sand paper, with the machine map as the one wide object. */
+:root {
+  --paper: #E9E1CF; --raised: #F5F0E4; --line: #CFC2AB; --ink: #2E3028;
+  --muted: #5E5B52; --accent: #7A624C; --frame: #56594D; --band: #DDD3BC;
+  --ok: #5F7A4C; --warn: #9B6A2E; --danger: #9B3A32;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --measure: 68ch;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1C1D18; --raised: #25271F; --line: #3A3C33; --ink: #D3C9AF;
+    --muted: #9A9686; --accent: #B4997E; --frame: #848072; --band: #151612;
+    --ok: #8FA877; --warn: #D2A15E; --danger: #D08A80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1C1D18; --raised: #25271F; --line: #3A3C33; --ink: #D3C9AF;
+  --muted: #9A9686; --accent: #B4997E; --frame: #848072; --band: #151612;
+  --ok: #8FA877; --warn: #D2A15E; --danger: #D08A80;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 400 16px/1.6 var(--sans);
+  font-variant-numeric: tabular-nums;
+  padding-block: 40px 72px; padding-inline: 16px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 56px; }
+header { display: grid; gap: 14px; max-width: var(--measure); }
+.eyebrow { font: 600 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 600 clamp(32px, 5vw, 46px)/1.08 var(--sans); margin: 0; letter-spacing: -.015em; text-wrap: balance; }
+h2 { font: 600 26px/1.2 var(--sans); margin: 0; text-wrap: balance; }
+h3 { font: 600 18px/1.3 var(--sans); margin: 0; }
+p { margin: 0; max-width: var(--measure); }
+.lede { font-size: 19px; color: var(--muted); }
+section { display: grid; gap: 18px; }
+section > p, section > ul { max-width: var(--measure); }
+code, .path { font: 500 .92em/1.4 var(--sans); background: var(--band); padding: 1px 6px; border-radius: 3px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+
+/* The machine map */
+.map { border: 1px solid var(--line); background: var(--raised); overflow-x: auto; }
+.map svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.map .box { fill: var(--paper); stroke: var(--frame); stroke-width: 1.5; }
+.map .hub { fill: var(--band); stroke: var(--accent); stroke-width: 2; }
+.map .ext { fill: var(--raised); stroke: var(--line); stroke-dasharray: 5 4; stroke-width: 1.5; }
+.map .t { fill: var(--ink); font: 600 17px var(--sans); }
+.map .s { fill: var(--muted); font: 400 13.5px var(--sans); }
+.map .k { fill: var(--accent); font: 500 13px var(--sans); }
+.map .edge { stroke: var(--accent); stroke-width: 2; fill: none; }
+.map .soft { stroke: var(--frame); stroke-width: 1.5; fill: none; stroke-dasharray: 4 4; }
+.map .lbl { fill: var(--ink); font: 500 12.5px var(--sans); }
+.map .lblbg { fill: var(--raised); }
+.map marker path { fill: var(--accent); }
+.caption { font-size: 14px; color: var(--muted); }
+
+/* Machines */
+.machines { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+.machine { background: var(--raised); border: 1px solid var(--line); padding: 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.machine .role { color: var(--muted); font-size: 15px; }
+.machine dl { margin: 6px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14.5px; }
+.machine dt { color: var(--muted); }
+.machine dd { margin: 0; min-width: 0; }
+
+/* Tables */
+.table { overflow-x: auto; border: 1px solid var(--line); background: var(--raised); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 640px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--band); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 500; white-space: nowrap; }
+
+/* Vault tree */
+.tree { background: var(--raised); border: 1px solid var(--line); padding: 16px 20px; font: 400 14.5px/1.75 var(--sans); white-space: pre; overflow-x: auto; }
+.tree b { font-weight: 600; }
+.tree i { font-style: normal; color: var(--muted); }
+
+/* Status list */
+.status { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; max-width: var(--measure); }
+.status li { display: grid; grid-template-columns: 84px 1fr; gap: 12px; align-items: baseline; }
+.pill { font: 600 11.5px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; padding: 5px 0; text-align: center; border: 1px solid currentColor; border-radius: 2px; }
+.pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.off { color: var(--danger); }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (max-width: 520px) { .status li { grid-template-columns: 1fr; gap: 4px; } .pill { justify-self: start; padding: 5px 8px; } }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">How the whole system fits together</span>
+  <h1>HubidubiOS Ecosystem</h1>
+  <p class="lede">A personal task and notes system that runs on machines you own. A Linux workstation holds everything as plain files. A phone and a Mac each carry a full copy and keep working with no network. A Raspberry Pi gives a terminal at the desk, and a separate inference box answers the AI questions.</p>
+</header>
+
+<section aria-labelledby="map-h">
+  <h2 id="map-h">The machines and how they talk</h2>
+  <div class="map">
+    <svg viewBox="0 0 960 600" role="img" aria-labelledby="map-title map-desc">
+      <title id="map-title">HubidubiOS machines and connections</title>
+      <desc id="map-desc">The workstation syncs with the phone over port 5233. The phone syncs with the Mac over port 5244 and relays between the Mac and the workstation. The workstation, phone and Mac ask the inference box. The workstation pulls Google Calendar one way. The thin client opens a terminal on the workstation.</desc>
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+
+      <!-- Google Calendar -->
+      <rect class="ext" x="40" y="24" width="380" height="76"/>
+      <text class="t" x="60" y="56">Google Calendar</text>
+      <text class="s" x="60" y="80">optional · a private iCal address</text>
+
+      <!-- Inference box -->
+      <rect class="ext" x="580" y="24" width="340" height="76"/>
+      <text class="t" x="600" y="56">Inference box (selfhostedai)</text>
+      <text class="s" x="600" y="80">encrypted API on :8443, or any OpenAI-style one</text>
+
+      <!-- Workstation -->
+      <rect class="hub" x="40" y="160" width="380" height="300"/>
+      <text class="t" x="60" y="194">Workstation</text>
+      <text class="s" x="60" y="216">Omarchy Linux, x86_64 · the source of truth</text>
+      <text class="k" x="60" y="252">~/vault</text><text class="s" x="140" y="252">markdown and .ics files</text>
+      <text class="k" x="60" y="280">hubidubios-sync</text><text class="s" x="190" y="280">phone change feed :5233</text>
+      <text class="k" x="60" y="308">hubidubios-agent</text><text class="s" x="196" y="308">one skill per turn</text>
+      <text class="k" x="60" y="336">plugins</text><text class="s" x="124" y="336">gtd, calendar</text>
+      <text class="k" x="60" y="364">Radicale</text><text class="s" x="132" y="364">CalDAV :5232 for desktop apps</text>
+      <text class="k" x="60" y="392">git</text><text class="s" x="92" y="392">every change committed on a timer</text>
+      <text class="k" x="60" y="420">desktop layer</text><text class="s" x="168" y="420">capture key, next panel, status</text>
+
+      <!-- Phone -->
+      <rect class="box" x="580" y="160" width="340" height="112"/>
+      <text class="t" x="600" y="194">Phone</text>
+      <text class="s" x="600" y="218">Android app · full offline copy</text>
+      <text class="s" x="600" y="240">encrypted local database, widget,</text>
+      <text class="s" x="600" y="260">share menu, camera, voice memos</text>
+
+      <!-- Mac -->
+      <rect class="box" x="580" y="348" width="340" height="112"/>
+      <text class="t" x="600" y="382">Mac</text>
+      <text class="s" x="600" y="406">macOS app · full copy in SQLite</text>
+      <text class="s" x="600" y="428">same screens as the phone,</text>
+      <text class="s" x="600" y="448">drag a file in to capture it</text>
+
+      <!-- Thin client -->
+      <rect class="box" x="40" y="520" width="380" height="58"/>
+      <text class="t" x="60" y="556">Thin client</text>
+      <text class="s" x="168" y="556">Raspberry Pi · no data of its own</text>
+
+      <!-- Edges -->
+      <path class="edge" d="M420 226 H580" marker-start="url(#arr)" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="430" y="200" width="140" height="18"/>
+      <text class="lbl" x="500" y="214" text-anchor="middle">change feed · :5233</text>
+      <text class="s" x="500" y="248" text-anchor="middle" style="font-size:12px">pinned TLS, QR pairing</text>
+
+      <path class="edge" d="M750 272 V348" marker-start="url(#arr)" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="758" y="292" width="150" height="38"/>
+      <text class="lbl" x="764" y="306">peer sync · :5244</text>
+      <text class="s" x="764" y="324" style="font-size:12px">Bonjour, pairing code</text>
+
+      <path class="soft" d="M420 186 C500 186, 520 62, 580 62" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="462" y="110" width="78" height="18"/>
+      <text class="lbl" x="501" y="124" text-anchor="middle">agent asks</text>
+
+      <path class="soft" d="M860 160 V100" marker-end="url(#arr)"/>
+      <path class="soft" d="M920 404 H944 V62 H920" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="866" y="120" width="54" height="18"/>
+      <text class="lbl" x="870" y="134">chat</text>
+
+      <path class="soft" d="M230 100 V160" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="238" y="120" width="104" height="18"/>
+      <text class="lbl" x="242" y="134">pull every 15 min</text>
+
+      <path class="edge" d="M230 520 V460" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="238" y="482" width="120" height="18"/>
+      <text class="lbl" x="242" y="496">ssh · mosh · tmux</text>
+    </svg>
+  </div>
+  <p class="caption">Solid lines carry your data. Dashed lines are questions to a model or a one-way calendar pull. The Mac never talks to the workstation directly: the phone passes records and attachments between them on each round.</p>
+</section>
+
+<section aria-labelledby="machines-h">
+  <h2 id="machines-h">What each machine does</h2>
+  <div class="machines">
+    <article class="machine">
+      <h3>Workstation</h3>
+      <p class="role">Holds the vault, runs the agent and the services, and is where you work with a keyboard.</p>
+      <dl>
+        <dt>Runs</dt><dd>Omarchy with the HubidubiOS layer added on top. Nothing Omarchy ships is removed or replaced.</dd>
+        <dt>Source</dt><dd><span class="path">src/workstation/</span>, <span class="path">src/plugins/</span></dd>
+        <dt>Installed by</dt><dd>The installer ISO in <span class="path">deploy/workstation/iso/</span>, or onto stock Omarchy with <span class="path">deploy/workstation/addon/</span></dd>
+        <dt>Updated by</dt><dd><span class="path">deploy/workstation/hubidubios-update</span>, run on the box</dd>
+      </dl>
+    </article>
+    <article class="machine">
+      <h3>Phone</h3>
+      <p class="role">Capture anywhere and see what is next. Works fully offline and syncs when it can reach the workstation or the Mac.</p>
+      <dl>
+        <dt>Runs</dt><dd>Android 8 and later, always portrait</dd>
+        <dt>Source</dt><dd><span class="path">src/apps/android/</span> with <span class="path">src/apps/shared/</span></dd>
+        <dt>Installed by</dt><dd>Google Play, or over Wi-Fi with adb while developing</dd>
+        <dt>Listing</dt><dd><span class="path">distribution/play-store/</span></dd>
+      </dl>
+    </article>
+    <article class="machine">
+      <h3>Mac</h3>
+      <p class="role">The same lists and the same "+" as the phone, on a big screen. Takes files dropped on the window.</p>
+      <dl>
+        <dt>Runs</dt><dd>macOS, as HubidubiOS.app</dd>
+        <dt>Source</dt><dd><span class="path">src/apps/macos/</span> with <span class="path">src/apps/shared/</span></dd>
+        <dt>Installed by</dt><dd><code>./gradlew :macos:createDistributable</code>, copied to Applications</dd>
+        <dt>Data</dt><dd><span class="path">~/Library/Application Support/HubidubiOS</span></dd>
+      </dl>
+    </article>
+    <article class="machine">
+      <h3>Thin client</h3>
+      <p class="role">A Raspberry Pi that boots straight into a terminal session on the workstation. It stores nothing and runs no model.</p>
+      <dl>
+        <dt>Runs</dt><dd>Raspberry Pi OS Lite or Alpine</dd>
+        <dt>Installed by</dt><dd><span class="path">deploy/thin-client/provision.sh</span></dd>
+      </dl>
+    </article>
+    <article class="machine">
+      <h3>Inference box</h3>
+      <p class="role">A separate machine that runs the language model. The workstation's agent, the phone and the Mac all send their questions here.</p>
+      <dl>
+        <dt>Speaks</dt><dd>selfhostedai's encrypted protocol on :8443, or a plain OpenAI-style API</dd>
+        <dt>Set in</dt><dd><span class="path">~/vault/.hubidubios/config.toml</span>, and in each app's Settings</dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="links-h">
+  <h2 id="links-h">Every connection</h2>
+  <div class="table">
+    <table>
+      <thead><tr><th>Between</th><th>How</th><th>Port</th><th>Finding each other</th><th>Trust</th></tr></thead>
+      <tbody>
+        <tr><td>Phone and workstation</td><td>Cursor-based change feed, plus attachment uploads</td><td>5233</td><td>Address in the pairing QR code</td><td>Self-signed certificate pinned by fingerprint; a token per phone</td></tr>
+        <tr><td>Phone and Mac</td><td>Peer sync: both send changes since the other's last cursor, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Pinned certificate; a pairing code shown on the Mac</td></tr>
+        <tr><td>Apps and model</td><td>Chat and item reviews, with a short summary of what is open</td><td>8443</td><td>Typed in Settings</td><td>Encrypted session (ECDH and AES-GCM) or a pinned TLS certificate</td></tr>
+        <tr><td>Agent and model</td><td>One skill call per turn, checked against the skill's schema</td><td>8443</td><td><span class="path">config.toml</span></td><td>As above</td></tr>
+        <tr><td>Desktop apps and workstation</td><td>CalDAV, for calendar apps on a laptop</td><td>5232</td><td>Avahi</td><td>LAN only</td></tr>
+        <tr><td>Thin client and workstation</td><td>ssh, mosh and tmux</td><td>22</td><td>Hostname given at setup</td><td>SSH keys</td></tr>
+        <tr><td>Workstation and Google</td><td>A one-way pull of a private calendar address</td><td>443</td><td><span class="path">config.toml</span></td><td>Read only; nothing is sent back</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="vault-h">
+  <h2 id="vault-h">Where your data lives</h2>
+  <p>Everything is a plain file in <span class="path">~/vault</span> on the workstation. The search index is rebuilt from the files at any time, so losing it loses nothing. The vault stays usable with an editor, grep and git even if every other part of HubidubiOS were deleted.</p>
+  <div class="tree"><b>~/vault/</b>
+├── <b>inbox/</b>       <i>captures not yet sorted</i>
+├── <b>current/</b>     <i>next actions, one file per project</i>
+├── <b>waiting/</b>     <i>handed to someone else</i>
+├── <b>maybe/</b>       <i>someday</i>
+├── <b>archive/</b>     <i>done or dropped, still searchable</i>
+├── <b>projects/</b>    <i>one file per project</i>
+├── <b>notes/</b>       <i>text, photo, voice and file notes, the file beside its .md</i>
+├── <b>calendars/</b>   <i>.ics events, Google's in calendars/google/</i>
+└── <b>.hubidubios/</b> <i>index, config.toml, sync and attachment store</i></div>
+  <p>The phone and the Mac each keep the same records in their own database. Attachments travel by their SHA-256 hash, so the same photo is stored once and every device can check it arrived intact.</p>
+</section>
+
+<section aria-labelledby="agent-h">
+  <h2 id="agent-h">The agent and plugins</h2>
+  <p>The agent on the workstation lets the model plan one small step at a time while ordinary code does the work. Each turn the model picks one skill, its parameters are checked against that skill's schema, and the skill runs in a bubblewrap sandbox. The model never sees the whole vault: it asks a search skill for ranked snippets.</p>
+  <p>Plugins are ordinary Arch packages, so pacman handles versions and dependencies. Each plugin brings entity types and the skills the agent can call.</p>
+  <div class="table">
+    <table>
+      <thead><tr><th>Plugin</th><th>Records it owns</th><th>Skills</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>gtd</td><td>inbox item, next action, waiting for, someday, project, archived</td><td>clarify, file, next, weekly review, archive</td><td>Installed by default</td></tr>
+        <tr><td>calendar</td><td>event</td><td>agenda</td><td>Installed by default</td></tr>
+        <tr><td>tasks</td><td>task</td><td>task-add</td><td>Older set, replaced by gtd</td></tr>
+        <tr><td>inbox</td><td>inbox item</td><td>capture</td><td>Older set, replaced by gtd</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="repo-h">
+  <h2 id="repo-h">The repository</h2>
+  <p>The repository is arranged by what each folder is for: source code, putting it on machines, getting builds to people, the website, tests, tools and documents. Every Arch package keeps its PKGBUILD next to its own code, because makepkg reads the files from there.</p>
+  <div class="table">
+    <table>
+      <thead><tr><th>Folder</th><th>What is in it</th><th>Was</th></tr></thead>
+      <tbody>
+        <tr><td>src/workstation/</td><td>The workstation's Python services, one Arch package per folder</td><td>packages/</td></tr>
+        <tr><td>src/plugins/</td><td>gtd, calendar, tasks, inbox</td><td>plugins/</td></tr>
+        <tr><td>src/apps/</td><td>One Gradle build: android/, macos/, shared/</td><td>mobile/ with app/, desktop/, core/</td></tr>
+        <tr><td>deploy/workstation/</td><td>iso/, addon/, config/, hubidubios-update</td><td>iso/workstation/, install/, config/, scripts/</td></tr>
+        <tr><td>deploy/thin-client/</td><td>The Raspberry Pi setup script</td><td>iso/thin/</td></tr>
+        <tr><td>distribution/play-store/</td><td>Listing texts, graphics, screenshots, fastlane metadata</td><td>store/android/, mobile/fastlane/</td></tr>
+        <tr><td>distribution/pacman/</td><td>Builds every package into a private pacman repo</td><td>install/build-repo.sh</td></tr>
+        <tr><td>site/</td><td>The public website for the phone and Mac apps</td><td>unchanged</td></tr>
+        <tr><td>tests/</td><td>Python tests, sandbox escape tests, smoke tests, container runners</td><td>unchanged</td></tr>
+        <tr><td>tools/</td><td>The release script</td><td>unchanged</td></tr>
+        <tr><td>docs/</td><td>This page, the user manual, the original plan</td><td>PLAN.md and MANUAL.md at the top</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Inside the app build the Gradle modules are now <code>:android</code>, <code>:macos</code> and <code>:shared</code>, so Android build outputs are named <code>android-debug.apk</code> and <code>android-release.aab</code>.</p>
+</section>
+
+<section aria-labelledby="build-h">
+  <h2 id="build-h">Building each part</h2>
+  <div class="table">
+    <table>
+      <thead><tr><th>To get</th><th>Run</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Workstation tests</td><td><code>uv sync &amp;&amp; uv run pytest tests/unit tests/integration</code></td><td>Any machine</td></tr>
+        <tr><td>Phone app</td><td><code>./gradlew :android:assembleDebug</code> or <code>:android:bundleRelease</code></td><td>src/apps/</td></tr>
+        <tr><td>Mac app</td><td><code>./gradlew :macos:createDistributable</code></td><td>src/apps/, on a Mac</td></tr>
+        <tr><td>All Arch packages</td><td><code>distribution/pacman/build-repo.sh</code></td><td>An Arch machine</td></tr>
+        <tr><td>Installer ISO</td><td><code>deploy/workstation/iso/make-image.sh</code></td><td>x86_64 Linux, or a Mac through Colima</td></tr>
+        <tr><td>Store graphics</td><td><code>distribution/play-store/graphics/render.sh</code></td><td>Any machine with librsvg</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="status-h">
+  <h2 id="status-h">Current state</h2>
+  <ul class="status">
+    <li><span class="pill ok">Works</span><span>Phone and Mac apps, peer sync between them, the "+" for every kind of new item, file drops on the Mac. The Mac app is at 1.3.1.</span></li>
+    <li><span class="pill ok">Works</span><span>211 Python tests and all Gradle tests pass after the restructure, with results identical to before it.</span></li>
+    <li><span class="pill warn">Open</span><span>Five acceptance tests in <span class="path">tests/acceptance/test_phase1.py</span> fail because they still expect the old <span class="path">tasks/</span> vault folder. They failed the same way before the restructure.</span></li>
+    <li><span class="pill warn">Open</span><span>Ten lint findings in the Python code, nine of them auto-fixable. Also unchanged by the restructure.</span></li>
+    <li><span class="pill warn">Open</span><span>The site and the Play listing still show screenshots of the old Capture screen and the old typefaces.</span></li>
+    <li><span class="pill warn">Open</span><span>The deploy README calls the add-on the current route, while the manual describes the installer ISO. One of them should be retired.</span></li>
+    <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off until a self-hosted runner exists.</span></li>
+  </ul>
+</section>
+
+<footer>Written from the repository as it stands on 6 October 2026. The workstation and its installer are private, and only the phone and Mac apps are public.</footer>
+</div>

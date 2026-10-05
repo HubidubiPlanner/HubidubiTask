@@ -10,7 +10,7 @@ tests/container/run.sh
 
 ## What it covers (and what it can't)
 
-A container shares the host kernel, so it covers the install/service/CLI layers
+A container shares the host kernel, so it covers the deploy/workstation/addon/service/CLI layers
 but **not** a bootable ISO or a Wayland desktop. Test layers:
 
 | Layer | Tool | Here |

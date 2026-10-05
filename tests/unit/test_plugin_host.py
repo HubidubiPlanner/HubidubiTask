@@ -11,7 +11,7 @@ from hubidubios_plugin_host.registry import RegistryError, discover, export_enti
 from hubidubios_vault.formats import tasks_md
 from hubidubios_vault.index import indexer, queries
 
-REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 def test_shipped_plugins_are_valid():

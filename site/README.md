@@ -16,7 +16,7 @@ Preview locally: `python3 -m http.server -d site 8000` → http://localhost:8000
 Before going live, replace:
 - `hubidubios.example` — canonical and Open Graph URLs in both pages
 - `hello@hubidubios.example` — contact address (also used in the Play listing)
-- `downloads/HubidubiOS.dmg` — the Mac download (`cd mobile && ./gradlew :desktop:packageDmg`),
+- `downloads/HubidubiOS.dmg` — the Mac download (`cd src/apps && ./gradlew :macos:packageDmg`),
   or remove the Mac card from `index.html`
 
 The page follows the system light/dark setting; the "Sand / Moss" button

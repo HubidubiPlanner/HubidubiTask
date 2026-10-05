@@ -9,7 +9,7 @@ import pytest
 from hubidubios_plugin_host.registry import discover, export_entity_types
 from hubidubios_vault.index import indexer, queries
 
-REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 @pytest.fixture

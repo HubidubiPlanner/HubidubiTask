@@ -28,14 +28,14 @@ warn() { printf '\033[1;33m    ! %s\033[0m\n' "$*"; }
 
 run_android() {
   step "android-instrumented: build APKs"
-  ( cd "$REPO/mobile" && ./gradlew -q :app:assembleDebug :app:assembleDebugAndroidTest )
-  local apk="$REPO/mobile/app/build/outputs/apk"
+  ( cd "$REPO/src/apps" && ./gradlew -q :android:assembleDebug :android:assembleDebugAndroidTest )
+  local apk="$REPO/src/apps/android/build/outputs/apk"
 
   local dev; dev="$("$ADB" devices | awk 'NR>1 && $2=="device"{print $1; exit}')"
   [ -n "$dev" ] || { warn "no adb device/emulator; connect a phone or start an AVD"; return 1; }
   ok "device $dev"
-  "$ADB" install -r "$apk/debug/app-debug.apk" >/dev/null
-  "$ADB" install -r "$apk/androidTest/debug/app-debug-androidTest.apk" >/dev/null
+  "$ADB" install -r "$apk/debug/android-debug.apk" >/dev/null
+  "$ADB" install -r "$apk/androidTest/debug/android-debug-androidTest.apk" >/dev/null
 
   step "android-instrumented: start hubidubios-sync (TLS) + adb reverse"
   export HUBIDUBIOS_VAULT="$SCRATCH/android-vault"; rm -rf "$HUBIDUBIOS_VAULT"
@@ -78,17 +78,17 @@ run_iso() {
     archlinux:latest bash -c "
       sed -i '/^\[options\]/a DisableSandbox' /etc/pacman.conf
       pacman -Sy --noconfirm --needed archiso git docker
-      OMARCHY_ISO_REF='$OMARCHY_ISO_REF' iso/workstation/build.sh /repo/iso/workstation/out
+      OMARCHY_ISO_REF='$OMARCHY_ISO_REF' deploy/workstation/iso/build.sh /repo/deploy/workstation/iso/out
     "
-  ls -la "$REPO"/iso/workstation/out/*.iso 2>/dev/null && ok "ISO built"
+  ls -la "$REPO"/deploy/workstation/iso/out/*.iso 2>/dev/null && ok "ISO built"
 }
 
 # --------------------------------------------------------------- qemu
 
 run_qemu() {
   step "qemu-smoke: preconditions"
-  local iso; iso="$(ls "$REPO"/iso/workstation/out/*.iso 2>/dev/null | head -1 || true)"
-  [ -n "$iso" ] || { warn "no ISO in iso/workstation/out — run '$0 iso' first"; return 0; }
+  local iso; iso="$(ls "$REPO"/deploy/workstation/iso/out/*.iso 2>/dev/null | head -1 || true)"
+  [ -n "$iso" ] || { warn "no ISO in deploy/workstation/iso/out — run '$0 iso' first"; return 0; }
   command -v qemu-system-x86_64 >/dev/null || { warn "install qemu (brew install qemu); note: x86_64 guest on arm64 is TCG-emulated and slow"; return 0; }
   step "qemu-smoke: boot + assert"
   "$REPO/tests/smoke/qemu_smoke.sh" "$iso"

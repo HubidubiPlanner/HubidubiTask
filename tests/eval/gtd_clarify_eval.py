@@ -51,7 +51,7 @@ def clarify(text: str) -> dict:
     from hubidubios_plugin_host.sandbox import run_skill
     from hubidubios_vault.vault import Vault
 
-    reg = discover([REPO / "plugins"])
+    reg = discover([REPO / "src" / "plugins"])
     plugin, spec = reg.skill("gtd", "gtd-clarify")
     vault = Vault(REPO / "tests" / "eval" / "_scratch_vault")
     vault.ensure_layout()

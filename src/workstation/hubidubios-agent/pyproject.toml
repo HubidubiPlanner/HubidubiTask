@@ -1,0 +1,25 @@
+[project]
+name = "hubidubios-agent"
+version = "0.1.0"
+description = "hubidubios agent: constrained skill-dispatch loop over a local llama.cpp endpoint."
+requires-python = ">=3.12"
+dependencies = [
+    "hubidubios-vault",
+    "hubidubios-plugin-host",
+    "jsonschema>=4.0",
+    "cryptography>=41.0",
+]
+
+[project.scripts]
+hubidubios-agent = "hubidubios_agent.cli:main"
+
+[tool.uv.sources]
+hubidubios-vault = { workspace = true }
+hubidubios-plugin-host = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hubidubios_agent"]

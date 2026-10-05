@@ -16,7 +16,7 @@ from hubidubios_vault.sidecars import BODY
 
 
 def _gtd(vault):
-    reg = discover([Path(__file__).parents[2] / "plugins"])
+    reg = discover([Path(__file__).parents[2] / "src" / "plugins"])
     reg.plugins = {k: v for k, v in reg.plugins.items() if k in ("gtd", "calendar")}
     export_entity_types(vault, reg)
     return vault

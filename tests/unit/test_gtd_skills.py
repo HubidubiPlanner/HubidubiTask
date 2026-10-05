@@ -12,7 +12,7 @@ import pytest
 from hubidubios_plugin_host.registry import discover
 from hubidubios_plugin_host.sandbox import run_skill
 
-REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 @pytest.fixture

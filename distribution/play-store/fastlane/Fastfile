@@ -1,0 +1,16 @@
+# F-Droid / release automation (PLAN.md Phase 7). The signed APK is published
+# as a GitLab release artifact and served from an F-Droid repo on the
+# workstation over the LAN — no external service.
+#
+# The signing key stays offline and out of the repo; losing it forces every
+# user to uninstall and reinstall.
+
+default_platform(:android)
+
+platform :android do
+  desc "Build the release APK"
+  lane :build do
+    # The Gradle build lives in src/apps/, away from the store listing.
+    gradle(task: "assembleRelease", project_dir: File.expand_path("../../../src/apps", __dir__))
+  end
+end

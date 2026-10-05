@@ -4,17 +4,19 @@ __pycache__/
 .pytest_cache/
 dist/
 *.egg-info/
-iso/workstation/out/
+deploy/workstation/iso/out/
 *.iso
 
 # Vendored upstream checkouts for the fork ISO build. Pristine clones with their
-# own .git, restored per iso/workstation/FORK.md; our delta lives in
+# own .git, restored per deploy/workstation/iso/FORK.md; our delta lives in
 # hubidubios-omarchy-iso.patch, so committing these would add ~165MB for nothing.
-iso/workstation/omarchy/
-iso/workstation/omarchy-iso/
-iso/workstation/omarchy-pkgs/
+deploy/workstation/iso/omarchy/
+deploy/workstation/iso/omarchy-iso/
+deploy/workstation/iso/omarchy-pkgs/
 
 # Build outputs
+# The private pacman repo distribution/pacman/build-repo.sh writes by default.
+/repo/
 *.pkg.tar.zst
 dist-update/
 

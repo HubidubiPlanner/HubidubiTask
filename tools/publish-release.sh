@@ -11,7 +11,7 @@ set -euo pipefail
 TAG="${1:?usage: publish-release.sh <tag>}"
 FDROID_REPO="${HUBIDUBIOS_FDROID_REPO:-/srv/fdroid/repo}"
 PKG_REPO="${HUBIDUBIOS_PKG_REPO:-/srv/pacman/hubidubios}"
-APK="mobile/app/build/outputs/apk/release/app-release-unsigned.apk"
+APK="src/apps/android/build/outputs/apk/release/android-release-unsigned.apk"
 
 echo "==> Signing APK for $TAG"
 : "${HUBIDUBIOS_APK_KEYSTORE:?set HUBIDUBIOS_APK_KEYSTORE to the offline signing keystore}"
@@ -21,7 +21,7 @@ apksigner sign --ks "$HUBIDUBIOS_APK_KEYSTORE" \
 echo "==> Updating LAN F-Droid repo"
 mkdir -p "$FDROID_REPO"
 cp "hubidubios-$TAG.apk" "$FDROID_REPO/"
-# fdroid update regenerates index-v2 from mobile/fastlane metadata.
+# fdroid update regenerates index-v2 from distribution/play-store/fastlane metadata.
 ( cd "$(dirname "$FDROID_REPO")" && fdroid update --create-metadata )
 
 echo "==> Updating LAN package repo"

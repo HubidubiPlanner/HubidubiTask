@@ -37,8 +37,8 @@ lint:
   image: python:3.12
   script:
     - pip install ruff
-    - ruff check packages plugins tests
-    - bash -n iso/workstation/build.sh iso/thin/provision.sh
+    - ruff check src/workstation src/plugins tests
+    - bash -n deploy/workstation/iso/build.sh deploy/thin-client/provision.sh
         tests/smoke/qemu_smoke.sh tests/smoke/emulator_pairing.sh
 
 # ------------------------------------------------------------------ tests
@@ -62,8 +62,8 @@ sandbox-escape:
     # pacman 7's landlock download sandbox may be blocked by the runner kernel.
     - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed python python-pip bubblewrap
-    - pip install --break-system-packages ./packages/hubidubios-vault
-        ./packages/hubidubios-plugin-host pytest pyyaml jsonschema icalendar
+    - pip install --break-system-packages ./src/workstation/hubidubios-vault
+        ./src/workstation/hubidubios-plugin-host pytest pyyaml jsonschema icalendar
     - python -m pytest tests/sandbox -v
 
 # (The Phase-3 view-sandbox suite was retired in Phase 8: plugins are headless
@@ -75,11 +75,11 @@ android:
   stage: android
   image: ghcr.io/cirruslabs/android-sdk:34
   script:
-    - cd mobile
-    - ./gradlew :core:test :app:assembleDebug :app:assembleRelease
+    - cd src/apps
+    - ./gradlew :shared:test :android:assembleDebug :android:assembleRelease
   artifacts:
     paths:
-      - mobile/app/build/outputs/apk/debug/app-debug.apk
+      - src/apps/android/build/outputs/apk/debug/android-debug.apk
     expire_in: 1 week
 
 android-instrumented:
@@ -89,9 +89,9 @@ android-instrumented:
   when: manual
   allow_failure: true
   script:
-    - cd mobile
-    - ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
-    - ../tests/smoke/emulator_pairing.sh app/build/outputs/apk/debug/app-debug.apk
+    - cd src/apps
+    - ./gradlew :android:assembleDebug :android:assembleDebugAndroidTest
+    - ../../tests/smoke/emulator_pairing.sh android/build/outputs/apk/debug/android-debug.apk
 
 # ------------------------------------------------------------------ packages
 
@@ -104,9 +104,9 @@ packages:
         python-hatchling python-wheel
     - useradd -m build && chown -R build .
     - |
-      for p in packages/hubidubios-vault packages/hubidubios-plugin-host \
-               packages/hubidubios-sync packages/hubidubios-agent \
-               plugins/gtd plugins/calendar packages/metapackages; do
+      for p in src/workstation/hubidubios-vault src/workstation/hubidubios-plugin-host \
+               src/workstation/hubidubios-sync src/workstation/hubidubios-agent \
+               src/plugins/gtd src/plugins/calendar src/workstation/metapackages; do
         ( cd "$p" && sudo -u build makepkg -f --nodeps --skipinteg )
       done
   artifacts:
@@ -128,10 +128,10 @@ iso:
   script:
     - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed archiso git docker
-    - OMARCHY_ISO_REF="$OMARCHY_ISO_REF" iso/workstation/build.sh iso/workstation/out
+    - OMARCHY_ISO_REF="$OMARCHY_ISO_REF" deploy/workstation/iso/build.sh deploy/workstation/iso/out
   artifacts:
     paths:
-      - iso/workstation/out/*.iso
+      - deploy/workstation/iso/out/*.iso
     expire_in: 1 week
 
 # ------------------------------------------------------------------ smoke
@@ -145,7 +145,7 @@ qemu-smoke:
   script:
     - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
     - pacman -Sy --noconfirm --needed qemu-base openssh
-    - tests/smoke/qemu_smoke.sh iso/workstation/out/*.iso
+    - tests/smoke/qemu_smoke.sh deploy/workstation/iso/out/*.iso
 
 # ------------------------------------------------------------------ publish
 

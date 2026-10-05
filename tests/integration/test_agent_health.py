@@ -16,7 +16,7 @@ from hubidubios_sync import auth
 from hubidubios_sync.server import serve
 from hubidubios_vault.vault import Vault
 
-REPO_PLUGINS = Path(__file__).parents[2] / "plugins"
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 @pytest.fixture
