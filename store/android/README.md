@@ -1,6 +1,6 @@
 # Publishing HubidubiOS on Google Play
 
-Everything needed to fill in Play Console for `com.hubidubios.mobile`, in the
+Everything needed to fill in Play Console for `com.saferendering.hubidubios.projects`, in the
 order Play Console asks for it. The upload-ready texts and images live in the
 fastlane layout, so they can be pasted by hand or pushed with `fastlane supply`:
 
@@ -46,7 +46,7 @@ These stop an upload or a review; none of them are listing work.
       creating the app: this key then acts as the upload key.
 - [ ] **Version.** `versionCode = 1`, `versionName = "0.1.0"`. Every upload
       needs a higher `versionCode`; add `changelogs/<versionCode>.txt` each time.
-- [ ] **The package name is permanent.** `com.hubidubios.mobile` can never be
+- [ ] **The package name is permanent.** `com.saferendering.hubidubios.projects` can never be
       changed or reused once uploaded.
 - [ ] **New personal developer account?** Production access requires a closed
       test with at least **12 testers opted in for 14 consecutive days** first.

@@ -11,7 +11,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.hubidubios.mobile"
+        // Play knows the app by this id. The phone still runs the
+        // original one, and an install under a new id is a second, empty app —
+        // so a dogfood install passes -Phubidubios.appId=com.hubidubios.mobile
+        // to upgrade that one in place, data and pairing kept.
+        applicationId = (project.findProperty("hubidubios.appId") as String?)
+            ?: "com.saferendering.hubidubios.projects"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
