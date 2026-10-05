@@ -168,13 +168,17 @@ object MacLink {
 
     data class Round(val sent: Int, val received: Int)
 
+    /** A photo, recording or file the Mac held and this phone now has too. */
+    data class Fetched(val sha: String, val file: File, val mime: String, val noteId: String)
+
     /**
      * One sync round with the paired Mac. If it isn't where it was, look for it
      * on the LAN by its certificate (its address may have changed) and try again.
      */
-    fun sync(context: Context, store: PeerStore, blobsDir: File): Round? {
+    fun sync(context: Context, store: PeerStore, blobsDir: File,
+             onFetched: (Fetched) -> Unit = {}): Round? {
         var mac = load(context) ?: return null
-        val attempt = { m: Mac -> runCatching { round(context, m, store, blobsDir) } }
+        val attempt = { m: Mac -> runCatching { round(context, m, store, blobsDir, onFetched) } }
         var result = attempt(mac)
         if (result.isFailure) {
             val moved = discover(context).firstOrNull { f ->
@@ -193,12 +197,25 @@ object MacLink {
         }
     }
 
-    private fun round(context: Context, mac: Mac, store: PeerStore, blobsDir: File): Round {
+    private fun round(context: Context, mac: Mac, store: PeerStore, blobsDir: File,
+                      onFetched: (Fetched) -> Unit): Round {
         val http = client(Capture(mac.fingerprint), readSeconds = 60)
         val base = "https://${mac.host}:${mac.port}"
         fun auth(b: Request.Builder) = b.header("Authorization", "Bearer ${mac.token}")
+        // What the Mac sends that names bytes this phone lacks: a photo, memo
+        // or file captured there. Fetched after the round, so the phone holds
+        // what the Mac holds and can pass it on to the workstation.
+        val wanted = LinkedHashMap<String, Pair<String, String>>()   // sha -> (mime, record id)
+        val watching = object : PeerStore by store {
+            override fun applyFromPeer(record: com.hubidubios.core.EntityRecord, peer: String) {
+                store.applyFromPeer(record, peer)
+                val sha = record.fields["media_sha256"]
+                if (!record.deleted && !sha.isNullOrBlank() && !File(blobsDir, sha).exists())
+                    wanted[sha] = (record.fields["media_mime"] ?: "application/octet-stream") to record.id
+            }
+        }
         val report = PeerSyncer(
-            store, peer = mac.id, self = deviceId(context),
+            watching, peer = mac.id, self = deviceId(context),
             send = { req ->
                 http.newCall(auth(Request.Builder().url("$base/peer/sync"))
                     .post(PeerJson.request(req).toRequestBody(json)).build()).execute().use { r ->
@@ -223,6 +240,20 @@ object MacLink {
                 }
             },
         ).round()
+        wanted.forEach { (sha, meta) ->
+            runCatching {
+                http.newCall(auth(Request.Builder().url("$base/peer/blob/$sha")).build()).execute().use { r ->
+                    if (!r.isSuccessful) return@use
+                    val bytes = r.body!!.bytes()
+                    // Named by its hash, so it must be its hash.
+                    if (PeerPairing.sha256Hex(bytes) != sha) return@use
+                    blobsDir.mkdirs()
+                    val f = File(blobsDir, sha)
+                    f.writeBytes(bytes)
+                    onFetched(Fetched(sha, f, meta.first, meta.second))
+                }
+            }
+        }
         return Round(report.sent, report.received)
     }
 }

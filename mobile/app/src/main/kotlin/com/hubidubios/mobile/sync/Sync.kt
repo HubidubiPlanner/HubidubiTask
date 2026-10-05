@@ -354,14 +354,19 @@ class Sync private constructor(
 
         /**
          * One round with the paired Mac, if there is one. What comes from the
-         * Mac is queued for the workstation too, so the phone relays between them.
+         * Mac is queued for the workstation too, so the phone relays between
+         * them: records through the outbox, and their bytes through the same
+         * upload queue a capture made here would use.
          */
         fun syncMac(context: Context): com.hubidubios.mobile.net.MacLink.Round? {
             val db = Database.get(context)
             val store = RoomLocalStore(db)
             val peers = com.hubidubios.mobile.data.PhonePeerStore(db, store,
                 Outbox(RoomOutboxStore(db)))
-            return com.hubidubios.mobile.net.MacLink.sync(context, peers, File(context.filesDir, "blobs"))
+            return com.hubidubios.mobile.net.MacLink.sync(context, peers, File(context.filesDir, "blobs")) { got ->
+                db.blobUploads().add(BlobUploadRow(sha256 = got.sha, local_path = got.file.path,
+                    mime = got.mime, note_id = got.noteId))
+            }
         }
 
         private fun deviceIdFor(context: Context): String =

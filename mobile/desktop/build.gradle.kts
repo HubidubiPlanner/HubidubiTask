@@ -29,7 +29,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg)
             packageName = "HubidubiOS"
-            packageVersion = "1.1.0"
+            packageVersion = "1.2.0"
             description = "HubidubiOS for macOS"
             // The embedded HTTPS server, SQLite (JDBC) and the TLS/crypto the
             // peer protocol needs, kept in the bundled runtime.
@@ -41,6 +41,8 @@ compose.desktop {
                     extraKeysRawXml = """
                         <key>NSLocalNetworkUsageDescription</key>
                         <string>HubidubiOS syncs with your phone over your local network.</string>
+                        <key>NSMicrophoneUsageDescription</key>
+                        <string>HubidubiOS records voice memos you capture.</string>
                         <key>NSBonjourServices</key>
                         <array><string>_hubidubios-peer._tcp</string></array>
                     """.trimIndent()

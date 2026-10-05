@@ -175,6 +175,15 @@ class Store(val dir: File = defaultDir()) : PeerStore {
 
     fun blob(sha: String): File? = File(blobs, sha).takeIf { sha.matches(Regex("[0-9a-f]{64}")) }
 
+    /** Keep [bytes] under their hash, as the phone does with what it captures;
+     *  the phone fetches them by that hash on its next round. */
+    fun putBlob(bytes: ByteArray): String {
+        val sha = com.hubidubios.core.peer.PeerPairing.sha256Hex(bytes)
+        val f = File(blobs, sha)
+        if (!f.exists()) f.writeBytes(bytes)
+        return sha
+    }
+
     companion object {
         fun defaultDir() = File(System.getProperty("user.home"), "Library/Application Support/HubidubiOS")
     }

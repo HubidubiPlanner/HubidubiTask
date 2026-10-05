@@ -104,8 +104,27 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
             "time" to "%02d:%02d".format(now.hour, now.minute)))
     }
 
-    fun noteText(title: String, due: String? = null) = io {
-        write("note", id("n"), mapOf("title" to title, "kind" to "text", "body" to "", "due" to due))
+    fun noteText(title: String, due: String? = null, body: String = "") = io {
+        write("note", id("n"), mapOf("title" to title, "kind" to "text", "body" to body, "due" to due))
+    }
+
+    /** A photo, recording or file kept as a note. The bytes sit in blobs/ by
+     *  their hash, the record names them, and the phone fetches them from here. */
+    fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String, due: String? = null) = io {
+        val sha = store.putBlob(bytes)
+        write("note", id("n"), mapOf("title" to title, "kind" to kind, "media_sha256" to sha,
+            "media_mime" to mime, "media_bytes" to bytes.size.toString(), "due" to due))
+    }
+
+    /** The same media as a task: the phone's "do something about this". */
+    fun captureMedia(kind: String, bytes: ByteArray, mime: String, text: String, due: String? = null) = io {
+        val sha = store.putBlob(bytes)
+        val now = java.time.LocalDateTime.now()
+        write("inbox_item", id("i"), mapOf("text" to text, "due" to due,
+            "date" to now.toLocalDate().toString(),
+            "time" to "%02d:%02d".format(now.hour, now.minute),
+            "kind" to kind, "media_sha256" to sha, "media_mime" to mime,
+            "media_bytes" to bytes.size.toString()))
     }
 
     fun addNote(parentId: String, title: String, body: String = "") = io {
