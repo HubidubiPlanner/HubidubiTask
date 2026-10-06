@@ -121,6 +121,23 @@ Your vault is `~/vault`. Everything is plain markdown + media files.
   dropped (firewall, or the phone is on a guest network / different subnet);
   *connection refused* would instead mean nothing is listening.
 
+### Harness — Claude Code for the phone and Mac
+The workstation can answer the apps with Claude Code, on your own Claude plan.
+1. Log in to Claude Code once: run `claude`, then quit it.
+2. `systemctl --user enable --now hubidubios-harness`
+3. `hubidubios-harness show` prints the address and token.
+4. In the app: **Settings → Agent → Harness**, enter both, **Save agent**.
+
+Claude Code runs with every tool switched off, so it only ever writes text.
+
+### Feeds — a task when a web page changes
+In the app's **Feeds** tab, tap **+ → A web page**, enter the address, choose
+**Day / Week / Month** and **Claude** or **Harness**, and pick a project
+(or none, for the inbox). The first look only remembers the page. After that,
+once per period, the page is compared with the last look; if something
+changed, the model writes one task about it, due that day. A second change in
+the same period waits for the next one. Feeds live on the phone and the Mac.
+
 ---
 
 ## Where things live (the vault)

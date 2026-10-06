@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
@@ -37,6 +38,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.hubidubios.desktop.ui.ChatScreen
 import com.hubidubios.desktop.ui.HubidubiOsTheme
 import com.hubidubios.desktop.ui.HubidubiOsViewModel
+import com.hubidubios.desktop.ui.FeedsScreen
 import com.hubidubios.desktop.ui.ImportScreen
 import com.hubidubios.desktop.ui.NextScreen
 import com.hubidubios.desktop.ui.ProjectsScreen
@@ -78,6 +80,7 @@ fun App(vm: HubidubiOsViewModel, start: String = "projects") {
         val dests = listOf(
             Dest("projects", "Projects", Icons.Outlined.Folder),
             Dest("next", "Next", Icons.Outlined.CheckCircle),
+            Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
             Dest("chat", "Agent", Icons.Outlined.ChatBubbleOutline),
             Dest("settings", "Settings", Icons.Outlined.Tune),
         )
@@ -105,6 +108,7 @@ fun App(vm: HubidubiOsViewModel, start: String = "projects") {
                 Box(Modifier.fillMaxSize()) { when (route) {
                     "projects" -> ProjectsScreen(state, vm)
                     "next" -> NextScreen(state, vm)
+                    "feeds" -> FeedsScreen(state, vm)
                     "chat" -> ChatScreen(state, vm)
                     "settings" -> SettingsScreen(state, vm, onImport = { route = "import" })
                     "import" -> ImportScreen(vm, onBack = { route = "settings" })

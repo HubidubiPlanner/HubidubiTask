@@ -118,7 +118,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
       <!-- Inference box -->
       <rect class="ext" x="580" y="24" width="340" height="76"/>
-      <text class="t" x="600" y="56">Inference box (selfhostedai)</text>
+      <text class="t" x="600" y="56">Inference box (SelfHostedAI)</text>
       <text class="s" x="600" y="80">encrypted API on :8443, or any OpenAI-style one</text>
 
       <!-- Workstation -->
@@ -131,7 +131,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <text class="k" x="60" y="336">plugins</text><text class="s" x="124" y="336">gtd, calendar</text>
       <text class="k" x="60" y="364">Radicale</text><text class="s" x="132" y="364">CalDAV :5232 for desktop apps</text>
       <text class="k" x="60" y="392">git</text><text class="s" x="92" y="392">every change committed on a timer</text>
-      <text class="k" x="60" y="420">desktop layer</text><text class="s" x="168" y="420">capture key, next panel, status</text>
+      <text class="k" x="60" y="420">harness</text><text class="s" x="128" y="420">Claude Code for the apps :5240</text>
 
       <!-- Phone -->
       <rect class="box" x="580" y="160" width="340" height="112"/>
@@ -227,9 +227,9 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     </article>
     <article class="machine">
       <h3>Inference box</h3>
-      <p class="role">A separate machine that runs the language model. The workstation's agent sends its questions here. The phone and the Mac can use it too, or Claude, or a local model.</p>
+      <p class="role">A separate machine that runs the language model. The workstation's agent sends its questions here. The phone and the Mac can use it too, or Claude, a model of their own, or the harness on the workstation.</p>
       <dl>
-        <dt>Speaks</dt><dd>selfhostedai's encrypted protocol on :8443, or a plain OpenAI-style API</dd>
+        <dt>Speaks</dt><dd>SelfHostedAI's encrypted protocol on :8443, or a plain OpenAI-style API</dd>
         <dt>Set in</dt><dd><span class="path">~/vault/.hubidubios/config.toml</span>, and in each app's Settings</dd>
       </dl>
     </article>
@@ -245,6 +245,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>Phone and workstation</td><td>Cursor-based change feed, plus attachment uploads</td><td>5233</td><td>Address in the pairing QR code</td><td>Self-signed certificate pinned by fingerprint; a token per phone</td></tr>
         <tr><td>Phone and Mac</td><td>Peer sync: both send changes since the other's last cursor, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Pinned certificate; a pairing code shown on the Mac</td></tr>
         <tr><td>Apps and Claude</td><td>Chat and item reviews, through Anthropic's SDK. The first choice in Settings</td><td>443</td><td>api.anthropic.com</td><td>An Anthropic API key, kept in the Android Keystore or the macOS Keychain</td></tr>
+        <tr><td>Apps and the harness</td><td>Chat, reviews and feeds through Claude Code on the workstation, tools off</td><td>5240</td><td>Address in Settings, filled in from pairing</td><td>Self-signed TLS and a bearer token; LAN only</td></tr>
         <tr><td>Apps and own model</td><td>Chat and item reviews, with a short summary of what is open</td><td>8443</td><td>Typed in Settings</td><td>Encrypted session (ECDH and AES-GCM) or a pinned TLS certificate</td></tr>
         <tr><td>Agent and model</td><td>One skill call per turn, checked against the skill's schema</td><td>8443</td><td><span class="path">config.toml</span></td><td>As above</td></tr>
         <tr><td>Desktop apps and workstation</td><td>CalDAV, for calendar apps on a laptop</td><td>5232</td><td>Avahi</td><td>LAN only</td></tr>
@@ -332,7 +333,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <section aria-labelledby="status-h">
   <h2 id="status-h">Current state</h2>
   <ul class="status">
-    <li><span class="pill ok">Works</span><span>Phone and Mac apps, peer sync between them, the "+" for every kind of new item, file drops on the Mac. Claude is the first agent choice in both apps. The Mac app is at 1.4.1.</span></li>
+    <li><span class="pill ok">Works</span><span>Phone and Mac apps, peer sync between them, the "+" for every kind of new item, file drops on the Mac. Agents are Claude, SelfHostedAI, Model and Harness. Feeds turn a changed web page into one task per day, week or month. The Mac app is at 1.5.0.</span></li>
         <li><span class="pill ok">Works</span><span>All 216 Python tests pass, the Phase 1 acceptance suite included, and the Python code is lint-clean.</span></li>
     <li><span class="pill ok">Works</span><span>The Play listing has six new screenshots from made-up demo data, which a debug-only seeder can recreate.</span></li>
         <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off until a self-hosted runner exists.</span></li>

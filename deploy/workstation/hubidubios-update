@@ -13,7 +13,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # Order matters: the later packages depend on the earlier ones.
 PACKAGES=(hubidubios-vault hubidubios-plugin-host hubidubios-agent
-          hubidubios-sync hubidubios-desktop)
+          hubidubios-sync hubidubios-harness hubidubios-desktop)
 BUILD="$(mktemp -d)"
 trap 'rm -rf "$BUILD"' EXIT
 
@@ -43,7 +43,7 @@ echo "==> installing (sudo)"
 sudo pacman -U --noconfirm "${built[@]}"
 
 echo "==> restarting services"
-for unit in hubidubios-sync hubidubios-watch; do
+for unit in hubidubios-sync hubidubios-watch hubidubios-harness; do
   if systemctl --user list-unit-files "$unit.service" >/dev/null 2>&1; then
     systemctl --user restart "$unit" 2>/dev/null \
       && echo "    restarted $unit" \

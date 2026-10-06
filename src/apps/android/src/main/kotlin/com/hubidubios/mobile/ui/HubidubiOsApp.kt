@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.HorizontalDivider
@@ -45,6 +46,7 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
             val dests = listOf(
                 Dest("projects", "Projects", Icons.Outlined.Folder),
                 Dest("next", "Next", Icons.Outlined.CheckCircle),
+                Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
                 Dest("chat", "Agent", Icons.Outlined.ChatBubbleOutline),
                 Dest("settings", "Settings", Icons.Outlined.Tune),
             )
@@ -101,6 +103,7 @@ fun HubidubiOsApp(vm: HubidubiOsViewModel = viewModel()) {
                     modifier = Modifier.padding(pad).consumeWindowInsets(pad)) {
                     composable("projects") { ProjectsScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }
+                    composable("feeds") { FeedsScreen(state, vm) }
                     composable("chat") { ChatScreen(state, vm) }
                     composable("settings") {
                         SettingsScreen(state, vm, onImport = { nav.navigate("import") })

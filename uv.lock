@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 [manifest]
 members = [
     "hubidubios-agent",
+    "hubidubios-harness",
     "hubidubios-plugin-host",
     "hubidubios-sync",
     "hubidubios-vault",
@@ -184,6 +185,11 @@ requires-dist = [
     { name = "hubidubios-vault", editable = "src/workstation/hubidubios-vault" },
     { name = "jsonschema", specifier = ">=4.0" },
 ]
+
+[[package]]
+name = "hubidubios-harness"
+version = "0.1.0"
+source = { editable = "src/workstation/hubidubios-harness" }
 
 [[package]]
 name = "hubidubios-plugin-host"

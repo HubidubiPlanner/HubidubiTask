@@ -23,7 +23,7 @@ package_hubidubios-plugins-default() {
 package_hubidubios-workstation() {
   pkgdesc="HubidubiOS workstation layer for Omarchy: vault, agent, desktop integration"
   depends=('hubidubios-base' 'hubidubios-plugin-host' 'hubidubios-plugins-default'
-           'hubidubios-agent' 'hubidubios-desktop' 'git')
+           'hubidubios-agent' 'hubidubios-desktop' 'hubidubios-harness' 'git')
   # Inference defaults to a remote selfhostedai endpoint, so a local model server is
   # optional; CalDAV/file-sync too. Keeps the install's dep closure lean + in the
   # offline mirror.

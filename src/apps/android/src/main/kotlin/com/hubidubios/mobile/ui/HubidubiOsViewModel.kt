@@ -47,6 +47,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val mac: com.hubidubios.mobile.net.MacLink.Mac? = null,
         /** Host of the paired workstation, to propose a default endpoint. */
         val workstationHost: String? = null,
+        /** Watched pages, each turned into at most one task per period. */
+        val feeds: List<EntityRecord> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -64,6 +66,43 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 kotlinx.coroutines.delay(60_000)
             }
         }
+        // Feeds whose period turned while the app was closed.
+        viewModelScope.launch {
+            val ran = withContext(Dispatchers.IO) {
+                runCatching { com.hubidubios.mobile.feed.FeedWork.run(getApplication()) }.getOrNull()
+            }
+            if (!ran.isNullOrEmpty()) refresh()
+        }
+    }
+
+    // ---- feeds ----
+
+    /** Watch [url]; the first look happens straight away and only remembers the page. */
+    fun addFeed(url: String, title: String, period: String, model: String, projectId: String?) =
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val feed = sync().newFeed(mapOf(
+                    "kind" to com.hubidubios.core.feed.Feeds.KIND_WEB, "url" to url.trim(),
+                    "title" to title.trim().ifBlank { null }, "period" to period, "model" to model,
+                    "project" to projectId))
+                runCatching { com.hubidubios.mobile.feed.FeedWork.run(getApplication(), only = feed.id) }
+            }
+            refresh()
+        }
+
+    fun deleteFeed(id: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().delete(id) }
+        refresh()
+    }
+
+    /** Look at one feed now. Its period still allows one task. Returns what happened. */
+    suspend fun checkFeed(id: String): String {
+        val msg = withContext(Dispatchers.IO) {
+            runCatching { com.hubidubios.mobile.feed.FeedWork.run(getApplication(), only = id)[id] }
+                .getOrElse { it.message } ?: "Nothing to look at"
+        }
+        refresh()
+        return msg
     }
 
     /** Sync with the Mac now, not at the next minute. */
@@ -128,6 +167,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 mac = com.hubidubios.mobile.net.MacLink.load(getApplication()),
                 inference = _state.value.inference,
                 workstationHost = PairedServer.load(getApplication())?.host,
+                feeds = sync.feeds().sortedBy { com.hubidubios.core.feed.Feeds.label(it).lowercase() },
             )
         }
         _state.value = s
@@ -168,6 +208,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
     fun agentConfig(): AgentConfig = AgentSettings.load(getApplication())
 
     fun claudeKey(): String? = AgentSettings.claudeKey(getApplication())
+    fun harnessEndpoint(): String? = AgentSettings.harnessEndpoint(getApplication())
+    fun harnessToken(): String? = AgentSettings.harnessToken(getApplication())
 
     /** Re-probe the agent and report what came back. */
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(force = true) }

@@ -37,6 +37,7 @@ docker --context "$CTX" run --rm --privileged -v "$REPO":/repo -w /repo \
   rm -f "$OUT"/*.pkg.tar.zst 2>/dev/null || true; mkdir -p "$OUT"
   for p in src/workstation/hubidubios-vault src/workstation/hubidubios-plugin-host \
            src/workstation/hubidubios-sync src/workstation/hubidubios-agent \
+           src/workstation/hubidubios-harness \
            src/plugins/gtd src/plugins/calendar src/workstation/hubidubios-desktop \
            src/workstation/metapackages; do
     cp -a "/repo/$p" "/tmp/$(basename $p)"

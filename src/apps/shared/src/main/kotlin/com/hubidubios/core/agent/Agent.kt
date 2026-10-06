@@ -13,8 +13,10 @@ import javax.net.ssl.X509TrustManager
  *
  * [protocol] "claude" is Anthropic's Claude API, reached with an API key and
  * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually
- * :8443); "openai" is any OpenAI-compatible server. [tlsFingerprint], when
- * set, pins a self-signed certificate (sha256 hex of the DER).
+ * :8443); "openai" is any OpenAI-compatible server; "harness" is a local
+ * agent harness (Claude Code, run by src/harness/ on the user's own machine)
+ * served in the OpenAI shape with a bearer token. [tlsFingerprint], when set,
+ * pins a self-signed certificate (sha256 hex of the DER).
  */
 data class AgentConfig(
     val endpoint: String,
@@ -30,10 +32,17 @@ data class AgentConfig(
         const val CLAUDE_MODEL = "claude-opus-5-5"
 
         /** Every agent the apps can use, in the order Settings offers them. */
-        val PROTOCOLS = listOf("claude" to "Claude", "selfhostedai" to "selfhostedai", "openai" to "Local model")
+        val PROTOCOLS = listOf("claude" to "Claude", "selfhostedai" to "SelfHostedAI",
+            "openai" to "Model", "harness" to "Harness")
+
+        /** The agents a feed may use: the two that write good one-line tasks. */
+        val FEED_MODELS = listOf("claude" to "Claude", "harness" to "Harness")
+
+        const val HARNESS_MODEL = "claude-code"
 
         fun defaultModel(protocol: String) = when (protocol) {
             "claude" -> CLAUDE_MODEL
+            "harness" -> HARNESS_MODEL
             "selfhostedai" -> "fast"
             else -> "local"
         }
@@ -58,7 +67,8 @@ object Agent {
 
     fun clientFor(config: AgentConfig): ModelClient = when (config.protocol) {
         "claude" -> ClaudeClient(config)
-        "openai" -> OpenAiClient(config)
+        // The harness speaks the OpenAI shape; only where it runs differs.
+        "openai", "harness" -> OpenAiClient(config)
         else -> SelfhostedaiClient(config)
     }
 

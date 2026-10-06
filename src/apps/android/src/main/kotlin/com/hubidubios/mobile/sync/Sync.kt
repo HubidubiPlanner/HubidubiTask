@@ -295,8 +295,7 @@ class Sync private constructor(
 
     /** A next action filed under a project (or loose when [parentId] is null). */
     fun addNextAction(text: String, parentId: String?, projectSlug: String?, due: String?,
-                      body: String? = null): String {
-        val id = "t_" + randomSuffix()
+                      body: String? = null, id: String = "t_" + randomSuffix()): String {
         val f = HashMap<String, String?>()
         // No "done": absent means open. An explicit "false" is a truthy string
         // to a workstation that predates the fix for it.
@@ -313,6 +312,29 @@ class Sync private constructor(
     }
 
     fun events(): List<EntityRecord> = store.byType("event")
+
+    // ---- feeds: watched pages, each turned into at most one task per period ----
+
+    fun get(id: String): EntityRecord? = store.get(id)
+
+    /** Any record with [id], deleted ones included: a feed's task for a period is made once. */
+    fun exists(id: String): Boolean = store.get(id) != null
+
+    fun feeds(): List<EntityRecord> = store.byType(com.hubidubios.core.feed.Feeds.TYPE)
+
+    fun newFeed(fields: Map<String, String?>): EntityRecord {
+        val rec = EntityRecord(id = "f_" + randomSuffix(), type = com.hubidubios.core.feed.Feeds.TYPE,
+            updated = com.hubidubios.core.nowUtc(), fields = fields.filterValues { it != null })
+        putFeed(rec)
+        return rec
+    }
+
+    /** A feed as it now stands. The workstation does not keep feeds and says
+     *  so; the outbox lets go of it then (see SyncEngine). */
+    fun putFeed(rec: EntityRecord) {
+        store.put(rec)
+        outbox.enqueueUpsert(rec)
+    }
 
     /**
      * A calendar event. Its id is derived from the UID exactly as the

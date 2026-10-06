@@ -106,6 +106,7 @@ packages:
     - |
       for p in src/workstation/hubidubios-vault src/workstation/hubidubios-plugin-host \
                src/workstation/hubidubios-sync src/workstation/hubidubios-agent \
+               src/workstation/hubidubios-harness \
                src/plugins/gtd src/plugins/calendar src/workstation/metapackages; do
         ( cd "$p" && sudo -u build makepkg -f --nodeps --skipinteg )
       done

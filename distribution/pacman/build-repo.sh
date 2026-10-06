@@ -19,6 +19,7 @@ PKGDIRS=(
   src/workstation/hubidubios-plugin-host
   src/workstation/hubidubios-sync
   src/workstation/hubidubios-agent
+  src/workstation/hubidubios-harness
   src/plugins/gtd
   src/plugins/calendar
   src/workstation/hubidubios-desktop

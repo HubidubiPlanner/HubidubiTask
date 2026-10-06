@@ -23,6 +23,9 @@ class SyncWorker(context: Context, params: WorkerParameters) :
         // Each on its own: an unreachable Mac must not stop the workstation sync.
         runCatching { Sync.open(applicationContext).syncNow() }
         runCatching { Sync.syncMac(applicationContext) }
+        // Feeds whose day, week or month has turned; the tasks they make go
+        // out with the next sync.
+        runCatching { com.hubidubios.mobile.feed.FeedWork.run(applicationContext) }
         Result.success()
     } catch (e: Exception) {
         Result.retry() // durable outbox; safe to retry later

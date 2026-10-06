@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Debug builds only: a way to fill the app with made-up data for store
      screenshots. Release builds never contain this receiver. -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:ignore="UnusedAttribute">
         <receiver
             android:name="com.hubidubios.mobile.demo.DemoSeed"
             android:exported="true"
-            tools:ignore="ExportedReceiver"
-            xmlns:tools="http://schemas.android.com/tools">
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="com.hubidubios.mobile.DEMO_SEED" />
             </intent-filter>

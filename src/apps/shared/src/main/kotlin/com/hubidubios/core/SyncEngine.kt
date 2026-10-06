@@ -81,10 +81,14 @@ class SyncEngine(
         var acked = 0
         for (entry in entries) {
             val status = result.results[entry.record.id]
-            if (status == "applied" || status == "stale" || status == "rejected_tombstone") {
+            if (status == "applied" || status == "stale" || status == "rejected_tombstone" ||
+                status == "unknown_type") {
                 // "applied": landed. "stale"/"rejected_tombstone": the server
                 // already has a newer/authoritative state, which the next pull
                 // will deliver — dropping our entry is correct, not a loss.
+                // "unknown_type": a record the workstation does not keep (a
+                // feed, say); it lives on the phone and the Mac only, and
+                // retrying would only keep it queued forever.
                 outbox.ack(entry.seq)
                 if (status == "applied") {
                     store.setBase(entry.record)

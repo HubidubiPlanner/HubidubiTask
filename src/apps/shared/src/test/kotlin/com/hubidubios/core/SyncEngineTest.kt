@@ -156,6 +156,18 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `a type the workstation does not keep leaves the outbox - a feed is phone and Mac only`() {
+        val store = InMemoryLocalStore()
+        val outbox = Outbox(InMemoryOutboxStore())
+        val rec = EntityRecord("f_1", "feed", "2026-10-06T00:00:00Z", mapOf("url" to "https://x.org"))
+        store.put(rec); outbox.enqueueUpsert(rec)
+        val t = FakeTransport(pushResponder = { PushResult(mapOf("f_1" to "unknown_type"), 0) })
+
+        engine(store, outbox, t).push()
+        assertTrue(outbox.isEmpty())
+    }
+
+    @Test
     fun `full sync cycle - offline edits reach the server`() {
         val store = InMemoryLocalStore()
         val outbox = Outbox(InMemoryOutboxStore())

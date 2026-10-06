@@ -5,6 +5,8 @@ import com.hubidubios.core.agent.Agent
 import com.hubidubios.core.agent.AgentConfig
 import com.hubidubios.core.agent.Health
 import com.hubidubios.core.agent.ModelClient
+import com.hubidubios.core.feed.Feeds
+import com.hubidubios.core.feed.PageFetch
 import com.hubidubios.core.nowUtc
 import com.hubidubios.core.peer.PeerPairing
 import com.hubidubios.desktop.PeerServer
@@ -43,13 +45,26 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
         val dated: List<EntityRecord> = emptyList(),
         val events: List<EntityRecord> = emptyList(),
         val peers: List<Store.Peer> = emptyList(),
+        /** Watched pages, each turned into at most one task per period. */
+        val feeds: List<EntityRecord> = emptyList(),
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-    init { refresh() }
+    init {
+        refresh()
+        // Feeds whose day, week or month has turned: looked at on start and
+        // every half hour while the app is open.
+        scope.launch {
+            while (true) {
+                val ran = withContext(Dispatchers.IO) { runCatching { runFeeds() }.getOrNull() }
+                if (!ran.isNullOrEmpty()) refresh()
+                kotlinx.coroutines.delay(30 * 60_000L)
+            }
+        }
+    }
 
     fun refresh() = scope.launch {
         val s = withContext(Dispatchers.IO) {
@@ -68,6 +83,7 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
                 events = t("event"),
                 inference = _state.value.inference,
                 peers = peers,
+                feeds = t(Feeds.TYPE).sortedBy { Feeds.label(it).lowercase() },
             )
         }
         _state.value = s
@@ -183,25 +199,93 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
     fun agentConfig(): AgentConfig {
         val p = store.kv("agent_protocol") ?: "selfhostedai"
         return AgentConfig(
-            endpoint = store.kv("agent_endpoint") ?: AgentConfig.DEFAULT_ENDPOINT,
+            endpoint = if (p == "harness") harnessEndpoint().orEmpty()
+                       else store.kv("agent_endpoint") ?: AgentConfig.DEFAULT_ENDPOINT,
             protocol = p,
             model = store.kv("agent_model") ?: AgentConfig.defaultModel(p),
-            apiKey = if (p == "claude") claudeKey() else null,
+            apiKey = when (p) { "claude" -> claudeKey(); "harness" -> harnessToken(); else -> null },
             tlsFingerprint = store.kv("agent_fp"),
         )
     }
 
     fun setAgentConfig(c: AgentConfig) {
-        store.setKv("agent_endpoint", c.endpoint); store.setKv("agent_protocol", c.protocol)
+        // Claude and the harness keep their own address and secret, so a feed
+        // can use either whichever agent chat is set to.
+        when (c.protocol) {
+            "claude" -> c.apiKey?.let { Keychain.put(CLAUDE_KEY, it) }
+            "harness" -> { store.setKv("harness_endpoint", c.endpoint); c.apiKey?.let { Keychain.put(HARNESS_TOKEN, it) } }
+            else -> store.setKv("agent_endpoint", c.endpoint)
+        }
+        store.setKv("agent_protocol", c.protocol)
         store.setKv("agent_model", c.model); store.setKv("agent_fp", c.tlsFingerprint)
-        if (c.protocol == "claude") c.apiKey?.let { Keychain.put(CLAUDE_KEY, it) }
         lastHealth = null
     }
 
     /** Claude's key, from the macOS Keychain rather than the app's database. */
     fun claudeKey(): String? = Keychain.get(CLAUDE_KEY)
+    fun harnessEndpoint(): String? = store.kv("harness_endpoint")
+    fun harnessToken(): String? = Keychain.get(HARNESS_TOKEN)
 
-    private companion object { const val CLAUDE_KEY = "claude-api-key" }
+    /** The agent a feed writes its task with: "claude" or "harness". */
+    private fun feedConfig(model: String) = if (model == "harness")
+        AgentConfig(endpoint = harnessEndpoint().orEmpty(), protocol = "harness", apiKey = harnessToken())
+    else AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey())
+
+    private companion object {
+        const val CLAUDE_KEY = "claude-api-key"
+        const val HARNESS_TOKEN = "harness-token"
+    }
+
+    // ---- feeds: watched pages, each turned into at most one task per period
+
+    /** Look at every feed whose period has turned, or [only] now. Returns what happened, by feed id. */
+    @Synchronized
+    private fun runFeeds(only: String? = null): Map<String, String> {
+        val today = java.time.LocalDate.now()
+        val out = LinkedHashMap<String, String>()
+        for (feed in store.byType(Feeds.TYPE)) {
+            if (only != null && feed.id != only) continue
+            if (only == null && !Feeds.isDue(feed, today)) continue
+            val client = Agent.clientFor(feedConfig(feed.fields["model"] ?: "claude"))
+            val result = try {
+                Feeds.check(feed, today, nowUtc(), PageFetch::get, { client.complete(it) },
+                    { store.get(it) != null })
+            } finally { client.close() }
+            store.put(result.feed)
+            result.task?.takeIf { store.get(it.id) == null }?.let { t ->
+                val project = t.project?.let(store::get)?.takeIf { !it.deleted }
+                write("next_action", t.id, mapOf("text" to t.text, "parent" to project?.id,
+                    "project" to (project?.let { ProjectTree.slugOf(it.fields["title"] ?: it.id) } ?: "inbox"),
+                    "due" to t.due, "body" to t.body))
+            }
+            out[feed.id] = result.message
+        }
+        return out
+    }
+
+    /** Watch [url]; the first look happens straight away and only remembers the page. */
+    fun addFeed(url: String, title: String, period: String, model: String, projectId: String?) =
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                val fid = id("f")
+                write(Feeds.TYPE, fid, mapOf("kind" to Feeds.KIND_WEB, "url" to url.trim(),
+                    "title" to title.trim().ifBlank { null }, "period" to period, "model" to model,
+                    "project" to projectId))
+                runCatching { runFeeds(only = fid) }
+            }
+            refresh()
+        }
+
+    fun deleteFeed(id: String) = delete(id)
+
+    /** Look at one feed now. Its period still allows one task. Returns what happened. */
+    suspend fun checkFeed(id: String): String {
+        val msg = withContext(Dispatchers.IO) {
+            runCatching { runFeeds(only = id)[id] }.getOrElse { it.message } ?: "Nothing to look at"
+        }
+        refresh()
+        return msg
+    }
 
     @Synchronized
     private fun agent(): Pair<AgentConfig, ModelClient> {
