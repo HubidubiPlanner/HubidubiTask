@@ -12,33 +12,33 @@ android {
         resources.excludes += setOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*",
             "META-INF/INDEX.LIST")
     }
-    namespace = "com.hubidubios.mobile"
+    namespace = "com.hubidubitask.mobile"
     // Play takes new apps only at its current target level (API 36 from 31 Aug 2026).
     compileSdk = 36
 
     defaultConfig {
         // Play knows the app by this id. The phone still runs the
         // original one, and an install under a new id is a second, empty app —
-        // so a dogfood install passes -Phubidubios.appId=com.hubidubios.mobile
+        // so a dogfood install passes -Phubidubitask.appId=com.hubidubios.mobile
         // to upgrade that one in place, data and pairing kept.
-        applicationId = (project.findProperty("hubidubios.appId") as String?)
+        applicationId = (project.findProperty("hubidubitask.appId") as String?)
             ?: "com.saferendering.hubidubios.projects"
         minSdk = 26
         targetSdk = 36
-        versionCode = (project.property("hubidubios.versionCode") as String).toInt()
-        versionName = project.property("hubidubios.version") as String
+        versionCode = (project.property("hubidubitask.versionCode") as String).toInt()
+        versionName = project.property("hubidubitask.version") as String
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Release builds are signed with the PRIVATE key, which never enters the
     // repo: the keystore sits in ~/.keystores and its password in the macOS
-    // Keychain. Elsewhere (CI), point HUBIDUBIOS_KEYSTORE and
-    // HUBIDUBIOS_KEYSTORE_PASSWORD at them instead.
+    // Keychain. Elsewhere (CI), point HUBIDUBITASK_KEYSTORE and
+    // HUBIDUBITASK_KEYSTORE_PASSWORD at them instead.
     signingConfigs {
         create("release") {
-            val path = System.getenv("HUBIDUBIOS_KEYSTORE")
+            val path = System.getenv("HUBIDUBITASK_KEYSTORE")
                 ?: "${System.getProperty("user.home")}/.keystores/hubidubitask-upload.jks"
-            val password = providers.environmentVariable("HUBIDUBIOS_KEYSTORE_PASSWORD").orElse(
+            val password = providers.environmentVariable("HUBIDUBITASK_KEYSTORE_PASSWORD").orElse(
                 providers.exec {
                     commandLine("security", "find-generic-password", "-s", "android-keystore-hubidubitask-upload", "-w")
                     isIgnoreExitValue = true

@@ -1,12 +1,12 @@
-# Omarchy with HubidubiOS
+# Omarchy with HubidubiTask
 
-An Omarchy installer image with the HubidubiOS app installed. Omarchy stays
-as it is; the image adds one package, `hubidubios` (the app, built by
+An Omarchy installer image with the HubidubiTask app installed. Omarchy stays
+as it is; the image adds one package, `hubidubitask` (the app, built by
 `distribution/arch/build.sh`), plus boot fixes for new NVIDIA cards.
 
 The build needs three upstream checkouts. They are **not committed** here: they
 are large pristine clones, and the repo stays private and small. Only our delta
-is tracked — as `hubidubios-omarchy-iso.patch`.
+is tracked — as `hubidubitask-omarchy-iso.patch`.
 
 ## Upstream sources (pinned)
 
@@ -29,7 +29,7 @@ git clone git@github.com:omacom-io/omarchy-pkgs.git omarchy-pkgs
 git -C omarchy-iso   checkout a23f8d464dcb0616a61bfaa8026e23d0533da209
 git -C omarchy       checkout 93d9d0c8591605f9eab6f0e5b8735bed9d174f1b
 git -C omarchy-pkgs  checkout bce3b368e7cf711c41fc29eb5f8bfc1c658ab5b8
-git -C omarchy-iso apply ../hubidubios-omarchy-iso.patch
+git -C omarchy-iso apply ../hubidubitask-omarchy-iso.patch
 ```
 
 `omarchy-iso` must keep its `.git` — the build calls `git ls-files --stage`
@@ -38,12 +38,12 @@ git -C omarchy-iso apply ../hubidubios-omarchy-iso.patch
 ## What the patch does
 
 1. **The app** (`builder/build-iso.sh`) — adds the app's Arch dependencies to
-   the offline `pacman -Syw`; copies the prebuilt `hubidubios` package into the
-   offline mirror, keeps it through the prune, and appends `hubidubios` to
+   the offline `pacman -Syw`; copies the prebuilt `hubidubitask` package into the
+   offline mirror, keeps it through the prune, and appends `hubidubitask` to
    `omarchy-base.packages` (the list pacstrap installs). Both blocks are guarded
-   by `[[ -d /hubidubios-pkgs ]]`, so the builder still works as stock Omarchy
+   by `[[ -d /hubidubitask-pkgs ]]`, so the builder still works as stock Omarchy
    without them.
-2. **Container mount** (`bin/omarchy-iso-make`) — bind-mounts `hubidubios-pkgs/`
+2. **Container mount** (`bin/omarchy-iso-make`) — bind-mounts `hubidubitask-pkgs/`
    into the build container when present.
 3. **Name** — none of its own: the image, its label and its boot menu are
    Omarchy's.
@@ -61,7 +61,7 @@ git -C omarchy-iso apply ../hubidubios-omarchy-iso.patch
 bash deploy/omarchy/build-fork-in-colima.sh
 ```
 
-Stage 1 builds the `hubidubios` app package into `omarchy-iso/hubidubios-pkgs/`;
+Stage 1 builds the `hubidubitask` app package into `omarchy-iso/hubidubitask-pkgs/`;
 stage 2 runs `omarchy-iso-make --no-boot-offer --local-source ../omarchy
 ../omarchy-pkgs` inside the x86_64 Colima VM. Output: `omarchy-iso/release/*.iso`.
 
@@ -78,7 +78,7 @@ Notes:
 
 ```sh
 git -C omarchy-iso fetch && git -C omarchy-iso checkout <new-sha>
-git -C omarchy-iso apply ../hubidubios-omarchy-iso.patch   # resolve rejects if any
+git -C omarchy-iso apply ../hubidubitask-omarchy-iso.patch   # resolve rejects if any
 # then regenerate the patch and update the pinned SHAs above:
-( cd omarchy-iso && git diff ) >> ../hubidubios-omarchy-iso.patch   # keep the header
+( cd omarchy-iso && git diff ) >> ../hubidubitask-omarchy-iso.patch   # keep the header
 ```

@@ -1,0 +1,13 @@
+[Unit]
+Description=Open the HubidubiTask phone-sync port to the LAN (ufw)
+After=ufw.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/usr/bin/ufw
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/hubidubitask-firewall
+
+[Install]
+WantedBy=multi-user.target

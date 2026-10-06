@@ -1,4 +1,4 @@
-# HubidubiOS: Android, macOS and Linux
+# HubidubiTask: Android, macOS and Linux
 
 One Gradle build for the app on every system: the Android phone app, and the
 desktop app for macOS and Linux. They share their model, sync, feeds and agent
@@ -13,9 +13,9 @@ no browser.
   durable outbox, and the sync engine. No Android dependency, so its JUnit
   tests run on the JVM without an emulator — this is where the app's most
   important correctness is proven.
-- **`android/`** (`:android`) — the Android application. UI in `ui/` (Compose): `HubidubiOsApp`
+- **`android/`** (`:android`) — the Android application. UI in `ui/` (Compose): `HubidubiTaskApp`
   (nav scaffold), `Screens` (Home/capture, Next, Review, Chat, Settings),
-  `HubidubiOsViewModel`. `net/AgentClient` polls `/v1/agent/health` for the native
+  `HubidubiTaskViewModel`. `net/AgentClient` polls `/v1/agent/health` for the native
   inference-status chip and streams `/v1/agent/ask` for online-only chat.
 - **`desktop/`** (`:desktop`) — the desktop app, for macOS and Linux. Its own
   SQLite store, an HTTPS peer server on port 5244 announced over Bonjour as

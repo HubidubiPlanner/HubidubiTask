@@ -1,4 +1,4 @@
-# Publishing HubidubiOS on Google Play
+# Publishing HubidubiTask on Google Play
 
 Everything needed to fill in Play Console for `com.saferendering.hubidubios.projects`, in the
 order Play Console asks for it. The upload-ready texts and images live in the
@@ -41,10 +41,10 @@ These stop an upload or a review; none of them are listing work.
 - [x] **Signed App Bundle.** `cd src/apps && ./gradlew :android:bundleRelease` signs
       with the PRIVATE key (`~/.keystores/hubidubitask-upload.jks`,
       alias `private`, password read from the Keychain entry
-      `android-keystore-hubidubitask-upload`; CI sets `HUBIDUBIOS_KEYSTORE` and
-      `HUBIDUBIOS_KEYSTORE_PASSWORD`). Still enrol in **Play App Signing** when
+      `android-keystore-hubidubitask-upload`; CI sets `HUBIDUBITASK_KEYSTORE` and
+      `HUBIDUBITASK_KEYSTORE_PASSWORD`). Still enrol in **Play App Signing** when
       creating the app: this key then acts as the upload key.
-- [ ] **Version.** One number for every platform, in `src/apps/gradle.properties` (`hubidubios.version`, `hubidubios.versionCode`). Every upload
+- [ ] **Version.** One number for every platform, in `src/apps/gradle.properties` (`hubidubitask.version`, `hubidubitask.versionCode`). Every upload
       needs a higher `versionCode`; add `changelogs/<versionCode>.txt` each time.
 - [ ] **The package name is permanent.** `com.saferendering.hubidubios.projects` can never be
       changed or reused once uploaded.
@@ -55,8 +55,8 @@ These stop an upload or a review; none of them are listing work.
       GitHub/GitLab Pages, Netlify, Cloudflare Pages, your own server) and use
       `https://<your-domain>/privacy.html`.
 - [ ] **Replace placeholders in `site/`:**
-      `hubidubios.example` (canonical/OG URLs), `hello@hubidubios.example`
-      (contact), and `downloads/HubidubiOS.dmg` (the Mac download — build it
+      `hubidubitask.example` (canonical/OG URLs), `hello@hubidubitask.example`
+      (contact), and `downloads/HubidubiTask.dmg` (the Mac download — build it
       with `./gradlew :desktop:packageDmg`, or remove the Mac card).
 
 ---
@@ -65,7 +65,7 @@ These stop an upload or a review; none of them are listing work.
 
 | Field | Value |
 |---|---|
-| App name | `HubidubiOS: Tasks & Calendar` (listing title; the launcher label stays `HubidubiOS`) |
+| App name | `HubidubiTask: Tasks & Calendar` (listing title; the launcher label stays `HubidubiTask`) |
 | Default language | English (United States) – en-US |
 | App or game | App |
 | Free or paid | Free (cannot be changed to paid later) |
@@ -117,7 +117,7 @@ this note so the reviewer does not flag sync or the assistant as broken:
 > No account or login exists. Projects, the + menu, Next and Mark done work
 > entirely on the device. Two optional features need the user's own
 > equipment on the same local network and cannot be reached by a reviewer:
-> (1) sync with the user's HubidubiOS Mac app, paired by a typed code;
+> (1) sync with the user's HubidubiTask Mac app, paired by a typed code;
 > (2) the assistant, which calls a model server whose address the user enters
 > in Settings. Without them the app shows their status and every other
 > feature works normally.
@@ -220,8 +220,8 @@ carry the seeder), then capture with `adb exec-out screencap -p`:
 
 ```sh
 cd src/apps && ./gradlew :android:installDebug
-adb shell am broadcast -a com.hubidubios.mobile.DEMO_SEED \
-  -n com.saferendering.hubidubios.projects/com.hubidubios.mobile.demo.DemoSeed
+adb shell am broadcast -a com.hubidubitask.mobile.DEMO_SEED \
+  -n com.saferendering.hubidubios.projects/com.hubidubitask.mobile.demo.DemoSeed
 adb shell settings put global sysui_demo_allowed 1
 adb shell am broadcast -a com.android.systemui.demo -e command enter
 ```

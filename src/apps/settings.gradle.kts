@@ -20,8 +20,8 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "hubidubios-apps"
-// -Phubidubios.desktopOnly=true builds the desktop app without the Android
+rootProject.name = "hubidubitask-apps"
+// -Phubidubitask.desktopOnly=true builds the desktop app without the Android
 // SDK, as the Linux build container does.
-if (providers.gradleProperty("hubidubios.desktopOnly").orNull == "true") include(":shared", ":desktop")
+if (providers.gradleProperty("hubidubitask.desktopOnly").orNull == "true") include(":shared", ":desktop")
 else include(":shared", ":android", ":desktop")

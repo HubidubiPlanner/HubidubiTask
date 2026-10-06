@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **HubidubiOS is now HubidubiTask.** The app's name changes on every platform:
+  the Android label, `HubidubiTask.app` on the Mac, the `hubidubitask` Arch
+  package (which replaces `hubidubios` on upgrade), the site and the listing.
+- The computer's data folder moves to its new name on first start
+  (`~/.local/share/hubidubitask`, `~/Library/Application Support/HubidubiTask`),
+  and keys saved under the old keychain name are carried over. Pairings,
+  items and the certificate phones pin come along.
+- Unchanged on purpose: the Play package `com.saferendering.hubidubios.projects`,
+  the phone's database and keystore names, and what 1.7.0 devices use to find
+  and talk to each other.
+
 ## 1.7.0 — 6 October 2026
 
 The first release of HubidubiOS as one app on Android, macOS and Linux.

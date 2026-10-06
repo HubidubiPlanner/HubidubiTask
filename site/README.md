@@ -1,4 +1,4 @@
-# HubidubiOS website
+# HubidubiTask website
 
 Plain static HTML and CSS — no build step, no framework, no third-party
 requests. Upload this folder as-is to any static host.
@@ -14,9 +14,9 @@ assets/         icon, favicon, social preview image
 Preview locally: `python3 -m http.server -d site 8000` → http://localhost:8000
 
 Before going live, replace:
-- `hubidubios.example` — canonical and Open Graph URLs in both pages
-- `hello@hubidubios.example` — contact address (also used in the Play listing)
-- `downloads/HubidubiOS.dmg` and `downloads/hubidubios-x86_64.pkg.tar.zst` — the Mac and Linux
+- `hubidubitask.example` — canonical and Open Graph URLs in both pages
+- `hello@hubidubitask.example` — contact address (also used in the Play listing)
+- `downloads/HubidubiTask.dmg` and `downloads/hubidubitask-x86_64.pkg.tar.zst` — the Mac and Linux
   downloads (`cd src/apps && ./gradlew :desktop:packageDmg`; `distribution/arch/build.sh`),
   or remove those buttons from `index.html`
 

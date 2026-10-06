@@ -8,7 +8,7 @@ build/
 
 # Vendored upstream checkouts for the Omarchy image build. Pristine clones
 # with their own .git, restored per deploy/omarchy/FORK.md; our delta lives in
-# hubidubios-omarchy-iso.patch.
+# hubidubitask-omarchy-iso.patch.
 deploy/omarchy/omarchy/
 deploy/omarchy/omarchy-iso/
 deploy/omarchy/omarchy-pkgs/

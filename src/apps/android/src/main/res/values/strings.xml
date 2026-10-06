@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">hubidubios</string>
-    <string name="widget_capture_label">hubidubios capture</string>
+    <string name="app_name">HubidubiTask</string>
+    <string name="widget_capture_label">HubidubiTask capture</string>
     <string name="widget_button_text">＋ Capture</string>
 </resources>

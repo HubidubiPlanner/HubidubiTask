@@ -7,11 +7,11 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:ignore="UnusedAttribute">
         <receiver
-            android:name="com.hubidubios.mobile.demo.DemoSeed"
+            android:name="com.hubidubitask.mobile.demo.DemoSeed"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.hubidubios.mobile.DEMO_SEED" />
+                <action android:name="com.hubidubitask.mobile.DEMO_SEED" />
             </intent-filter>
         </receiver>
     </application>

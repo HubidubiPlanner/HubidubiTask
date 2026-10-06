@@ -1,14 +1,14 @@
-# HubidubiOS — Manual
+# HubidubiTask — Manual
 
-HubidubiOS runs on your phone (Android) and on your computer (macOS or Linux).
+HubidubiTask runs on your phone (Android) and on your computer (macOS or Linux).
 Each keeps a full copy of your items and works on its own; paired, they keep
 each other current over your own Wi-Fi.
 
 ## Install
 
 - **Phone:** from Google Play, or `./gradlew :android:installDebug` while developing.
-- **Mac:** `HubidubiOS.app` (build it with `./gradlew :desktop:createDistributable`).
-- **Linux (Arch, Omarchy):** `sudo pacman -U hubidubios-*.pkg.tar.zst`, or use
+- **Mac:** `HubidubiTask.app` (build it with `./gradlew :desktop:createDistributable`).
+- **Linux (Arch, Omarchy):** `sudo pacman -U hubidubitask-*.pkg.tar.zst`, or use
   the Omarchy image from `deploy/omarchy/`, which has the app installed. The
   package opens the sync port (5244) to private networks in Omarchy's firewall.
 
@@ -48,7 +48,7 @@ subagents. It can never run commands or edit files. Feeds give it no tools.
 
 To run the Harness on a local model instead of your Claude plan, put the
 model's settings in `harness.env` in the app's data folder (`~/.local/share/
-hubidubios/` on Linux, `~/Library/Application Support/HubidubiOS/` on a Mac),
+hubidubitask/` on Linux, `~/Library/Application Support/HubidubiTask/` on a Mac),
 for example:
 
 ```
@@ -60,6 +60,6 @@ ANTHROPIC_MODEL=glm-5.3-flash
 ## Where your data lives
 
 - **Phone:** in the app's own encrypted database.
-- **Computer:** `~/.local/share/hubidubios/` (Linux) or
-  `~/Library/Application Support/HubidubiOS/` (Mac): an SQLite database,
+- **Computer:** `~/.local/share/hubidubitask/` (Linux) or
+  `~/Library/Application Support/HubidubiTask/` (Mac): an SQLite database,
   attachments by hash, and the TLS identity phones pin.

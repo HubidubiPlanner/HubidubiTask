@@ -17,10 +17,10 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="HubidubiOS"
+        android:label="HubidubiTask"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
-        android:theme="@style/Theme.HubidubiOs">
+        android:theme="@style/Theme.HubidubiTask">
 
         <activity
             android:name=".MainActivity"

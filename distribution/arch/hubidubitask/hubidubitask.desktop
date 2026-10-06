@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=HubidubiTask
+Comment=Tasks, notes and feeds, synced with your phone
+Exec=hubidubitask
+Icon=hubidubitask
+Categories=Office;ProjectManagement;
+Terminal=false
+StartupWMClass=com-hubidubitask-desktop-MainKt

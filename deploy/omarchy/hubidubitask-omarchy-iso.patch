@@ -1,0 +1,171 @@
+# HubidubiTask patch for omarchy-iso
+# Upstream base: omacom-io/omarchy-iso @ a23f8d464dcb0616a61bfaa8026e23d0533da209
+# Apply with:  git -C omarchy-iso apply ../hubidubitask-omarchy-iso.patch
+#
+# The image is Omarchy with the HubidubiTask app installed. Contents:
+#   (1) put the prebuilt hubidubitask app package and its Arch dependencies in
+#       the offline mirror and append it to the pacstrap list;
+#   (2) mount hubidubitask-pkgs into the build container;
+#   (3) boot fixes for new NVIDIA cards: a visible GRUB menu on the text
+#       console, nouveau.modeset=0, and a nomodeset "safe graphics" entry;
+#   (4) map arch-mact2's renamed apple-bcm-firmware(-fetcher).
+
+diff --git a/bin/omarchy-iso-make b/bin/omarchy-iso-make
+index 5dbbeff..050109b 100755
+--- a/bin/omarchy-iso-make
++++ b/bin/omarchy-iso-make
+@@ -142,6 +142,12 @@ if [[ -n $LOCAL_OMARCHY_PATH ]]; then
+   )
+ fi
+ 
++# HubidubiTask fork: mount our locally-built packages so build-iso.sh injects them
++# into the offline mirror + the target install list (see build-iso.sh).
++if [[ -d "$BUILD_ROOT/hubidubitask-pkgs" ]]; then
++  DOCKER_ARGS+=(-v "$BUILD_ROOT/hubidubitask-pkgs:/hubidubitask-pkgs:ro")
++fi
++
+ if [[ -d /var/cache/pacman/pkg ]]; then
+   DOCKER_ARGS+=(-v "/var/cache/pacman/pkg:/var/cache/pacman/pkg")
+ fi
+diff --git a/builder/build-iso.sh b/builder/build-iso.sh
+index aa2feb3..c7f54b9 100755
+--- a/builder/build-iso.sh
++++ b/builder/build-iso.sh
+@@ -210,6 +210,24 @@ mapfile -t all_packages < <(
+   printf '%s\n' "${all_packages[@]}" | sed 's/^broadcom-wl$/broadcom-wl-dkms/' | sort -u
+ )
+ 
++# ===== HubidubiTask fork fix: arch-mact2 renamed apple-bcm-firmware =====
++# The T2-Mac repo now ships it as apple-bcm-firmware-fetcher, so the old name is
++# "target not found" and the whole offline download fails. Same remedy as
++# broadcom-wl above; it is only installed on T2 MacBooks (fix-t2.sh).
++mapfile -t all_packages < <(
++  printf '%s\n' "${all_packages[@]}" |
++    sed 's/^apple-bcm-firmware$/apple-bcm-firmware-fetcher/' | sort -u
++)
++
++# ===== HubidubiTask app (1/2): the app package's Arch dependencies =====
++# Fetch the libraries the HubidubiTask app needs into the offline mirror so the
++# target install can resolve it. The app itself is not online; it is copied
++# in below.
++if [[ -d /hubidubitask-pkgs ]]; then
++  all_packages+=(libxrender libxtst libxi alsa-lib fontconfig freetype2 libglvnd libsecret)
++  mapfile -t all_packages < <(printf '%s\n' "${all_packages[@]}" | sort -u)
++fi
++
+ # With --local-source we already built these omarchy* packages directly into
+ # the mirror; strip them from the pacman -Syw list so it doesn't try to fetch
+ # the published versions on top.
+@@ -276,6 +294,19 @@ if [[ -n ${LOCAL_OMARCHY_BUILD:-} ]]; then
+   done
+ fi
+ 
++# ===== HubidubiTask app (2/2): the prebuilt app package into the mirror =====
++# Copy the app package into the offline mirror and keep it through the prune,
++# then add it to the target's base install list so pacstrap installs the
++# HubidubiTask app alongside Omarchy. Nothing else of Omarchy changes.
++if [[ -d /hubidubitask-pkgs ]]; then
++  cp /hubidubitask-pkgs/*.pkg.tar.zst "$offline_mirror_dir/" 2>/dev/null || true
++  for f in /hubidubitask-pkgs/*.pkg.tar.zst; do
++    [[ -f $f ]] && required_package_files+=("${f##*/}")
++  done
++  echo "hubidubitask" >> \
++    "$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-base.packages"
++fi
++
+ printf '%s\n' "${required_package_files[@]}" |
+   bash /builder/prune-offline-mirror.sh "$offline_mirror_dir"
+ 
+diff --git a/configs/grub/grub.cfg b/configs/grub/grub.cfg
+index a0f67ef..8c6e7ec 100644
+--- a/configs/grub/grub.cfg
++++ b/configs/grub/grub.cfg
+@@ -8,14 +8,14 @@ insmod ntfscomp
+ insmod exfat
+ insmod udf
+ 
+-# Use graphics-mode output
++# Menu output: use the firmware text console, not gfxterm. On new GPUs (e.g.
++# NVIDIA Blackwell) GRUB's gfxterm can fail to bring up the GOP framebuffer and
++# the menu renders to a black screen. The EFI text console is always available.
+ insmod font
+-if loadfont "${prefix}/fonts/unicode.pf2" ; then
+-    insmod all_video
+-    set gfxmode="auto"
+-    terminal_input console
+-    terminal_output gfxterm
+-fi
++loadfont "${prefix}/fonts/unicode.pf2"
++insmod all_video
++terminal_input console
++terminal_output console
+ 
+ # Enable serial console
+ insmod serial
+@@ -44,23 +44,30 @@ else
+     archiso_platform="${grub_cpu} ${grub_platform}"
+ fi
+ 
+-# Set default menu entry
++# Set default menu entry. Show the menu (not hidden) so the boot mode can be
++# chosen and entries edited with `e` — essential for first-boot GPU debugging.
+ default=archlinux
+-timeout=0
+-timeout_style=hidden
++timeout=30
++timeout_style=menu
+ 
+ 
+ # Menu entries
+ 
+ menuentry "Omarchy (%ARCH%, ${archiso_platform})" --class arch --class gnu-linux --class gnu --class os --id 'archlinux' {
+-    set gfxpayload=keep
+-    linux /%INSTALL_DIR%/boot/%ARCH%/vmlinuz-linux-t2 archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% quiet splash xe.enable_panel_replay=0 initramfs_async=0
++    set gfxpayload=text
++    linux /%INSTALL_DIR%/boot/%ARCH%/vmlinuz-linux-t2 archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% nouveau.modeset=0 modprobe.blacklist=nouveau xe.enable_panel_replay=0 initramfs_async=0
++    initrd /%INSTALL_DIR%/boot/%ARCH%/initramfs-linux-t2.img
++}
++
++menuentry "Omarchy (safe graphics — nomodeset, %ARCH%, ${archiso_platform})" --class arch --class gnu-linux --class gnu --class os --id 'archlinux-safe' {
++    set gfxpayload=text
++    linux /%INSTALL_DIR%/boot/%ARCH%/vmlinuz-linux-t2 archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% nouveau.modeset=0 modprobe.blacklist=nouveau nomodeset xe.enable_panel_replay=0 initramfs_async=0
+     initrd /%INSTALL_DIR%/boot/%ARCH%/initramfs-linux-t2.img
+ }
+ 
+ menuentry "Omarchy with speakup screen reader (%ARCH%, ${archiso_platform})" --hotkey s --class arch --class gnu-linux --class gnu --class os --id 'archlinux-accessibility' {
+-    set gfxpayload=keep
+-    linux /%INSTALL_DIR%/boot/%ARCH%/vmlinuz-linux-t2 archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% accessibility=on xe.enable_panel_replay=0 initramfs_async=0
++    set gfxpayload=text
++    linux /%INSTALL_DIR%/boot/%ARCH%/vmlinuz-linux-t2 archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% accessibility=on nouveau.modeset=0 modprobe.blacklist=nouveau xe.enable_panel_replay=0 initramfs_async=0
+     initrd /%INSTALL_DIR%/boot/%ARCH%/initramfs-linux-t2.img
+ }
+ 
+diff --git a/configs/syslinux/archiso_sys-linux.cfg b/configs/syslinux/archiso_sys-linux.cfg
+index 805a5a7..f3b010c 100644
+--- a/configs/syslinux/archiso_sys-linux.cfg
++++ b/configs/syslinux/archiso_sys-linux.cfg
+@@ -6,7 +6,17 @@ ENDTEXT
+ MENU LABEL Omarchy install medium (x86_64, BIOS)
+ LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux-t2
+ INITRD /%INSTALL_DIR%/boot/x86_64/initramfs-linux-t2.img
+-APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% quiet splash xe.enable_panel_replay=0 initramfs_async=0
++APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% nouveau.modeset=0 modprobe.blacklist=nouveau xe.enable_panel_replay=0 initramfs_async=0
++
++LABEL arch64safe
++TEXT HELP
++Boot Omarchy on BIOS with all kernel mode-setting disabled (nomodeset).
++Use this if the normal entry shows a black screen on a new GPU.
++ENDTEXT
++MENU LABEL Omarchy install medium (x86_64, BIOS) ^safe graphics
++LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux-t2
++INITRD /%INSTALL_DIR%/boot/x86_64/initramfs-linux-t2.img
++APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% nouveau.modeset=0 modprobe.blacklist=nouveau nomodeset xe.enable_panel_replay=0 initramfs_async=0
+ 
+ # Accessibility boot option
+ LABEL arch64speech
+@@ -17,4 +27,4 @@ ENDTEXT
+ MENU LABEL Omarchy install medium (x86_64, BIOS) with ^speech
+ LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux-t2
+ INITRD /%INSTALL_DIR%/boot/x86_64/initramfs-linux-t2.img
+-APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% accessibility=on xe.enable_panel_replay=0 initramfs_async=0
++APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_UUID% accessibility=on nouveau.modeset=0 modprobe.blacklist=nouveau xe.enable_panel_replay=0 initramfs_async=0

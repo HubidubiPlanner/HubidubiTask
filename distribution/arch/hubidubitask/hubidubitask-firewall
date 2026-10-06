@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Open the HubidubiTask phone-sync port to the LAN.
+#
+# Omarchy ships ufw with default-deny incoming, so without this a phone's
+# connection to this computer is silently dropped (it times out rather than
+# being refused) and pairing never succeeds.
+#
+# Purely additive: one allow rule for our own port, scoped to the RFC1918
+# private ranges. ufw itself, its default policy and every other rule are
+# left alone, and an inactive ufw is not touched at all.
+set -euo pipefail
+
+PORT="${HUBIDUBITASK_PORT:-5244}"
+
+command -v ufw >/dev/null 2>&1 || { echo "ufw not installed; nothing to do"; exit 0; }
+if ! ufw status 2>/dev/null | head -1 | grep -qi "Status: active"; then
+  echo "ufw inactive; leaving the firewall untouched"
+  exit 0
+fi
+for net in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12; do
+  ufw allow from "$net" to any port "$PORT" proto tcp comment "HubidubiTask" \
+    >/dev/null 2>&1 || echo "warning: could not add ufw rule for $net" >&2
+done
+echo "HubidubiTask port $PORT/tcp open to the LAN (ufw)"

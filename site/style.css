@@ -1,4 +1,4 @@
-/* HubidubiOS site: one column, one typeface, the app's own sand and moss.
+/* HubidubiTask site: one column, one typeface, the app's own sand and moss.
    Fonts are served from here, so no page load reaches a third party. */
 
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }

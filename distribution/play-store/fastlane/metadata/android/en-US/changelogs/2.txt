@@ -1,5 +1,5 @@
 • One + for everything new: project, task, note, photo, voice memo or file.
 • Feeds: watch a web page, and once a day, week or month what changed becomes one task.
 • Four AI choices: Claude, SelfHostedAI, your own model, or Claude Code on your computer.
-• Pair with the HubidubiOS app on your Mac or Linux computer.
+• Pair with the HubidubiTask app on your Mac or Linux computer.
 • Review any item with AI.

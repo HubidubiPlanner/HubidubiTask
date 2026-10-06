@@ -1,1 +1,1 @@
-HubidubiOS: Tasks & Calendar
+HubidubiTask: Tasks & Calendar

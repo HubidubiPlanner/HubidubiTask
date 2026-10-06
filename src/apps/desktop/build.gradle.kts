@@ -25,31 +25,31 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.hubidubios.desktop.MainKt"
+        mainClass = "com.hubidubitask.desktop.MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Deb)
-            packageName = "HubidubiOS"
-            packageVersion = project.property("hubidubios.version") as String
-            description = "HubidubiOS: tasks, notes and feeds, synced with your phone"
+            packageName = "HubidubiTask"
+            packageVersion = project.property("hubidubitask.version") as String
+            description = "HubidubiTask: tasks, notes and feeds, synced with your phone"
             // The embedded HTTPS server, SQLite (JDBC) and the TLS/crypto the
             // peer protocol needs, kept in the bundled runtime.
             modules("jdk.httpserver", "java.sql", "java.naming", "jdk.crypto.ec", "java.management")
             linux {
                 iconFile.set(project.file("icon.png"))
-                packageName = "hubidubios"
+                packageName = "hubidubitask"
                 appCategory = "Office"
                 menuGroup = "Office"
                 shortcut = true
             }
             macOS {
-                bundleID = "com.hubidubios.desktop"
+                bundleID = "com.hubidubitask.desktop"
                 iconFile.set(project.file("icon.icns"))
                 infoPlist {
                     extraKeysRawXml = """
                         <key>NSLocalNetworkUsageDescription</key>
-                        <string>HubidubiOS syncs with your phone over your local network.</string>
+                        <string>HubidubiTask syncs with your phone over your local network.</string>
                         <key>NSMicrophoneUsageDescription</key>
-                        <string>HubidubiOS records voice memos you capture.</string>
+                        <string>HubidubiTask records voice memos you capture.</string>
                         <key>NSBonjourServices</key>
                         <array><string>_hubidubios-peer._tcp</string></array>
                     """.trimIndent()

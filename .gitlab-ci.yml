@@ -1,4 +1,4 @@
-# HubidubiOS CI: the app on Android, macOS and Linux.
+# HubidubiTask CI: the app on Android, macOS and Linux.
 #
 # CI IS DISABLED FOR NOW: the workflow rule below prevents any pipeline. To
 # turn it on, delete the `workflow` block. The macOS app is built on a Mac
@@ -16,7 +16,7 @@ shared-and-desktop-tests:
   image: eclipse-temurin:17-jdk
   script:
     - cd src/apps
-    - ./gradlew --no-daemon -Phubidubios.desktopOnly=true :shared:test :desktop:test
+    - ./gradlew --no-daemon -Phubidubitask.desktopOnly=true :shared:test :desktop:test
 
 android:
   stage: build

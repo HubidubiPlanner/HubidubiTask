@@ -1,4 +1,4 @@
-HubidubiOS is a task app built around one idea: what you capture should get done, not pile up.
+HubidubiTask is a task app built around one idea: what you capture should get done, not pile up.
 
 Your tasks, notes and calendar live on your own devices. Your phone and your computer (Mac or Linux) sync directly with each other over your own Wi-Fi. There is no account, no cloud service and no server of ours in between.
 
@@ -6,7 +6,7 @@ GET IT OUT OF YOUR HEAD
 • Capture four ways: type a thought, take or pick a photo, record a voice memo, or attach a document.
 • One question when you save: task or note? Only you know whether a photo means "do something about this" or "keep this".
 • Add a date right there, while you still remember it, or skip it.
-• Capture text from the home-screen widget or from any app's share menu, without opening HubidubiOS.
+• Capture text from the home-screen widget or from any app's share menu, without opening HubidubiTask.
 
 KNOW WHAT IS NEXT
 • Next opens on today. Overdue items get their own heading at the top, because "should already have happened" calls for a different decision than "happens today".
@@ -25,7 +25,7 @@ DONE MEANS DONE
 • Open any item to see what it is, when it is due, and what is filed under it.
 
 SYNC WITHOUT A CLOUD
-• Pair the phone with the HubidubiOS app on your Mac or Linux computer by typing a short code. Both on the same Wi-Fi is all it takes.
+• Pair the phone with the HubidubiTask app on your Mac or Linux computer by typing a short code. Both on the same Wi-Fi is all it takes.
 • From then on they keep each other current on their own. Every edit carries a time; the newest one wins, and deletions travel too, so nothing you removed comes back.
 • Everything works offline. The phone keeps a full copy of your data in an encrypted database.
 • Traffic between your devices is encrypted and pinned to the certificate exchanged when you paired.
@@ -43,4 +43,4 @@ PRIVACY
 • We run no servers, so we never receive your data.
 • The camera is used only when you take a photo; the microphone only while you record a voice memo.
 
-Plain paper by day, moss green by night: HubidubiOS follows your system's light and dark theme.
+Plain paper by day, moss green by night: HubidubiTask follows your system's light and dark theme.

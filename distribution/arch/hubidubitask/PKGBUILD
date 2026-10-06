@@ -1,0 +1,43 @@
+# Maintainer: hubidubitask
+# The HubidubiTask desktop app for Linux (Omarchy and other Arch systems).
+# Built from the Compose app image that distribution/arch/build.sh makes in
+# an x86_64 container; it carries its own Java runtime.
+pkgname=hubidubitask
+pkgver=1.7.0  # set from src/apps/gradle.properties by build.sh
+pkgrel=1
+pkgdesc="HubidubiTask: tasks, notes and feeds, synced with your phone"
+arch=('x86_64')
+url="https://hubidubitask.example"
+license=('custom')
+depends=('libxrender' 'libxtst' 'libxi' 'alsa-lib' 'fontconfig' 'freetype2' 'libglvnd')
+# Called hubidubios up to 1.7.0; this package takes its place on upgrade.
+provides=('hubidubios')
+replaces=('hubidubios')
+conflicts=('hubidubios')
+optdepends=('libsecret: keep API keys in the system keyring (secret-tool)'
+            'ufw: the package opens the phone-sync port to the LAN when ufw is on')
+source=("hubidubitask-linux-x64.tar.gz"
+        "hubidubitask.desktop"
+        "hubidubitask-firewall"
+        "hubidubitask-firewall.service")
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+options=('!strip' '!debug')
+
+package() {
+  install -d "$pkgdir/opt"
+  cp -a "$srcdir/hubidubitask" "$pkgdir/opt/hubidubitask"
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/hubidubitask/bin/HubidubiTask "$pkgdir/usr/bin/hubidubitask"
+  install -Dm644 "$srcdir/hubidubitask.desktop" "$pkgdir/usr/share/applications/hubidubitask.desktop"
+  install -Dm644 "$srcdir/hubidubitask/lib/HubidubiTask.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/hubidubitask.png"
+
+  # Phones sync with this computer on 5244. Omarchy's ufw denies incoming by
+  # default; open only that port, only to private networks, at boot. A
+  # package cannot run `systemctl enable`, so it ships the wants-symlink.
+  install -Dm755 "$srcdir/hubidubitask-firewall" "$pkgdir/usr/bin/hubidubitask-firewall"
+  install -Dm644 "$srcdir/hubidubitask-firewall.service" \
+    "$pkgdir/usr/lib/systemd/system/hubidubitask-firewall.service"
+  install -d "$pkgdir/usr/lib/systemd/system/multi-user.target.wants"
+  ln -sf ../hubidubitask-firewall.service \
+    "$pkgdir/usr/lib/systemd/system/multi-user.target.wants/hubidubitask-firewall.service"
+}

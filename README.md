@@ -1,4 +1,4 @@
-# HubidubiOS
+# HubidubiTask
 
 One app for tasks, notes and feeds, on **Android, macOS and Linux**. A phone
 and a computer pair once and then keep each other current over your own

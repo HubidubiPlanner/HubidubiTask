@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build the Omarchy image with the HubidubiOS app installed, on an Apple
+# Build the Omarchy image with the HubidubiTask app installed, on an Apple
 # silicon Mac, in the x86_64 Colima VM. Two stages:
-#   1) build the hubidubios app package (distribution/arch/build.sh) into
-#      omarchy-iso/hubidubios-pkgs/
+#   1) build the hubidubitask app package (distribution/arch/build.sh) into
+#      omarchy-iso/hubidubitask-pkgs/
 #   2) run the vendored omarchy-iso-make --local-source: Omarchy built from
 #      our vendored checkouts, with the app in the offline mirror and the
-#      install list (see hubidubios-omarchy-iso.patch).
+#      install list (see hubidubitask-omarchy-iso.patch).
 #
 # omarchy-iso-make needs a Linux host (GNU coreutils + docker), so stage 2
 # runs INSIDE the Colima VM via `colima ssh`, using the VM's own dockerd.
@@ -26,13 +26,13 @@ if ! colima status -p "$PROFILE" >/dev/null 2>&1; then
   colima start -p "$PROFILE" --arch x86_64 --cpu 6 --memory 12 --disk 100
 fi
 
-echo "==> Stage 1: the hubidubios app package"
+echo "==> Stage 1: the hubidubitask app package"
 # The x86_64 VM builds it natively; REUSE_IMAGE=1 skips rebuilding the app.
 DOCKER_CONTEXT="$CTX" "$REPO/distribution/arch/build.sh"
-mkdir -p "$OMI/hubidubios-pkgs"
-rm -f "$OMI"/hubidubios-pkgs/*.pkg.tar.zst
-cp "$REPO"/distribution/arch/out/hubidubios-*.pkg.tar.zst "$OMI/hubidubios-pkgs/"
-ls -1 "$OMI/hubidubios-pkgs"
+mkdir -p "$OMI/hubidubitask-pkgs"
+rm -f "$OMI"/hubidubitask-pkgs/*.pkg.tar.zst
+cp "$REPO"/distribution/arch/out/hubidubitask-*.pkg.tar.zst "$OMI/hubidubitask-pkgs/"
+ls -1 "$OMI/hubidubitask-pkgs"
 
 echo "==> Stage 2: build the fork ISO inside the VM (omarchy-iso-make --local-source)"
 colima ssh -p "$PROFILE" -- bash -lc "
