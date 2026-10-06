@@ -39,23 +39,40 @@ and the phone also hourly in the background.
 | Claude | An API key from the Anthropic Console (kept in the system's keychain) |
 | SelfHostedAI | The server's address |
 | Model | The address of an OpenAI-compatible server |
-| Harness | Nothing. On the computer it is Claude Code installed there; on the phone, Claude Code on the paired computer. |
+| Harness | The IP and port of the computer running the Harness (port 8765 unless you chose another) |
 
-**Harness** runs Claude Code in its restricted mode: it can read a copy of
-your items (Read, Glob, Grep), use your items as tools (search, upcoming,
-projects, inbox, add a task, capture, mark done), fetch web pages and use
-subagents. It can never run commands or edit files. Feeds give it no tools.
+**Harness** is Claude Code on a computer in your home network, any Linux or
+macOS machine with Claude Code installed. Set it up there once:
 
-To run the Harness on a local model instead of your Claude plan, put the
-model's settings in `harness.env` in the app's data folder (`~/.local/share/
-hubidubitask/` on Linux, `~/Library/Application Support/HubidubiTask/` on a Mac),
-for example:
-
+```sh
+sh deploy/harness/install.sh
 ```
-ANTHROPIC_BASE_URL=http://127.0.0.1:8080
-ANTHROPIC_AUTH_TOKEN=local
-ANTHROPIC_MODEL=glm-5.3-flash
-```
+
+It runs as a service, starts with the computer, and prints the IP and port to
+type in **Settings → Agent → Harness**. Saving trusts the certificate the
+Harness shows at that moment; after that only that certificate is accepted.
+If you reinstall it on a new machine, save again.
+
+With chat and reviews, the app sends your items along, and Claude Code, in its
+restricted mode, can read a copy of them (Read, Glob, Grep), use them as tools
+(search, upcoming, projects, inbox, add a task, capture, mark done), fetch web
+pages and use subagents. The tasks it adds or marks done come back to the app,
+which makes those changes itself. It can never run commands or edit files.
+Feeds give it no tools and no items.
+
+Its settings live on that computer in `~/.config/hubidubitask-harness/`:
+
+- `harness.env` points Claude Code at a local model instead of its own login,
+  for example:
+
+  ```
+  ANTHROPIC_BASE_URL=http://127.0.0.1:8080
+  ANTHROPIC_AUTH_TOKEN=local
+  ANTHROPIC_MODEL=glm-5.2
+  ```
+
+- `mcp.json` adds MCP servers of that computer, in Claude Code's own format
+  (`{"mcpServers": {...}}`).
 
 ## Where your data lives
 

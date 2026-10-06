@@ -19,8 +19,7 @@ no browser.
   inference-status chip and streams `/v1/agent/ask` for online-only chat.
 - **`desktop/`** (`:desktop`) — the desktop app, for macOS and Linux. Its own
   SQLite store, an HTTPS peer server on port 5244 announced over Bonjour as
-  `_hubidubios-peer._tcp`, the same screens as the phone, and the Harness
-  agent: Claude Code on this computer, which paired phones use too. Mac:
+  `_hubidubios-peer._tcp`, and the same screens as the phone. Mac:
   `./gradlew :desktop:createDistributable` (or `:desktop:packageDmg`). Linux:
   `distribution/arch/build.sh` builds the Arch package in containers.
 

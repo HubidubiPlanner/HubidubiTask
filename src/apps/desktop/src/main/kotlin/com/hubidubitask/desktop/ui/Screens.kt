@@ -925,9 +925,10 @@ private fun LabeledField(
     enabled: Boolean,
     placeholder: String? = null,
     secret: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val c = HubidubiTaskTheme.colors
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value, onValueChange = onValueChange,
@@ -992,8 +993,11 @@ fun SettingsScreen(
     // system's secret store.
     var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
     val claude = protocol == "claude"
-    // The harness is Claude Code on this computer; nothing to configure.
+    // The harness is Claude Code on a computer in the home network: its IP and port.
     val harness = protocol == "harness"
+    val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.HarnessLink.split(vm.harnessEndpoint()) }
+    var harnessIp by remember { mutableStateOf(savedIp) }
+    var harnessPort by remember { mutableStateOf(savedPort) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
 
@@ -1023,28 +1027,35 @@ fun SettingsScreen(
             if (claude)
                 LabeledField("Claude API key", claudeKey, { claudeKey = it; message = null },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
-            else if (harness) {
-                // Claude Code on this computer: nothing to type, only whether it is here.
-                val h = remember { vm.harnessHealth() }
-                Text(if (h.connected) "Claude Code on this computer" else h.error ?: "Claude Code is not installed",
-                    style = MaterialTheme.typography.bodyMedium, color = if (h.connected) c.ink else c.danger)
-            }
+            else if (harness)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LabeledField("IP", harnessIp, { harnessIp = it; message = null },
+                        helper = "", enabled = true, placeholder = "192.168.1.50",
+                        modifier = Modifier.weight(2f))
+                    LabeledField("Port", harnessPort, { harnessPort = it.filter(Char::isDigit); message = null },
+                        helper = "", enabled = true, placeholder = com.hubidubitask.core.agent.HarnessLink.DEFAULT_PORT,
+                        modifier = Modifier.weight(1f))
+                }
             else
                 LabeledField("Server address", endpoint, { endpoint = it; message = null },
                     helper = "",
                     enabled = true, placeholder = "https://192.168.1.50:8443")
 
-            LabeledField("Model", model, { model = it; message = null },
-                helper = "",
-                enabled = true, placeholder = defaultModel)
+            // The harness's computer decides its model.
+            if (!harness)
+                LabeledField("Model", model, { model = it; message = null },
+                    helper = "",
+                    enabled = true, placeholder = defaultModel)
 
             PrimaryButton(
                 if (saving) "Saving…" else "Save agent",
                 {
                     saving = true; message = null
+                    val address = if (harness)
+                        com.hubidubitask.core.agent.HarnessLink.endpoint(harnessIp, harnessPort) else endpoint.trim()
                     vm.setAgentConfig(saved.copy(
-                        endpoint = endpoint.trim(), protocol = protocol,
-                        model = model.ifBlank { defaultModel },
+                        endpoint = address, protocol = protocol,
+                        model = if (harness) defaultModel else model.ifBlank { defaultModel },
                         apiKey = if (claude) claudeKey.trim() else null))
                     scope.launch {
                         // Saving is not the same as working. An address nothing
@@ -1054,7 +1065,7 @@ fun SettingsScreen(
                         val h = vm.checkInference()
                         message = if (h.connected) "Connected to ${h.server ?: endpoint}"
                             else if (claude) "Saved, but Claude did not answer: ${h.error ?: "no reply"}"
-                            else if (harness) "Saved, but the harness did not answer: ${h.error ?: "no reply"}"
+                            else if (harness) "Saved, but the harness at $address did not answer: ${h.error ?: "no reply"}"
                             else "Saved, but nothing answered at $endpoint — check the " +
                                 "address and that the agent is running there."
                         saving = false
@@ -1063,7 +1074,7 @@ fun SettingsScreen(
                 Modifier.fillMaxWidth(),
                 enabled = !saving && when {
                     claude -> claudeKey.isNotBlank()
-                    harness -> true
+                    harness -> harnessIp.isNotBlank()
                     else -> endpoint.isNotBlank()
                 },
             )

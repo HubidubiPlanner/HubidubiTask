@@ -31,8 +31,10 @@ import java.security.MessageDigest
  * time, written to the store's change log — which is what the phone picks up
  * on its next sync round.
  */
-class HubidubiTaskViewModel(val store: Store, val server: PeerServer,
-                          val harness: com.hubidubitask.desktop.harness.Harness) {
+class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
+
+    /** What a Harness question carries, and where its changes land. */
+    private val items = com.hubidubitask.desktop.harness.Items(store) { refresh() }
 
     data class UiState(
         /** A phone is paired with this Mac. */
@@ -199,13 +201,14 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer,
 
     fun agentConfig(): AgentConfig {
         val p = store.kv("agent_protocol") ?: "selfhostedai"
+        val harness = p == "harness"
         return AgentConfig(
-            endpoint = if (p == "harness") harnessEndpoint().orEmpty()
+            endpoint = if (harness) harnessEndpoint()
                        else store.kv("agent_endpoint") ?: AgentConfig.DEFAULT_ENDPOINT,
             protocol = p,
-            model = store.kv("agent_model") ?: AgentConfig.defaultModel(p),
-            apiKey = when (p) { "claude" -> claudeKey(); "harness" -> harnessToken(); else -> null },
-            tlsFingerprint = store.kv("agent_fp"),
+            model = if (harness) AgentConfig.HARNESS_MODEL else store.kv("agent_model") ?: AgentConfig.defaultModel(p),
+            apiKey = if (p == "claude") claudeKey() else null,
+            tlsFingerprint = if (harness) store.kv(HARNESS_FP) else store.kv("agent_fp"),
         )
     }
 
@@ -214,32 +217,32 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer,
         // can use either whichever agent chat is set to.
         when (c.protocol) {
             "claude" -> c.apiKey?.let { Secrets.put(CLAUDE_KEY, it) }
-            "harness" -> { store.setKv("harness_endpoint", c.endpoint); c.apiKey?.let { Secrets.put(HARNESS_TOKEN, it) } }
-            else -> store.setKv("agent_endpoint", c.endpoint)
+            // Saving the harness trusts the certificate found there now: the
+            // next answer from it is pinned (see health).
+            "harness" -> { store.setKv(HARNESS_ENDPOINT, c.endpoint); store.setKv(HARNESS_FP, null) }
+            else -> { store.setKv("agent_endpoint", c.endpoint); store.setKv("agent_fp", c.tlsFingerprint) }
         }
         store.setKv("agent_protocol", c.protocol)
-        store.setKv("agent_model", c.model); store.setKv("agent_fp", c.tlsFingerprint)
+        if (c.protocol != "harness") store.setKv("agent_model", c.model)
         lastHealth = null
     }
 
     /** Claude's key, from the system's secret store rather than the app's database. */
     fun claudeKey(): String? = Secrets.get(CLAUDE_KEY)
-    fun harnessEndpoint(): String? = store.kv("harness_endpoint")
-    fun harnessToken(): String? = Secrets.get(HARNESS_TOKEN)
-
-    /** Whether Claude Code is installed here, for Settings. */
-    fun harnessHealth(): Health = harness.health()
+    /** Claude Code on a computer in the home network, "https://ip:port"; blank until typed. */
+    fun harnessEndpoint(): String = store.kv(HARNESS_ENDPOINT).orEmpty()
 
     /** The agent a feed writes its task with: "claude" or "harness". Never with
      *  tools: a feed's text comes from a stranger's web page. */
     private fun feedConfig(model: String) = if (model == "harness")
-        AgentConfig(endpoint = harnessEndpoint().orEmpty(), protocol = "harness", apiKey = harnessToken(),
+        AgentConfig(endpoint = harnessEndpoint(), protocol = "harness", tlsFingerprint = store.kv(HARNESS_FP),
             tools = false)
     else AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey())
 
     private companion object {
         const val CLAUDE_KEY = "claude-api-key"
-        const val HARNESS_TOKEN = "harness-token"
+        const val HARNESS_ENDPOINT = "harness_endpoint"
+        const val HARNESS_FP = "harness_fp"
     }
 
     // ---- feeds: watched pages, each turned into at most one task per period
@@ -253,9 +256,8 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer,
             if (only != null && feed.id != only) continue
             if (only == null && !Feeds.isDue(feed, today)) continue
             val model = feed.fields["model"] ?: "claude"
-            // The harness runs here; a feed never gets its tools.
-            val client = if (model == "harness") harness.client(tools = false)
-                         else Agent.clientFor(feedConfig(model))
+            // A feed never gets the harness's tools, nor the items.
+            val client = Agent.clientFor(feedConfig(model))
             val result = try {
                 Feeds.check(feed, today, nowUtc(), PageFetch::get, { client.complete(it) },
                     { store.get(it) != null })
@@ -301,15 +303,20 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer,
         val cfg = agentConfig()
         agent?.let { if (cfg == agentCfg) return cfg to it; it.close() }
         agentCfg = cfg
-        // The harness is Claude Code on this computer, not a server to reach.
-        val client = if (cfg.protocol == "harness") harness.client(tools = cfg.tools) else Agent.clientFor(cfg)
-        return cfg to client.also { agent = it }
+        return cfg to Agent.clientFor(cfg, items).also { agent = it }
     }
 
     private fun health(force: Boolean = false): Health {
         val now = System.currentTimeMillis()
         lastHealth?.let { (at, h) -> if (!force && now - at < 60_000) return h }
-        return agent().second.health().also { lastHealth = now to it }
+        val (cfg, client) = agent()
+        return client.health().also { h ->
+            lastHealth = now to h
+            // The harness's certificate is its own, made on first start: the
+            // first one answering after Save is trusted, and only it after that.
+            if (cfg.protocol == "harness" && h.connected && cfg.tlsFingerprint == null)
+                h.fingerprint?.let { store.setKv(HARNESS_FP, it) }
+        }
     }
 
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(true) }

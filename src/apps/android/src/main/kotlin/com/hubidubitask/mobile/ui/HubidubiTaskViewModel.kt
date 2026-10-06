@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Agent
+import com.hubidubitask.core.agent.HarnessAction
+import com.hubidubitask.core.agent.HarnessItems
 import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
@@ -189,7 +191,32 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         if (cur != null && cfg == agentConfig) return cfg to cur
         cur?.close()
         agentConfig = cfg
-        Agent.clientFor(cfg).also { agent = it }.let { cfg to it }
+        Agent.clientFor(cfg, harnessItems).also { agent = it }.let { cfg to it }
+    }
+
+    /**
+     * The phone's items as a Harness question carries them, and where the
+     * changes its item tools made land: as if typed here, so they sync out.
+     */
+    private val harnessItems = object : HarnessItems {
+        override fun records(): List<EntityRecord> = sync().let { s ->
+            listOf("project", "next_action", "inbox_item", "note", "event").flatMap(s::byType) }
+
+        override fun apply(actions: List<HarnessAction>) {
+            val s = sync()
+            for (a in actions) when (a.op) {
+                "add_task" -> {
+                    val p = a.project?.let(s::get)?.takeIf { it.type == "project" && !it.deleted }
+                    s.addNextAction(a.text ?: continue, p?.id,
+                        p?.let { ProjectTree.slugOf(it.fields["title"] ?: it.id) }, a.due)
+                }
+                "capture" -> s.capture(a.text ?: continue)
+                "mark_done" -> s.get(a.id ?: continue)?.takeIf { !it.deleted }?.let { r ->
+                    if (r.type == "inbox_item") s.delete(r.id) else if (r.type == "next_action") s.markDone(r.id)
+                }
+            }
+            refresh()
+        }
     }
 
     // A health probe opens a session; refresh() runs after every tap, so the
@@ -199,15 +226,21 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     private fun health(force: Boolean = false): Health {
         val now = System.currentTimeMillis()
         lastHealth?.let { (at, h) -> if (!force && now - at < 60_000) return h }
-        return agent().second.health().also { lastHealth = now to it }
+        val (cfg, client) = agent()
+        return client.health().also { h ->
+            lastHealth = now to h
+            // The harness's certificate is its own, made on first start: the
+            // first one answering after Save is trusted, and only it after that.
+            if (cfg.protocol == "harness" && h.connected && cfg.tlsFingerprint == null)
+                h.fingerprint?.let { AgentSettings.pinHarness(getApplication(), it) }
+        }
     }
 
     /** The agent settings this phone holds, for the settings form. */
     fun agentConfig(): AgentConfig = AgentSettings.load(getApplication())
 
     fun claudeKey(): String? = AgentSettings.claudeKey(getApplication())
-    fun harnessEndpoint(): String? = AgentSettings.harnessEndpoint(getApplication())
-    fun harnessToken(): String? = AgentSettings.harnessToken(getApplication())
+    fun harnessEndpoint(): String = AgentSettings.harnessEndpoint(getApplication())
 
     /** Re-probe the agent and report what came back. */
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(force = true) }

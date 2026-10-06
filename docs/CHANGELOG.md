@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **The Harness is its own server, on any computer at home.** Settings asks for
+  its IP and port; the desktop app no longer runs Claude Code, and the phone no
+  longer goes through the paired computer for it. `sh deploy/harness/install.sh`
+  sets it up as a service on Linux or macOS (port 8765). With chat and reviews
+  the app sends its items along; Claude Code reads a Markdown copy, uses them as
+  MCP tools, fetches pages, uses subagents and the MCP servers in that
+  computer's `mcp.json`. Tasks it adds or marks done come back and the app
+  applies them. Feeds send no items and get no tools. Its certificate is pinned
+  at the first answer after Save, and it answers only home-network addresses.
 - **HubidubiOS is now HubidubiTask.** The app's name changes on every platform:
   the Android label, `HubidubiTask.app` on the Mac, the `hubidubitask` Arch
   package (which replaces `hubidubios` on upgrade), the site and the listing.

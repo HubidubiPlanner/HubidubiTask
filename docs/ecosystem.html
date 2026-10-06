@@ -106,7 +106,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   <div class="map">
     <svg viewBox="0 0 960 520" role="img" aria-labelledby="map-title map-desc">
       <title id="map-title">HubidubiTask devices and connections</title>
-      <desc id="map-desc">The phone and the computer sync with each other on port 5244. The computer runs Claude Code as the Harness, which the phone also uses through it. Both can ask Claude, a SelfHostedAI server or a model of their own. Feeds fetch web pages.</desc>
+      <desc id="map-desc">The phone and the computer sync with each other on port 5244. Both can ask Claude, a SelfHostedAI server, a model of their own, or the Harness: Claude Code on any computer at home, reached by its IP and port. Feeds fetch web pages.</desc>
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
       </defs>
@@ -122,9 +122,8 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <text class="t" x="580" y="184">Computer</text>
       <text class="s" x="580" y="208">macOS or Linux (Omarchy) · full copy in SQLite</text>
       <text class="k" x="580" y="244">peer server</text><text class="s" x="672" y="244">:5244, Bonjour, pinned TLS</text>
-      <text class="k" x="580" y="272">Harness</text><text class="s" x="648" y="272">Claude Code, restricted</text>
-      <text class="k" x="580" y="300">MCP</text><text class="s" x="622" y="300">your items as tools, 127.0.0.1</text>
-      <text class="k" x="580" y="326">drop</text><text class="s" x="622" y="326">a file on the window to capture it</text>
+      <text class="k" x="580" y="272">drop</text><text class="s" x="622" y="272">a file on the window to capture it</text>
+      <text class="s" x="580" y="300">+ for everything new, Next, Feeds</text>
 
       <rect class="ext" x="40" y="24" width="250" height="76"/>
       <text class="t" x="60" y="56">Claude</text>
@@ -136,28 +135,30 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <text class="t" x="690" y="56">Web pages</text>
       <text class="s" x="690" y="80">what feeds watch</text>
 
-      <rect class="ext" x="560" y="410" width="360" height="76"/>
-      <text class="t" x="580" y="442">Your Claude plan, or a local model</text>
-      <text class="s" x="580" y="466">whatever Claude Code is logged in to or pointed at</text>
+      <rect class="hub" x="330" y="400" width="300" height="112"/>
+      <text class="t" x="350" y="432">Harness</text>
+      <text class="s" x="350" y="456">any computer at home · :8765, pinned TLS</text>
+      <text class="s" x="350" y="478">Claude Code, restricted, on its own</text>
+      <text class="s" x="350" y="498">login or a local model</text>
 
       <path class="edge" d="M340 230 H560" marker-start="url(#arr)" marker-end="url(#arr)"/>
       <rect class="lblbg" x="380" y="204" width="140" height="18"/>
       <text class="lbl" x="450" y="218" text-anchor="middle">peer sync · :5244</text>
-      <path class="edge" d="M340 290 H560" marker-end="url(#arr)"/>
-      <rect class="lblbg" x="378" y="296" width="146" height="18"/>
-      <text class="lbl" x="451" y="310" text-anchor="middle">Harness, via pairing</text>
+      <path class="edge" d="M190 320 C190 400, 250 452, 330 452" marker-end="url(#arr)"/>
+      <path class="edge" d="M740 340 C740 410, 700 452, 630 452" marker-end="url(#arr)"/>
+      <rect class="lblbg" x="132" y="372" width="120" height="18"/>
+      <text class="lbl" x="192" y="386" text-anchor="middle">IP and port</text>
+      <rect class="lblbg" x="684" y="372" width="120" height="18"/>
+      <text class="lbl" x="744" y="386" text-anchor="middle">IP and port</text>
 
       <path class="soft" d="M150 170 V100" marker-end="url(#arr)"/>
       <path class="soft" d="M260 170 C300 130, 440 140, 470 100" marker-end="url(#arr)"/>
       <path class="soft" d="M700 150 V100" marker-end="url(#arr)"/>
       <path class="soft" d="M640 150 C600 120, 520 130, 500 100" marker-end="url(#arr)"/>
       <path class="soft" d="M860 150 V100" marker-end="url(#arr)"/>
-      <path class="soft" d="M740 340 V410" marker-end="url(#arr)"/>
-      <rect class="lblbg" x="748" y="364" width="96" height="18"/>
-      <text class="lbl" x="752" y="378">Claude Code</text>
     </svg>
   </div>
-  <p class="caption">Solid lines carry your items. Dashed lines are questions to an AI or a feed's look at a page. There is no server of ours anywhere.</p>
+  <p class="caption">Solid lines carry your items: to the other device, and to the Harness with a question that may use tools. Dashed lines are questions to an AI or a feed's look at a page. There is no server of ours anywhere.</p>
 </section>
 
 <section aria-labelledby="dev-h">
@@ -174,12 +175,21 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     </article>
     <article class="machine">
       <h3>Computer</h3>
-      <p class="role">The same app on a big screen, and the home of the Harness.</p>
+      <p class="role">The same app on a big screen.</p>
       <dl>
         <dt>System</dt><dd>macOS, or Linux (Arch, Omarchy) on x86_64</dd>
         <dt>Source</dt><dd><span class="path">src/apps/desktop/</span> with <span class="path">src/apps/shared/</span></dd>
         <dt>Install</dt><dd>Mac: <code>:desktop:createDistributable</code>. Linux: the Arch package from <span class="path">distribution/arch/build.sh</span></dd>
         <dt>Data</dt><dd><span class="path">~/.local/share/hubidubitask</span> or <span class="path">~/Library/Application Support/HubidubiTask</span></dd>
+      </dl>
+    </article>
+    <article class="machine">
+      <h3>Harness computer</h3>
+      <p class="role">Any computer at home with Claude Code, Linux or macOS. It answers the apps' Harness questions; the apps only need its IP and port.</p>
+      <dl>
+        <dt>Source</dt><dd><span class="path">src/harness/</span>, one Python file, nothing to install</dd>
+        <dt>Install</dt><dd><code>sh deploy/harness/install.sh</code>: a service on port 8765</dd>
+        <dt>Settings</dt><dd><span class="path">~/.config/hubidubitask-harness</span>: harness.env, mcp.json</dd>
       </dl>
     </article>
     <article class="machine">
@@ -199,8 +209,8 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <thead><tr><th>Between</th><th>How</th><th>Port</th><th>Finding each other</th><th>Trust</th></tr></thead>
       <tbody>
         <tr><td>Phone and computer</td><td>Peer sync: each sends what the other has not seen, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Self-signed certificate pinned at pairing; a token per phone</td></tr>
-        <tr><td>Phone and the Harness</td><td>Questions in the OpenAI shape to the paired computer, which runs Claude Code</td><td>5244</td><td>The pairing</td><td>The pairing's pinned certificate and token</td></tr>
-        <tr><td>Harness and your items</td><td>MCP tools and a Markdown copy, for Claude Code on the same computer</td><td>random</td><td>Passed on each run</td><td>127.0.0.1 only; a token that changes each start</td></tr>
+        <tr><td>Apps and the Harness</td><td>Questions in the OpenAI shape over HTTPS; with tools, the app's items go along and the changes the Harness made come back</td><td>8765</td><td>IP and port in Settings</td><td>Its self-signed certificate, pinned at the first answer after Save; only home-network addresses are answered</td></tr>
+        <tr><td>Harness and Claude Code</td><td>One restricted <code>claude -p</code> per question, with the items as MCP tools and a Markdown copy</td><td>none</td><td>The same computer</td><td>A fresh folder per question, deleted after the answer</td></tr>
         <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring</td></tr>
         <tr><td>Apps and SelfHostedAI or Model</td><td>Encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>Encryption or a pinned TLS certificate</td></tr>
         <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
@@ -216,12 +226,12 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     <table>
       <thead><tr><th>Harness request</th><th>Claude Code may use</th><th>Works in</th></tr></thead>
       <tbody>
-        <tr><td>Chat and reviews</td><td>Read, Glob, Grep, WebFetch, subagents, and your items as MCP tools: search, upcoming, projects, project, inbox, add_task, capture, mark_done</td><td>A fresh Markdown copy of your items</td></tr>
+        <tr><td>Chat and reviews</td><td>Read, Glob, Grep, WebFetch, subagents, your items as MCP tools (search, upcoming, projects, project, inbox, add_task, capture, mark_done), and the MCP servers in that computer's mcp.json</td><td>A fresh Markdown copy of the items the app sent</td></tr>
         <tr><td>Feeds</td><td>Nothing: text only, because a page's text comes from strangers</td><td>An empty folder</td></tr>
       </tbody>
     </table>
   </div>
-  <p>Always in Claude Code's restricted mode, with only our MCP server and every permission prompt answered no: nothing runs commands or edits files. A <span class="path">harness.env</span> in the app's data folder can point Claude Code at a local model instead of your Claude plan.</p>
+  <p>Always in Claude Code's restricted mode, with only the listed MCP servers and every permission prompt answered no: nothing runs commands or edits files. The item tools change nothing on the Harness computer; the app applies the changes to its own items. A <span class="path">harness.env</span> next to the Harness's settings can point Claude Code at a local model instead of its own login.</p>
 </section>
 
 <section aria-labelledby="repo-h">
@@ -231,6 +241,8 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <thead><tr><th>Folder</th><th>What is in it</th></tr></thead>
       <tbody>
         <tr><td>src/apps/</td><td>The app: android/, desktop/ (macOS and Linux), shared/</td></tr>
+        <tr><td>src/harness/</td><td>The Harness server and its tests</td></tr>
+        <tr><td>deploy/harness/</td><td>The Harness's installer, for any Linux or macOS computer</td></tr>
         <tr><td>distribution/arch/</td><td>The Linux package for Arch and Omarchy</td></tr>
         <tr><td>distribution/play-store/</td><td>The Google Play listing</td></tr>
         <tr><td>deploy/omarchy/</td><td>The Omarchy image with the app installed</td></tr>
@@ -245,10 +257,11 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <section aria-labelledby="status-h">
   <h2 id="status-h">Current state</h2>
   <ul class="status">
-    <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; the "+" for everything new; Feeds; four agents; the Harness with tools, tested live against Claude Code.</span></li>
+    <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; the "+" for everything new; Feeds; four agents.</span></li>
+    <li><span class="pill ok">Works</span><span>The Harness on another computer, by IP and port: tested live against Claude Code from the phone app and from the desktop's runtime, items read and a task added.</span></li>
     <li><span class="pill ok">Works</span><span>The Arch package installs with pacman in a clean Arch system and the app starts and draws its screens.</span></li>
     <li><span class="pill warn">Open</span><span>The Omarchy image has not been rebuilt since it switched to the app-only package.</span></li>
-    <li><span class="pill warn">Open</span><span>The Harness on a local model (GLM-5.3-Flash on a home server) is configured through harness.env but not yet tried.</span></li>
+    <li><span class="pill warn">Open</span><span>The Harness on a home server with a local GLM model, set through harness.env, is not yet tried.</span></li>
     <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off.</span></li>
   </ul>
 </section>

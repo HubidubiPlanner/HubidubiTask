@@ -12,6 +12,8 @@ The whole picture: [`docs/ecosystem.html`](docs/ecosystem.html).
 | Folder | What is in it |
 |---|---|
 | [`src/apps/`](src/apps) | The app: one Gradle build. `android/` the phone app, `desktop/` the macOS and Linux app, `shared/` what both use (items, sync, feeds, agents). |
+| [`src/harness/`](src/harness) | The Harness: Claude Code as an agent the apps reach by IP and port. One Python file. |
+| [`deploy/harness/`](deploy/harness) | Its installer, for any Linux or macOS computer at home. |
 | [`distribution/arch/`](distribution/arch) | The Linux package for Arch and Omarchy, built in containers by `build.sh`. |
 | [`distribution/play-store/`](distribution/play-store) | The Google Play listing: texts, graphics, screenshots, fastlane metadata. |
 | [`deploy/omarchy/`](deploy/omarchy) | An Omarchy installer image with the app installed. |
@@ -27,13 +29,14 @@ Settings offers four agents, the same on every system:
 | Claude | Anthropic's Claude, with your API key |
 | SelfHostedAI | A SelfHostedAI server, over its encrypted connection |
 | Model | Any OpenAI-compatible model you run yourself |
-| Harness | Claude Code on your computer, on your own Claude plan. The desktop app runs it; a paired phone uses it through that computer. |
+| Harness | Claude Code on any computer at home, at the IP and port you type. Install it there with `sh deploy/harness/install.sh`. |
 
 ## Everyday commands
 
 ```sh
 cd src/apps
 ./gradlew :shared:test :desktop:test          # tests
+(cd ../harness && python3 -m unittest)        # the Harness's tests
 ./gradlew :android:assembleDebug              # phone app
 ./gradlew :desktop:createDistributable        # Mac app (on a Mac)
 distribution/arch/build.sh                    # Linux: the Arch package, from any Docker host

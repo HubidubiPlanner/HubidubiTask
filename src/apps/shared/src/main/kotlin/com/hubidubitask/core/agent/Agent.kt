@@ -13,10 +13,10 @@ import javax.net.ssl.X509TrustManager
  *
  * [protocol] "claude" is Anthropic's Claude API, reached with an API key and
  * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually
- * :8443); "openai" is any OpenAI-compatible server; "harness" is a local
- * agent harness (Claude Code, run by src/harness/ on the user's own machine)
- * served in the OpenAI shape with a bearer token. [tlsFingerprint], when set,
- * pins a self-signed certificate (sha256 hex of the DER).
+ * :8443); "openai" is any OpenAI-compatible server; "harness" is Claude Code
+ * on a computer in the home network (src/harness), at the IP and port the
+ * user typed, in the OpenAI shape (see [HarnessLink]). [tlsFingerprint], when
+ * set, pins a self-signed certificate (sha256 hex of the DER).
  */
 data class AgentConfig(
     val endpoint: String,
@@ -27,9 +27,10 @@ data class AgentConfig(
     /** "auto" answers in the material's language; "en" / "pl" force one. */
     val language: String = "auto",
     /**
-     * Whether the harness may use its tools (vault files, vault skills, web
-     * pages, subagents) for this agent. Off for feeds: their text comes from
-     * strangers' web pages. Only the harness has tools; others ignore this.
+     * Whether the harness may use its tools (the items' Markdown copy and
+     * item tools, web pages, subagents, its computer's MCP servers) for this
+     * agent. Off for feeds: their text comes from strangers' web pages. Only
+     * the harness has tools; others ignore this.
      */
     val tools: Boolean = true,
 ) {
@@ -56,7 +57,9 @@ data class AgentConfig(
 }
 
 data class Health(val connected: Boolean, val server: String?, val models: List<String>,
-                  val error: String? = null)
+                  val error: String? = null,
+                  /** The sha256 of the server's certificate, when it was reached over TLS. */
+                  val fingerprint: String? = null)
 
 data class Message(val role: String, val content: String)
 
@@ -71,10 +74,12 @@ interface ModelClient {
 
 object Agent {
 
-    fun clientFor(config: AgentConfig): ModelClient = when (config.protocol) {
+    /** [items] is what a Harness question may carry and where its changes land. */
+    fun clientFor(config: AgentConfig, items: HarnessItems? = null): ModelClient = when (config.protocol) {
         "claude" -> ClaudeClient(config)
-        // The harness speaks the OpenAI shape; only where it runs differs.
-        "openai", "harness" -> OpenAiClient(config)
+        "openai" -> OpenAiClient(config)
+        // The harness speaks the OpenAI shape, with the items alongside.
+        "harness" -> OpenAiClient(config, items)
         else -> SelfhostedaiClient(config)
     }
 
@@ -93,7 +98,7 @@ object Agent {
         LANGUAGE[(language ?: "auto").lowercase().take(2)] ?: LANGUAGE.getValue("au")
 
     fun plainSystem(language: String?, tools: Boolean = false): String =
-        if (tools) "You are the user's assistant. Look up what you need in their vault " +
+        if (tools) "You are the user's assistant. Look up what you need in their items " +
             "with your tools before answering. Answer in plain prose. Be concise and concrete. " +
             "Do not use JSON or markdown fences. " + languageInstruction(language)
         else "You are the user's assistant. Answer in plain prose. Be concise and concrete. " +
@@ -130,17 +135,20 @@ object Agent {
     }
 
     /** An HTTP client for a LAN server with a self-signed certificate: any
-     *  certificate is accepted unless [fingerprint] pins one. */
-    internal fun http(fingerprint: String?, readTimeoutSeconds: Long): OkHttpClient {
+     *  certificate is accepted unless [fingerprint] pins one. [seen] hears the
+     *  sha256 of each certificate the server shows (OkHttp's own handshake
+     *  record drops a self-signed one it cannot chain to a known root). */
+    internal fun http(fingerprint: String?, readTimeoutSeconds: Long,
+                      seen: (String) -> Unit = {}): OkHttpClient {
         val pin = fingerprint?.removePrefix("sha256:")?.lowercase()?.replace(":", "")
             ?.takeIf { it.isNotBlank() }
         val trust = object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
             override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String?) {
-                if (pin == null) return
                 val got = MessageDigest.getInstance("SHA-256").digest(chain[0].encoded)
                     .joinToString("") { "%02x".format(it) }
-                if (got != pin) throw java.security.cert.CertificateException(
+                seen(got)
+                if (pin != null && got != pin) throw java.security.cert.CertificateException(
                     "the agent's certificate does not match the pinned fingerprint")
             }
             override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
