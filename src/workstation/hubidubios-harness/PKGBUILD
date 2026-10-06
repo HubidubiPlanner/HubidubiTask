@@ -7,8 +7,9 @@ arch=('any')
 url="https://gitlab.local/hubidubios"
 license=('MIT')
 # Claude Code itself is installed by its own installer (it is not a pacman
-# package); the service reports plainly when it is missing.
-depends=('python' 'openssl')
+# package); the service reports plainly when it is missing. hubidubios-agent
+# provides hubidubios-mcp, the vault skills the harness offers as tools.
+depends=('python' 'openssl' 'hubidubios-agent')
 makedepends=('python-build' 'python-installer' 'python-hatchling' 'python-wheel')
 source=()
 

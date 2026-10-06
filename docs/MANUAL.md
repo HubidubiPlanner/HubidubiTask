@@ -128,7 +128,9 @@ The workstation can answer the apps with Claude Code, on your own Claude plan.
 3. `hubidubios-harness show` prints the address and token.
 4. In the app: **Settings → Agent → Harness**, enter both, **Save agent**.
 
-Claude Code runs with every tool switched off, so it only ever writes text.
+For chat and reviews it can read your vault (Read, Glob, Grep), use the vault
+tools (vault-query, gtd-next, agenda and the rest), fetch web pages and hand work
+to subagents. It can never run commands or edit files. Feeds get no tools.
 
 ### Feeds — a task when a web page changes
 In the app's **Feeds** tab, tap **+ → A web page**, enter the address, choose

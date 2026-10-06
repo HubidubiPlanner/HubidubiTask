@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 hubidubios-agent = "hubidubios_agent.cli:main"
+hubidubios-mcp = "hubidubios_agent.mcp:main"
 
 [tool.uv.sources]
 hubidubios-vault = { workspace = true }

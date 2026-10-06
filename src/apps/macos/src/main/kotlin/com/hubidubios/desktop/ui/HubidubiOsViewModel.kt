@@ -226,9 +226,11 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
     fun harnessEndpoint(): String? = store.kv("harness_endpoint")
     fun harnessToken(): String? = Keychain.get(HARNESS_TOKEN)
 
-    /** The agent a feed writes its task with: "claude" or "harness". */
+    /** The agent a feed writes its task with: "claude" or "harness". Never with
+     *  tools: a feed's text comes from a stranger's web page. */
     private fun feedConfig(model: String) = if (model == "harness")
-        AgentConfig(endpoint = harnessEndpoint().orEmpty(), protocol = "harness", apiKey = harnessToken())
+        AgentConfig(endpoint = harnessEndpoint().orEmpty(), protocol = "harness", apiKey = harnessToken(),
+            tools = false)
     else AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey())
 
     private companion object {

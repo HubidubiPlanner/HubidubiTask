@@ -5,9 +5,18 @@ OpenAI chat-completions shape. Each request runs one headless Claude Code call
 under the login of the user who runs the server, so it uses that user's own
 Claude subscription, for that user's own devices.
 
-Safety, because the prompt can carry text from any web page a feed watches:
-- Claude Code runs with every tool switched off (`--tools ""`), in an empty
-  folder, with no session saved. It can only write text back.
+Tools, per request. A request sets `"hubidubios_tools": true` to let Claude
+Code work with: Read, Glob and Grep inside the vault, WebFetch, subagents
+(Task), and the vault's own skills over MCP (hubidubios-mcp: vault-query,
+gtd-next, agenda, capture, ...). Without it, every tool is off and only text
+comes back. The apps send it for chat and reviews and never for feeds, whose
+text comes from strangers' web pages.
+
+Safety either way:
+- Claude Code runs in --restricted mode: nothing that runs commands or code,
+  no user or project settings, file tools confined to the vault, only our
+  MCP server, and anything outside the allowed list refused (nobody is there
+  to approve it). No session is saved.
 - Every request needs the bearer token from `hubidubios-harness show`.
 - The server binds the LAN address only, never 0.0.0.0, over TLS with its
   own self-signed certificate (the apps pin or accept it like selfhostedai's).
@@ -25,6 +34,7 @@ import json
 import os
 import secrets
 import shlex
+import shutil
 import socket
 import ssl
 import subprocess
@@ -37,9 +47,20 @@ from pathlib import Path
 
 DEFAULT_PORT = 5240
 MODEL_ID = "claude-code"
-DEFAULT_COMMAND = ["claude", "-p", "--output-format", "json", "--tools", "",
-                   "--no-session-persistence"]
+DEFAULT_COMMAND = ["claude", "-p", "--output-format", "json", "--no-session-persistence",
+                   "--restricted", "--strict-mcp-config", "--permission-prompts", "none"]
+# What a request with tools may use. Task is Claude Code's subagent tool.
+TOOLS = ["Read", "Glob", "Grep", "WebFetch", "Task"]
+MCP_SERVER = "hubidubios"
 TIMEOUT = 300
+# Looking things up takes turns; on a slow local model, many of them.
+TOOLS_TIMEOUT = 540
+TOOLS_NOTE = (
+    "You run on the user's own workstation. You can read their HubidubiOS vault "
+    "(tasks, projects, notes, inbox, calendar as plain files in the working folder) "
+    "with Read, Glob and Grep, use the vault tools (vault-query, gtd-next, agenda and "
+    "the rest), fetch web pages with WebFetch, and hand a sub-task to a subagent. "
+    "Look things up before answering. Change the vault only when the user asked.")
 # Two at once: a phone and a Mac checking feeds together; more only queues
 # work that a single subscription would rate-limit anyway.
 SLOTS = threading.BoundedSemaphore(2)
@@ -92,6 +113,33 @@ def command() -> list[str]:
     return shlex.split(raw) if raw else list(DEFAULT_COMMAND)
 
 
+def vault_dir() -> Path | None:
+    v = Path(os.environ.get("HUBIDUBIOS_VAULT") or Path.home() / "vault").expanduser()
+    return v if v.is_dir() else None
+
+
+def mcp_config(vault: Path) -> dict:
+    """The one MCP server Claude Code may use: the vault's skills."""
+    raw = os.environ.get("HUBIDUBIOS_HARNESS_MCP")
+    cmd = shlex.split(raw) if raw else [shutil.which("hubidubios-mcp") or "hubidubios-mcp"]
+    return {"mcpServers": {MCP_SERVER: {
+        "command": cmd[0], "args": cmd[1:],
+        "env": {"HUBIDUBIOS_VAULT": str(vault), "PATH": os.environ.get("PATH", "/usr/bin:/bin")},
+    }}}
+
+
+def tool_args(tools: bool, vault: Path | None) -> list[str]:
+    """The flags that decide what Claude Code may touch for one request."""
+    if not tools:
+        return ["--tools", ""]
+    args = ["--tools", ",".join(TOOLS)]
+    allowed = list(TOOLS)
+    if vault is not None:
+        args += ["--mcp-config", json.dumps(mcp_config(vault))]
+        allowed.append(f"mcp__{MCP_SERVER}")
+    return args + ["--allowedTools", ",".join(allowed)]
+
+
 def prompt_of(messages: list[dict]) -> tuple[str, str]:
     """(system prompt, conversation) from OpenAI-shaped messages."""
     system = "\n\n".join(str(m.get("content") or "") for m in messages
@@ -104,21 +152,29 @@ def prompt_of(messages: list[dict]) -> tuple[str, str]:
     return system, convo
 
 
-def run(system: str, conversation: str, model: str | None, workdir: str) -> str:
-    """One headless harness call. Raises RuntimeError with a readable reason."""
-    cmd = command()
+def run(system: str, conversation: str, model: str | None, workdir: str,
+        tools: bool = False) -> str:
+    """One headless harness call. Raises RuntimeError with a readable reason.
+
+    With [tools] it runs in the vault, so Read, Glob and Grep see the user's
+    files and nothing else; without, in an empty folder with every tool off."""
+    vault = vault_dir() if tools else None
+    cmd = command() + tool_args(tools, vault)
+    if tools:
+        system = (TOOLS_NOTE + "\n\n" + system).strip()
     if system:
         cmd += ["--system-prompt", system]
     if model and model != MODEL_ID:
         cmd += ["--model", model]
+    limit = TOOLS_TIMEOUT if tools else TIMEOUT
     try:
         with SLOTS:
             p = subprocess.run(cmd, input=conversation, capture_output=True, text=True,
-                               cwd=workdir, timeout=TIMEOUT)
+                               cwd=str(vault) if vault else workdir, timeout=limit)
     except FileNotFoundError:
         raise RuntimeError(f"{cmd[0]} is not installed on this machine")
     except subprocess.TimeoutExpired:
-        raise RuntimeError(f"the harness took longer than {TIMEOUT} s")
+        raise RuntimeError(f"the harness took longer than {limit} s")
     out = p.stdout.strip()
     try:
         data = json.loads(out)
@@ -175,8 +231,11 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, KeyError, TypeError):
             return self._send(400, {"error": {"message": "expected {\"messages\": [...]}"}})
         system, convo = prompt_of(messages)
+        # Off unless asked for: a client that knows nothing of this field (or a
+        # feed, whose text comes from a stranger's page) gets text only.
+        tools = req.get("hubidubios_tools") is True
         try:
-            text = run(system, convo, req.get("model"), self.workdir)
+            text = run(system, convo, req.get("model"), self.workdir, tools=tools)
         except RuntimeError as e:
             return self._send(502, {"error": {"message": str(e)}})
         self._send(200, {

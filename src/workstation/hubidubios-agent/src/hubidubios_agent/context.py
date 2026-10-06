@@ -33,12 +33,23 @@ VAULT_QUERY_SKILL = {
 }
 
 
+# GTD's checkbox-shaped types read like Phase 3's task: a line of text, a
+# state, maybe a date and a project.
+_CHECKBOX = {"task": "task", "next_action": "next", "waiting_for": "waiting",
+             "someday": "someday", "archived": "archived"}
+
+
 def _snippet(entity: dict) -> str:
     t = entity["type"]
-    if t == "task":
+    if t in _CHECKBOX:
         due = f" (due {entity['due']})" if entity.get("due") else ""
         state = "done" if entity.get("done") else "todo"
-        return f"[task/{state}] {entity['text']}{due} — project {entity.get('project','')}"
+        who = f" — waiting on {entity['who']}" if entity.get("who") else ""
+        project = f" — project {entity['project']}" if entity.get("project") else ""
+        return f"[{_CHECKBOX[t]}/{state}] {entity.get('text', '')}{due}{who}{project}"
+    if t == "project":
+        status = entity.get("status") or "active"
+        return f"[project/{status}] {entity.get('title', '')}: {entity.get('body', '')[:160]}"
     if t == "note":
         body = entity.get("body", "")
         head = body[:200] + ("…" if len(body) > 200 else "")

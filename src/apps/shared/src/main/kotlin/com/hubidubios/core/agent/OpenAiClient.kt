@@ -23,6 +23,9 @@ class OpenAiClient(private val config: AgentConfig) : ModelClient {
             .put("messages", JSONArray().apply {
                 messages.forEach { put(JSONObject().put("role", it.role).put("content", it.content)) }
             })
+        // The harness keeps every tool off unless a request asks (see
+        // src/workstation/hubidubios-harness); say it either way.
+        if (config.protocol == "harness") body.put("hubidubios_tools", config.tools)
         val req = Request.Builder().url("$base/chat/completions").auth()
             .post(body.toString().toRequestBody("application/json".toMediaType())).build()
         return try {

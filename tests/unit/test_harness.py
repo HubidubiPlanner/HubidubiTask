@@ -5,6 +5,7 @@ echoes what it was given, which is what the server's contract is about.
 """
 
 import json
+import os
 import ssl
 import sys
 import threading
@@ -71,12 +72,54 @@ def test_a_question_runs_the_harness_with_the_system_prompt(harness):
     assert body["choices"][0]["message"]["content"] == "SYS[Be brief.\n\nOpen: buy milk] What first?"
 
 
-def test_the_default_command_has_every_tool_switched_off(monkeypatch):
+def test_claude_code_always_runs_restricted_with_only_our_mcp(monkeypatch):
     monkeypatch.delenv("HUBIDUBIOS_HARNESS_COMMAND", raising=False)
     cmd = server.command()
     assert cmd[:2] == ["claude", "-p"]
-    assert cmd[cmd.index("--tools") + 1] == ""
-    assert "--no-session-persistence" in cmd
+    for flag in ("--restricted", "--strict-mcp-config", "--no-session-persistence"):
+        assert flag in cmd
+    assert cmd[cmd.index("--permission-prompts") + 1] == "none"
+
+
+def test_without_tools_every_tool_is_off():
+    assert server.tool_args(False, None) == ["--tools", ""]
+
+
+def test_with_tools_only_the_chosen_ones_and_the_vault_skills(tmp_path):
+    args = server.tool_args(True, tmp_path)
+    assert args[args.index("--tools") + 1] == "Read,Glob,Grep,WebFetch,Task"
+    allowed = args[args.index("--allowedTools") + 1].split(",")
+    assert allowed == ["Read", "Glob", "Grep", "WebFetch", "Task", "mcp__hubidubios"]
+    mcp = json.loads(args[args.index("--mcp-config") + 1])["mcpServers"]
+    assert list(mcp) == ["hubidubios"]
+    assert mcp["hubidubios"]["env"]["HUBIDUBIOS_VAULT"] == str(tmp_path)
+    assert "Bash" not in ",".join(args)
+
+
+ECHO_ARGS = (
+    "import json,os,sys; sys.stdin.read();"
+    "print(json.dumps({'is_error':False,'result':json.dumps({'args':sys.argv[1:],'cwd':os.getcwd()})}))"
+)
+
+
+def test_a_request_gets_tools_only_when_it_asks(harness, monkeypatch, tmp_path):
+    base, tok, _ = harness
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setenv("HUBIDUBIOS_VAULT", str(vault))
+    monkeypatch.setenv("HUBIDUBIOS_HARNESS_COMMAND", f"{sys.executable} -c \"{ECHO_ARGS}\"")
+    msgs = [{"role": "user", "content": "What is next?"}]
+
+    _, plain = call(base, "/v1/chat/completions", tok, {"messages": msgs})
+    seen = json.loads(plain["choices"][0]["message"]["content"])
+    assert seen["args"][seen["args"].index("--tools") + 1] == ""
+    assert seen["cwd"] != str(vault.resolve())
+
+    _, with_tools = call(base, "/v1/chat/completions", tok, {"messages": msgs, "hubidubios_tools": True})
+    seen = json.loads(with_tools["choices"][0]["message"]["content"])
+    assert seen["args"][seen["args"].index("--tools") + 1] == "Read,Glob,Grep,WebFetch,Task"
+    assert os.path.realpath(seen["cwd"]) == os.path.realpath(vault)
+    assert "vault" in seen["args"][seen["args"].index("--system-prompt") + 1]
 
 
 def test_a_conversation_is_flattened_into_turns():

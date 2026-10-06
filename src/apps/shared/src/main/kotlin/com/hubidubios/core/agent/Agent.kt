@@ -26,6 +26,12 @@ data class AgentConfig(
     val tlsFingerprint: String? = null,
     /** "auto" answers in the material's language; "en" / "pl" force one. */
     val language: String = "auto",
+    /**
+     * Whether the harness may use its tools (vault files, vault skills, web
+     * pages, subagents) for this agent. Off for feeds: their text comes from
+     * strangers' web pages. Only the harness has tools; others ignore this.
+     */
+    val tools: Boolean = true,
 ) {
     companion object {
         const val DEFAULT_ENDPOINT = "https://192.168.1.50:8443"
@@ -86,9 +92,15 @@ object Agent {
     fun languageInstruction(language: String?): String =
         LANGUAGE[(language ?: "auto").lowercase().take(2)] ?: LANGUAGE.getValue("au")
 
-    fun plainSystem(language: String?): String =
-        "You are the user's assistant. Answer in plain prose. Be concise and concrete. " +
+    fun plainSystem(language: String?, tools: Boolean = false): String =
+        if (tools) "You are the user's assistant. Look up what you need in their vault " +
+            "with your tools before answering. Answer in plain prose. Be concise and concrete. " +
+            "Do not use JSON or markdown fences. " + languageInstruction(language)
+        else "You are the user's assistant. Answer in plain prose. Be concise and concrete. " +
             "Do not use JSON, markdown fences, or tool calls. " + languageInstruction(language)
+
+    /** Only the harness has real tools; for the others "tool calls" are text to avoid. */
+    fun usesTools(config: AgentConfig) = config.protocol == "harness" && config.tools
 
     /**
      * Ask for prose. One retry: a cold generation can spend its whole budget
@@ -99,7 +111,7 @@ object Agent {
     fun ask(client: ModelClient, config: AgentConfig, question: String,
             context: String? = null): String {
         val messages = buildList {
-            add(Message("system", plainSystem(config.language)))
+            add(Message("system", plainSystem(config.language, usesTools(config))))
             if (!context.isNullOrBlank()) add(Message("system", context))
             add(Message("user", question))
         }

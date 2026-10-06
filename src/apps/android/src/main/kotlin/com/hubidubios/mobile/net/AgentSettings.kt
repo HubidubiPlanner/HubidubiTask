@@ -58,10 +58,11 @@ object AgentSettings {
     fun harnessToken(context: Context): String? =
         runCatching { Keystore.getSecret(context, HARNESS_TOKEN) }.getOrNull()
 
-    /** The agent a feed writes its task with: "claude" or "harness". */
+    /** The agent a feed writes its task with: "claude" or "harness". Never with
+     *  tools: a feed's text comes from a stranger's web page. */
     fun configFor(context: Context, model: String): AgentConfig = if (model == "harness")
         AgentConfig(endpoint = harnessEndpoint(context).orEmpty(), protocol = "harness",
-            apiKey = harnessToken(context))
+            apiKey = harnessToken(context), tools = false)
     else AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey(context))
 
     fun claudeKey(context: Context): String? =
