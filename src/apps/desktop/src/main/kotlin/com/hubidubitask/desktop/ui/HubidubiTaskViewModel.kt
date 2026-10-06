@@ -214,7 +214,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     fun setAgentConfig(c: AgentConfig) {
         // Claude and the harness keep their own address and secret, so a feed
-        // can use either whichever agent chat is set to.
+        // can use either whichever agent reviews use.
         when (c.protocol) {
             "claude" -> c.apiKey?.let { Secrets.put(CLAUDE_KEY, it) }
             // Saving the harness trusts the certificate found there now: the
@@ -322,22 +322,10 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(true) }
         .also { h -> _state.value = _state.value.copy(inference = h) }
 
-    suspend fun ask(query: String, plain: Boolean = false): String = withContext(Dispatchers.IO) {
+    /** A review of one item by the agent chosen in Settings; the Harness also gets the items. */
+    suspend fun review(prompt: String): String = withContext(Dispatchers.IO) {
         val (cfg, client) = agent()
-        Agent.ask(client, cfg, query, if (plain) null else chatContext(_state.value))
-    }
-
-    private fun chatContext(s: UiState): String {
-        val title = s.projects.associate { it.id to (it.fields["title"] ?: it.id) }
-        val out = StringBuilder("What the user has open (tasks with their project and date):\n")
-        for (t in (s.nextActions + s.inbox).sortedBy { it.fields["due"] ?: "~" }) {
-            val line = "- " + (t.fields["text"] ?: continue) +
-                (t.fields["parent"]?.let { title[it] }?.let { " [$it]" } ?: "") +
-                (t.fields["due"]?.takeIf { it.isNotBlank() }?.let { " (due $it)" } ?: "")
-            if (out.length + line.length > 1500) break
-            out.append(line).append('\n')
-        }
-        return out.toString().trimEnd()
+        Agent.ask(client, cfg, prompt)
     }
 
     // ---- one-time import, the same logic as the phone's

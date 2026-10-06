@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Folder
@@ -47,7 +46,6 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                 Dest("projects", "Projects", Icons.Outlined.Folder),
                 Dest("next", "Next", Icons.Outlined.CheckCircle),
                 Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
-                Dest("chat", "Agent", Icons.Outlined.ChatBubbleOutline),
                 Dest("settings", "Settings", Icons.Outlined.Tune),
             )
             Scaffold(
@@ -104,7 +102,6 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                     composable("projects") { ProjectsScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }
                     composable("feeds") { FeedsScreen(state, vm) }
-                    composable("chat") { ChatScreen(state, vm) }
                     composable("settings") {
                         SettingsScreen(state, vm, onImport = { nav.navigate("import") })
                     }

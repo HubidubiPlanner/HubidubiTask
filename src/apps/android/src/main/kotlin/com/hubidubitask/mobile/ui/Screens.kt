@@ -4,9 +4,7 @@
 package com.hubidubitask.mobile.ui
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -32,7 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
@@ -58,11 +55,9 @@ import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -587,7 +582,7 @@ private fun AnalysisSheet(
     LaunchedEffect(record.id) {
         if (connected && text == null) {
             busy = true
-            text = vm.ask(ReviewBrowse.analysisPrompt(record), plain = true)
+            text = vm.review(ReviewBrowse.analysisPrompt(record))
             busy = false
             // Only a real answer is kept. An explanation of why there is none
             // is worth showing and not worth remembering.
@@ -620,7 +615,7 @@ private fun AnalysisSheet(
     // "Again" clears the text; run once more when that happens.
     LaunchedEffect(busy) {
         if (busy && text == null && connected) {
-            text = vm.ask(ReviewBrowse.analysisPrompt(record), plain = true)
+            text = vm.review(ReviewBrowse.analysisPrompt(record))
             busy = false
             // Only a real answer is kept. An explanation of why there is none
             // is worth showing and not worth remembering.
@@ -1064,107 +1059,6 @@ private fun projectTitles(projects: List<EntityRecord>): (EntityRecord) -> Strin
     val byId = projects.associate { it.id to (it.fields["title"] ?: it.id) }
     val bySlug = projects.associate { ProjectTree.slugOf(it.fields["title"] ?: it.id) to it.id }
     return { rec -> ProjectTree.parentOf(rec, bySlug)?.let { byId[it] } }
-}
-
-@Composable
-fun ChatScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
-    val c = HubidubiTaskTheme.colors
-    var query by remember { mutableStateOf("") }
-    var asked by remember { mutableStateOf("") }
-    var answer by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-    val online = state.inference.connected
-
-    // Dictation uses the phone's own recogniser: a spoken question is text by
-    // the time it leaves the device, so nothing new travels and nothing new
-    // has to run on the workstation.
-    val dictate = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()) { result ->
-        val said = result.data
-            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            ?.firstOrNull()
-        if (!said.isNullOrBlank()) query = if (query.isBlank()) said else "$query $said"
-    }
-    fun listen() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Ask the agent")
-        runCatching { dictate.launch(intent) }
-            .onFailure { answer = "No speech recogniser on this phone." }
-    }
-    fun send() {
-        val q = query.trim()
-        if (q.isNotBlank()) {
-            asked = q; query = ""
-            scope.launch { answer = "…"; answer = vm.ask(q) }
-        }
-    }
-
-    Column(Modifier.fillMaxSize().imePadding()) {
-        val model = state.inference.models.firstOrNull()
-        ScreenHeader("Agent") {
-            StatusChip(
-                if (!online) "Offline" else if (model != null) "Online · $model" else "Online",
-                online,
-            )
-        }
-        Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            if (!online) {
-                Text("Needs the agent server — set it in Settings, and be on its network.",
-                    style = MaterialTheme.typography.bodyMedium, color = c.muted,
-                    modifier = Modifier.fillMaxWidth().background(c.raised)
-                        .border(1.dp, c.line).padding(14.dp))
-            }
-            if (asked.isNotEmpty()) {
-                Text(asked, style = MaterialTheme.typography.bodyMedium, color = c.onButton,
-                    modifier = Modifier.align(Alignment.End).fillMaxWidth(0.8f)
-                        .background(c.button).padding(horizontal = 14.dp, vertical = 12.dp))
-            }
-            // No card: the answer is the page, not something sitting on it.
-            if (answer.isNotEmpty()) {
-                Column {
-                    Overline("Agent", c.accent)
-                    Text(answer, style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 6.dp))
-                }
-            }
-        }
-        HorizontalDivider(color = c.line, thickness = 1.dp)
-        // Ask, speak, send — one row, in that order, docked where the thumb is.
-        Row(
-            Modifier.fillMaxWidth().background(c.raised)
-                .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            OutlinedTextField(
-                value = query, onValueChange = { query = it },
-                placeholder = { Text("Ask about your projects…", color = c.muted) },
-                enabled = online, maxLines = 4, colors = appFieldColors(),
-                shape = RectangleShape, modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = { listen() }, enabled = online, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Outlined.Mic, contentDescription = "Dictate",
-                    tint = if (online) c.frame else c.line)
-            }
-            FilledIconButton(
-                onClick = { send() }, enabled = online && query.isNotBlank(),
-                shape = RectangleShape, modifier = Modifier.size(48.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = c.button, contentColor = c.onButton,
-                    disabledContainerColor = c.line, disabledContentColor = c.muted,
-                ),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send",
-                    modifier = Modifier.size(20.dp))
-            }
-        }
-    }
 }
 
 /** A field with its label above it rather than inside: it stays readable once filled. */

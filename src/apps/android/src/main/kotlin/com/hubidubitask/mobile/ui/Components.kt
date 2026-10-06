@@ -73,23 +73,6 @@ fun ScreenHeader(
     }
 }
 
-/** "Synced", "Online · fast": a dot and a word, in a pill so it reads as status, not a control. */
-@Composable
-fun StatusChip(text: String, good: Boolean) {
-    val c = HubidubiTaskTheme.colors
-    Row(
-        Modifier
-            .background(c.raised, RoundedCornerShape(50))
-            .border(1.dp, c.line, RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Dot(if (good) c.ok else c.muted)
-        Text(text, style = MaterialTheme.typography.labelMedium, color = c.muted)
-    }
-}
-
 @Composable
 fun Dot(color: Color, size: Int = 8) {
     Box(Modifier.size(size.dp).background(color, CircleShape))

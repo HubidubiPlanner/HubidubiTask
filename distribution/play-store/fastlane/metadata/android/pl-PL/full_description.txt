@@ -31,8 +31,8 @@ SYNCHRONIZACJA BEZ CHMURY
 • Ruch między urządzeniami jest szyfrowany i przypięty do certyfikatu wymienionego przy parowaniu.
 
 ASYSTENT NA TWOICH WARUNKACH (OPCJONALNIE)
-• Pytaj o swoje projekty, pisząc lub mówiąc, albo poproś o przegląd pojedynczej rzeczy.
-• Telefon łączy się bezpośrednio z serwerem modelu, który uruchamiasz we własnej sieci (dowolny punkt końcowy zgodny z OpenAI). Nic nie przechodzi przez nas.
+• Poproś o przegląd dowolnej pojedynczej rzeczy: zadania, notatki albo projektu.
+• Użyj Claude z własnym kluczem API albo modelu lub harnessu Claude Code, który uruchamiasz we własnej sieci. Nic nie przechodzi przez nas.
 • Bez serwera? Cała reszta działa dokładnie tak samo.
 
 PRZECHODZISZ Z INNEJ APLIKACJI?

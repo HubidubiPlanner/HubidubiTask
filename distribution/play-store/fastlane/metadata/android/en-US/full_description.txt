@@ -31,8 +31,8 @@ SYNC WITHOUT A CLOUD
 • Traffic between your devices is encrypted and pinned to the certificate exchanged when you paired.
 
 AN ASSISTANT ON YOUR TERMS (OPTIONAL)
-• Ask about your projects, typed or spoken, or ask for a review of a single item.
-• The phone talks directly to a model server you run on your own network (any OpenAI-compatible endpoint). Nothing passes through us.
+• Ask for a review of any single item: a task, a note or a project.
+• Use Claude with your own API key, or a model or a Claude Code harness you run on your own network. Nothing passes through us.
 • No server? Everything else works exactly the same.
 
 COMING FROM ANOTHER APP?

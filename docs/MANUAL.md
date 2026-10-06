@@ -53,7 +53,7 @@ type in **Settings → Agent → Harness**. Saving trusts the certificate the
 Harness shows at that moment; after that only that certificate is accepted.
 If you reinstall it on a new machine, save again.
 
-With chat and reviews, the app sends your items along, and Claude Code, in its
+With a review, the app sends your items along, and Claude Code, in its
 restricted mode, can read a copy of them (Read, Glob, Grep), use them as tools
 (search, upcoming, projects, inbox, add a task, capture, mark done), fetch web
 pages and use subagents. The tasks it adds or marks done come back to the app,

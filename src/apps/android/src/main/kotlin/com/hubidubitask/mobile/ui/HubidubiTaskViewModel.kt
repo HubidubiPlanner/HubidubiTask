@@ -382,32 +382,14 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     fun syncNow() = syncMacNow()
 
     /**
-     * Ask the agent. A review ([plain]) sends the item alone; a chat question
-     * goes with a short picture of what is open, since the agent no longer has
-     * the workstation's vault to look things up in.
+     * A review of one item by the agent chosen in Settings. The item goes
+     * alone; the Harness also gets the phone's items to look things up in.
      */
-    suspend fun ask(query: String, plain: Boolean = false): String =
+    suspend fun review(prompt: String): String =
         withContext(Dispatchers.IO) {
             val (cfg, client) = agent()
-            Agent.ask(client, cfg, query, if (plain) null else chatContext(_state.value))
+            Agent.ask(client, cfg, prompt)
         }
-
-    private fun chatContext(s: UiState): String {
-        val projectTitle = s.projects.associate { it.id to (it.fields["title"] ?: it.id) }
-        val lines = ArrayList<String>()
-        lines += "What the user has open (tasks with their project and date):"
-        for (t in (s.nextActions + s.inbox).sortedBy { it.fields["due"] ?: "~" }) {
-            val text = t.fields["text"] ?: t.fields["title"] ?: continue
-            val project = t.fields["parent"]?.let { projectTitle[it] }
-            lines += "- " + text + (project?.let { " [$it]" } ?: "") +
-                (t.fields["due"]?.takeIf { it.isNotBlank() }?.let { " (due $it)" } ?: "")
-        }
-        // The server keeps only the front of an over-long prompt; the list is
-        // cut here, soonest first, so the question itself is never what goes.
-        val out = StringBuilder()
-        for (l in lines) { if (out.length + l.length > 1500) break; out.append(l).append('\n') }
-        return out.toString().trimEnd()
-    }
 
     // --- one-time import. Nothing here is kept: the token and the calendar
     // address live only as long as the call that uses them.

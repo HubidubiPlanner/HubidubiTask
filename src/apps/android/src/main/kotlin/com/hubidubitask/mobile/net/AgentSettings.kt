@@ -41,7 +41,7 @@ object AgentSettings {
         if (c.protocol == "claude") c.apiKey?.let { Keystore.putSecret(context, CLAUDE_KEY, it) }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             // Claude and the harness keep their own address and secret, so a
-            // feed can use either whichever agent chat is set to.
+            // feed can use either whichever agent reviews use.
             .apply { if (!own) putString("endpoint", c.endpoint) }
             // Saving the harness trusts the certificate found there now: the
             // next answer from it is pinned (see pinHarness).

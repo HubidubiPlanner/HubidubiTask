@@ -2,11 +2,15 @@
 
 ## Unreleased
 
+- **No Agent tab.** General questions to an agent are not what the app is for, so the
+  chat tab is gone on the phone and the computer. The agent chosen in Settings
+  reviews items (long-press, Review with the agent), and feeds still write
+  their task with Claude or the Harness.
 - **The Harness is its own server, on any computer at home.** Settings asks for
   its IP and port; the desktop app no longer runs Claude Code, and the phone no
   longer goes through the paired computer for it. `sh deploy/harness/install.sh`
-  sets it up as a service on Linux or macOS (port 8765). With chat and reviews
-  the app sends its items along; Claude Code reads a Markdown copy, uses them as
+  sets it up as a service on Linux or macOS (port 8765). With reviews the app
+  sends its items along; Claude Code reads a Markdown copy, uses them as
   MCP tools, fetches pages, uses subagents and the MCP servers in that
   computer's `mcp.json`. Tasks it adds or marks done come back and the app
   applies them. Feeds send no items and get no tools. Its certificate is pinned

@@ -113,13 +113,9 @@ object Agent {
      * answered every time it was tried. Failures come back prefixed "error: "
      * so a caller can tell an explanation from an answer.
      */
-    fun ask(client: ModelClient, config: AgentConfig, question: String,
-            context: String? = null): String {
-        val messages = buildList {
-            add(Message("system", plainSystem(config.language, usesTools(config))))
-            if (!context.isNullOrBlank()) add(Message("system", context))
-            add(Message("user", question))
-        }
+    fun ask(client: ModelClient, config: AgentConfig, question: String): String {
+        val messages = listOf(Message("system", plainSystem(config.language, usesTools(config))),
+            Message("user", question))
         var raw = ""
         repeat(2) {
             raw = try {
@@ -131,7 +127,7 @@ object Agent {
             if (answer.isNotEmpty()) return answer
         }
         return "error: the model spent its whole reply reasoning and never answered, " +
-            "twice (${raw.length} characters of it). Try a shorter question."
+            "twice (${raw.length} characters of it). Try again."
     }
 
     /** An HTTP client for a LAN server with a self-signed certificate: any

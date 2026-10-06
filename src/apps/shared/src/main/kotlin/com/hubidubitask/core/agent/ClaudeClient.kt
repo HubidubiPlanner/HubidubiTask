@@ -17,7 +17,7 @@ import com.anthropic.models.beta.messages.MessageCreateParams
  * Claude, through Anthropic's API. Reached with the user's API key from the
  * Anthropic Console; there is no server of ours in between.
  *
- * The apps ask short things (a chat question, a review of one item), so the
+ * The apps ask short things (a review of one item, a feed's one task), so the
  * effort is low: quick answers matter more here than deep deliberation.
  */
 class ClaudeClient(

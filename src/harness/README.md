@@ -28,7 +28,7 @@ POST /v1/chat/completions  {"messages": [...],
 Each question is one `claude -p` run in Claude Code's restricted mode, in a
 fresh folder that is deleted afterwards.
 
-- **With tools** (chat and reviews): Read, Glob and Grep over a Markdown copy
+- **With tools** (reviews): Read, Glob and Grep over a Markdown copy
   of the items, WebFetch, subagents (Task), the items as MCP tools (search,
   upcoming, projects, project, inbox, add_task, capture, mark_done), and the
   servers in `mcp.json`. The item tools change nothing here; changes come back

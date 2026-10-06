@@ -28,7 +28,7 @@ class SnapshotTest {
         val server = PeerServer(store, "Test Mac") {}
         val vm = HubidubiTaskViewModel(store, server)
         repeat(100) { if (vm.state.value.projects.isEmpty()) Thread.sleep(100) }
-        for (tab in listOf("projects", "next", "feeds", "chat", "settings", "import")) {
+        for (tab in listOf("projects", "next", "feeds", "settings", "import")) {
             val scene = ImageComposeScene(1080, 780, Density(1f)) { App(vm, tab) }
             repeat(3) { scene.render(it * 16_000_000L) }
             val img = scene.render(100_000_000L)
