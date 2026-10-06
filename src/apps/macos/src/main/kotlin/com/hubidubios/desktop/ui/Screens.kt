@@ -977,7 +977,6 @@ fun SettingsScreen(
     // setting. Everything is proposed, nothing demanded: the form arrives
     // filled in and Save works on arrival.
     val saved = remember { vm.agentConfig() }
-    val defaultEndpoint = com.hubidubios.core.agent.AgentConfig.DEFAULT_ENDPOINT
     var endpoint by remember { mutableStateOf(saved.endpoint) }
     var protocol by remember { mutableStateOf(saved.protocol) }
     // The default is filled in rather than hinted at: an empty box reads as
@@ -1014,26 +1013,21 @@ fun SettingsScreen(
         SectionLabel("Agent", modifier = Modifier.padding(top = 10.dp))
 
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Agent", style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold)
-                Segmented(
-                    com.hubidubios.core.agent.AgentConfig.PROTOCOLS,
-                    protocol, { protocol = it; message = null },
-                )
-            }
+            Segmented(
+                com.hubidubios.core.agent.AgentConfig.PROTOCOLS,
+                protocol, { protocol = it; message = null },
+            )
 
             if (claude)
                 LabeledField("Claude API key", claudeKey, { claudeKey = it; message = null },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
             else
                 LabeledField("Server address", endpoint, { endpoint = it; message = null },
-                    helper = if (endpoint == defaultEndpoint) "Default agent server" else "",
+                    helper = "",
                     enabled = true, placeholder = "https://192.168.1.50:8443")
 
             LabeledField("Model", model, { model = it; message = null },
-                helper = if (model == defaultModel) "Default for this protocol"
-                         else "Custom — the default is $defaultModel",
+                helper = "",
                 enabled = true, placeholder = defaultModel)
 
             PrimaryButton(

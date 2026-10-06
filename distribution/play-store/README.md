@@ -202,22 +202,32 @@ Automating later: `fastlane supply --aab android-release.aab --track internal
 
 ## 5. Screenshots — what they show
 
-Captured on an emulator with demo data (no personal content), light theme for
-the store; light and dark copies are also in `site/assets/screens/`.
+Captured on the emulator with made-up demo data, light theme, a clean status
+bar, and cropped just above the system navigation bar to 1080 × 2148, inside
+Play's 2:1 limit.
 
 | File | Shows |
 |---|---|
-| `1_next-day.jpg` | Next, Day view: Overdue on its own, today's tasks, "3 more this week" |
-| `2_next-week.jpg` | Next, Week view with the seven-day strip |
-| `3_capture.jpg` | Capture: Text, Image, Audio, Document |
-| `4_task-or-note.jpg` | "Task or note?" with a date set |
-| `5_projects.jpg` | Projects with tasks and a note filed under them |
-| `6_item-detail.jpg` | An opened task: due date, its note, Mark done |
-| `7_next-month.jpg` | Next, Month view grouped by rolling week |
+| `1_next-day.jpg` | Next, Day view: an overdue task, today's tasks and a stand-up, "6 more this week" |
+| `2_next-week.jpg` | Next, Week view, grouped by day |
+| `3_new.jpg` | The "+" sheet: project, task, note, photo, gallery, voice memo, file |
+| `4_projects.jpg` | Projects, two of them open, with a note filed under a task |
+| `5_item-detail.jpg` | An opened task: due date, its note, Review and Mark done |
+| `6_next-month.jpg` | Next, Month view |
 
-The demo data has no calendar events, and the Capture screen shows "Not
-paired". To show events beside tasks and a "Synced" chip, pair the emulator
-with the Mac app and import an .ics before re-shooting.
+To re-shoot, seed a fresh debug install on the emulator (debug builds only
+carry the seeder), then capture with `adb exec-out screencap -p`:
+
+```sh
+cd src/apps && ./gradlew :android:installDebug
+adb shell am broadcast -a com.hubidubios.mobile.DEMO_SEED \
+  -n com.saferendering.hubidubios.projects/com.hubidubios.mobile.demo.DemoSeed
+adb shell settings put global sysui_demo_allowed 1
+adb shell am broadcast -a com.android.systemui.demo -e command enter
+```
+
+The seeder dates everything relative to today, so the Day view always has an
+overdue task and a full day.
 
 Optional polish that tends to lift installs: a one-line caption above each
 screenshot on a sand or moss band ("Today first. Overdue on its own." ·

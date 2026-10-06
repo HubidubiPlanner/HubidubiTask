@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: a way to fill the app with made-up data for store
+     screenshots. Release builds never contain this receiver. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name="com.hubidubios.mobile.demo.DemoSeed"
+            android:exported="true"
+            tools:ignore="ExportedReceiver"
+            xmlns:tools="http://schemas.android.com/tools">
+            <intent-filter>
+                <action android:name="com.hubidubios.mobile.DEMO_SEED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
