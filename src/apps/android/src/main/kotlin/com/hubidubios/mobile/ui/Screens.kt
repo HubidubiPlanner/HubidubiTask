@@ -1244,10 +1244,7 @@ fun SettingsScreen(
     // system's secret store.
     var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
     val claude = protocol == "claude"
-    // The harness on the workstation: its own address and token, kept apart
-    // like Claude's key so a feed can use it whatever chat is set to.
-    var harnessEndpoint by remember { mutableStateOf(vm.harnessEndpoint().orEmpty().ifBlank { state.workstationHost?.let { "https://$it:5240" }.orEmpty() }) }
-    var harnessToken by remember { mutableStateOf(vm.harnessToken().orEmpty()) }
+    // The harness is Claude Code on the paired computer; nothing to configure.
     val harness = protocol == "harness"
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -1310,10 +1307,9 @@ fun SettingsScreen(
                 LabeledField("Claude API key", claudeKey, { claudeKey = it; message = null },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
             else if (harness) {
-                LabeledField("Harness address", harnessEndpoint, { harnessEndpoint = it; message = null },
-                    helper = "", enabled = true, placeholder = "https://192.168.1.60:5240")
-                LabeledField("Harness token", harnessToken, { harnessToken = it; message = null },
-                    helper = "", enabled = true, placeholder = "hubidubios-harness show", secret = true)
+                // Claude Code on the paired computer, reached over the pairing's own link.
+                Text(state.mac?.let { "Claude Code on ${it.name}" } ?: "Pair a computer first",
+                    style = MaterialTheme.typography.bodyMedium, color = if (state.mac != null) c.ink else c.danger)
             }
             else
                 LabeledField("Server address", endpoint, { endpoint = it; message = null },
@@ -1329,9 +1325,9 @@ fun SettingsScreen(
                 {
                     saving = true; message = null
                     vm.setAgentConfig(saved.copy(
-                        endpoint = (if (harness) harnessEndpoint else endpoint).trim(), protocol = protocol,
+                        endpoint = endpoint.trim(), protocol = protocol,
                         model = model.ifBlank { defaultModel },
-                        apiKey = when { claude -> claudeKey.trim(); harness -> harnessToken.trim(); else -> null }))
+                        apiKey = if (claude) claudeKey.trim() else null))
                     scope.launch {
                         // Saving is not the same as working. An address nothing
                         // answers on looks identical to a good one until a question
@@ -1349,7 +1345,7 @@ fun SettingsScreen(
                 Modifier.fillMaxWidth(),
                 enabled = !saving && when {
                     claude -> claudeKey.isNotBlank()
-                    harness -> harnessEndpoint.isNotBlank() && harnessToken.isNotBlank()
+                    harness -> state.mac != null
                     else -> endpoint.isNotBlank()
                 },
             )

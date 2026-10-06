@@ -1,8 +1,8 @@
-# HubidubiOS apps: Android and macOS
+# HubidubiOS: Android, macOS and Linux
 
-One Gradle build for the two apps people hold: the Android phone app and the
-macOS desktop app. They share their model, sync and agent code through
-`:shared`, which is why the Mac app lives here and not on its own.
+One Gradle build for the app on every system: the Android phone app, and the
+desktop app for macOS and Linux. They share their model, sync, feeds and agent
+code through `:shared`.
 
 All UI is **Jetpack Compose** (Compose Multiplatform on the Mac). No WebView,
 no browser.
@@ -17,10 +17,12 @@ no browser.
   (nav scaffold), `Screens` (Home/capture, Next, Review, Chat, Settings),
   `HubidubiOsViewModel`. `net/AgentClient` polls `/v1/agent/health` for the native
   inference-status chip and streams `/v1/agent/ask` for online-only chat.
-- **`macos/`** (`:macos`) — the Mac app. Its own SQLite store, an HTTPS peer
-  server on port 5244 announced over Bonjour as `_hubidubios-peer._tcp`, and
-  the same screens as the phone. Package it with
-  `./gradlew :macos:createDistributable` (or `:macos:packageDmg`).
+- **`desktop/`** (`:desktop`) — the desktop app, for macOS and Linux. Its own
+  SQLite store, an HTTPS peer server on port 5244 announced over Bonjour as
+  `_hubidubios-peer._tcp`, the same screens as the phone, and the Harness
+  agent: Claude Code on this computer, which paired phones use too. Mac:
+  `./gradlew :desktop:createDistributable` (or `:desktop:packageDmg`). Linux:
+  `distribution/arch/build.sh` builds the Arch package in containers.
 
 The Play Store listing and fastlane metadata live in
 `distribution/play-store/`, not here.

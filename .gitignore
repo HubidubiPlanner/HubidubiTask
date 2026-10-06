@@ -22,3 +22,6 @@ dist-update/
 
 # macOS folder metadata
 .DS_Store
+
+# The app package distribution/arch/build.sh makes
+distribution/arch/out/

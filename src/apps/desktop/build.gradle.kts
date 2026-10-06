@@ -27,13 +27,20 @@ compose.desktop {
     application {
         mainClass = "com.hubidubios.desktop.MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Deb)
             packageName = "HubidubiOS"
             packageVersion = "1.5.1"
-            description = "HubidubiOS for macOS"
+            description = "HubidubiOS: tasks, notes and feeds, synced with your phone"
             // The embedded HTTPS server, SQLite (JDBC) and the TLS/crypto the
             // peer protocol needs, kept in the bundled runtime.
             modules("jdk.httpserver", "java.sql", "java.naming", "jdk.crypto.ec", "java.management")
+            linux {
+                iconFile.set(project.file("icon.png"))
+                packageName = "hubidubios"
+                appCategory = "Office"
+                menuGroup = "Office"
+                shortcut = true
+            }
             macOS {
                 bundleID = "com.hubidubios.desktop"
                 iconFile.set(project.file("icon.icns"))

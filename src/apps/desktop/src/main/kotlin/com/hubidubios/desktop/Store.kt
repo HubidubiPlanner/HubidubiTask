@@ -11,7 +11,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 
 /**
- * The Mac's copy of everything, in SQLite under Application Support.
+ * This computer's copy of everything, in SQLite in the app's data folder.
  *
  * `records` holds each item as it now stands; `log` gets a row for every change
  * (made here or taken in from the phone) with the next sequence number and its
@@ -185,6 +185,6 @@ class Store(val dir: File = defaultDir()) : PeerStore {
     }
 
     companion object {
-        fun defaultDir() = File(System.getProperty("user.home"), "Library/Application Support/HubidubiOS")
+        fun defaultDir() = Platform.dataDir()
     }
 }

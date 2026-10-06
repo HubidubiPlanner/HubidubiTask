@@ -57,7 +57,7 @@ These stop an upload or a review; none of them are listing work.
 - [ ] **Replace placeholders in `site/`:**
       `hubidubios.example` (canonical/OG URLs), `hello@hubidubios.example`
       (contact), and `downloads/HubidubiOS.dmg` (the Mac download — build it
-      with `./gradlew :macos:packageDmg`, or remove the Mac card).
+      with `./gradlew :desktop:packageDmg`, or remove the Mac card).
 
 ---
 

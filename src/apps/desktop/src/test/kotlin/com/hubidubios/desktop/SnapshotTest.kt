@@ -26,9 +26,10 @@ class SnapshotTest {
         store.put(EntityRecord("n_1", "note", nowUtc(), mapOf("title" to "Oak, 3 m", "parent" to "t_1")))
         store.put(EntityRecord("t_3", "next_action", nowUtc(), mapOf("text" to "Buy printer toner")))
         val server = PeerServer(store, "Test Mac") {}
-        val vm = HubidubiOsViewModel(store, server)
+        val vm = HubidubiOsViewModel(store, server,
+            com.hubidubios.desktop.harness.Harness(com.hubidubios.desktop.harness.Items(store), store.dir))
         repeat(100) { if (vm.state.value.projects.isEmpty()) Thread.sleep(100) }
-        for (tab in listOf("projects", "home", "next", "chat", "settings", "import")) {
+        for (tab in listOf("projects", "next", "feeds", "chat", "settings", "import")) {
             val scene = ImageComposeScene(1080, 780, Density(1f)) { App(vm, tab) }
             repeat(3) { scene.render(it * 16_000_000L) }
             val img = scene.render(100_000_000L)

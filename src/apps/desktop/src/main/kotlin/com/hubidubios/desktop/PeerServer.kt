@@ -35,6 +35,10 @@ import javax.net.ssl.SSLContext
  *   POST /peer/sync         one sync round, Bearer token
  *   PUT  /peer/blob/<sha>   a photo or voice memo the phone holds
  *   GET  /peer/blob/<sha>   and back
+ *   GET  /peer/v1/models, POST /peer/v1/chat/completions
+ *                           the Harness agent (Claude Code here) for the phone,
+ *                           in the OpenAI shape; tools only when the request
+ *                           sets "hubidubios_tools": true
  *
  * TLS with a self-signed certificate made on first run; the phone pins its
  * fingerprint at pairing, so the certificate is the Mac's identity. Found on
@@ -43,6 +47,7 @@ import javax.net.ssl.SSLContext
 class PeerServer(
     private val store: Store,
     private val deviceName: String,
+    private val harness: com.hubidubios.desktop.harness.Harness? = null,
     private val onSynced: () -> Unit,
 ) {
     val desk = PairingDesk()
@@ -65,6 +70,7 @@ class PeerServer(
         s.createContext("/peer/pair") { ex -> guard(ex) { pair(ex) } }
         s.createContext("/peer/sync") { ex -> guard(ex) { sync(ex) } }
         s.createContext("/peer/blob/") { ex -> guard(ex) { blob(ex) } }
+        s.createContext("/peer/v1/") { ex -> guard(ex) { agent(ex) } }
         s.start()
         server = s
         Thread({ advertise() }, "mdns").apply { isDaemon = true }.start()
@@ -118,6 +124,39 @@ class PeerServer(
         store.touchPeer(peer.id, nowUtc())
         send(ex, 200, PeerJson.response(resp))
         onSynced()
+    }
+
+    /** The Harness for a paired phone: the same Claude Code run this app uses. */
+    private fun agent(ex: HttpExchange) {
+        peerOf(ex) ?: return send(ex, 401, """{"error":{"message":"not paired"}}""")
+        val h = harness ?: return send(ex, 404, "{}")
+        when (ex.requestURI.path.trimEnd('/')) {
+            "/peer/v1/models" -> {
+                val health = h.health()
+                if (!health.connected) return send(ex, 503, org.json.JSONObject()
+                    .put("error", org.json.JSONObject().put("message", health.error)).toString())
+                send(ex, 200, """{"object":"list","data":[{"id":"${com.hubidubios.desktop.harness.Harness.MODEL}","object":"model"}]}""")
+            }
+            "/peer/v1/chat/completions" -> {
+                if (ex.requestMethod != "POST") return send(ex, 405, "{}")
+                val req = org.json.JSONObject(ex.requestBody.readBytes().decodeToString())
+                val arr = req.getJSONArray("messages")
+                val messages = (0 until arr.length()).map { i -> arr.getJSONObject(i).let {
+                    com.hubidubios.core.agent.Message(it.optString("role"), it.optString("content")) } }
+                val text = try {
+                    h.ask(messages, tools = req.optBoolean("hubidubios_tools", false))
+                } catch (e: com.hubidubios.core.agent.AgentError) {
+                    return send(ex, 502, org.json.JSONObject().put("error",
+                        org.json.JSONObject().put("message", e.message)).toString())
+                }
+                send(ex, 200, org.json.JSONObject().put("object", "chat.completion")
+                    .put("model", com.hubidubios.desktop.harness.Harness.MODEL)
+                    .put("choices", org.json.JSONArray().put(org.json.JSONObject().put("index", 0)
+                        .put("finish_reason", "stop").put("message", org.json.JSONObject()
+                            .put("role", "assistant").put("content", text)))).toString())
+            }
+            else -> send(ex, 404, "{}")
+        }
     }
 
     private fun blob(ex: HttpExchange) {

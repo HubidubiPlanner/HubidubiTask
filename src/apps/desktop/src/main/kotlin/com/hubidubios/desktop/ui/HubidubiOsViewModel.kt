@@ -31,7 +31,8 @@ import java.security.MessageDigest
  * time, written to the store's change log — which is what the phone picks up
  * on its next sync round.
  */
-class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
+class HubidubiOsViewModel(val store: Store, val server: PeerServer,
+                          val harness: com.hubidubios.desktop.harness.Harness) {
 
     data class UiState(
         /** A phone is paired with this Mac. */
@@ -212,8 +213,8 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
         // Claude and the harness keep their own address and secret, so a feed
         // can use either whichever agent chat is set to.
         when (c.protocol) {
-            "claude" -> c.apiKey?.let { Keychain.put(CLAUDE_KEY, it) }
-            "harness" -> { store.setKv("harness_endpoint", c.endpoint); c.apiKey?.let { Keychain.put(HARNESS_TOKEN, it) } }
+            "claude" -> c.apiKey?.let { Secrets.put(CLAUDE_KEY, it) }
+            "harness" -> { store.setKv("harness_endpoint", c.endpoint); c.apiKey?.let { Secrets.put(HARNESS_TOKEN, it) } }
             else -> store.setKv("agent_endpoint", c.endpoint)
         }
         store.setKv("agent_protocol", c.protocol)
@@ -221,10 +222,13 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
         lastHealth = null
     }
 
-    /** Claude's key, from the macOS Keychain rather than the app's database. */
-    fun claudeKey(): String? = Keychain.get(CLAUDE_KEY)
+    /** Claude's key, from the system's secret store rather than the app's database. */
+    fun claudeKey(): String? = Secrets.get(CLAUDE_KEY)
     fun harnessEndpoint(): String? = store.kv("harness_endpoint")
-    fun harnessToken(): String? = Keychain.get(HARNESS_TOKEN)
+    fun harnessToken(): String? = Secrets.get(HARNESS_TOKEN)
+
+    /** Whether Claude Code is installed here, for Settings. */
+    fun harnessHealth(): Health = harness.health()
 
     /** The agent a feed writes its task with: "claude" or "harness". Never with
      *  tools: a feed's text comes from a stranger's web page. */
@@ -248,7 +252,10 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
         for (feed in store.byType(Feeds.TYPE)) {
             if (only != null && feed.id != only) continue
             if (only == null && !Feeds.isDue(feed, today)) continue
-            val client = Agent.clientFor(feedConfig(feed.fields["model"] ?: "claude"))
+            val model = feed.fields["model"] ?: "claude"
+            // The harness runs here; a feed never gets its tools.
+            val client = if (model == "harness") harness.client(tools = false)
+                         else Agent.clientFor(feedConfig(model))
             val result = try {
                 Feeds.check(feed, today, nowUtc(), PageFetch::get, { client.complete(it) },
                     { store.get(it) != null })
@@ -294,7 +301,9 @@ class HubidubiOsViewModel(val store: Store, val server: PeerServer) {
         val cfg = agentConfig()
         agent?.let { if (cfg == agentCfg) return cfg to it; it.close() }
         agentCfg = cfg
-        return cfg to Agent.clientFor(cfg).also { agent = it }
+        // The harness is Claude Code on this computer, not a server to reach.
+        val client = if (cfg.protocol == "harness") harness.client(tools = cfg.tools) else Agent.clientFor(cfg)
+        return cfg to client.also { agent = it }
     }
 
     private fun health(force: Boolean = false): Health {

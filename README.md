@@ -13,7 +13,7 @@ the parts talk and what runs where, is described in
 | [`src/`](src) | **All source code.** |
 | `src/workstation/` | The workstation's Python services. Each folder is one Arch package, its PKGBUILD beside its code: `hubidubios-vault` (the files, the index, the `hubidubios` CLI), `hubidubios-sync` (the phone's change feed, port 5233), `hubidubios-agent` (the model loop), `hubidubios-plugin-host` (plugin loader and skill sandbox), `hubidubios-desktop` (the Omarchy layer: keybinds, panel, user services), `hubidubios-harness` (Claude Code served to the apps, port 5240) and `metapackages`. |
 | `src/plugins/` | Plugins, also Arch packages: `gtd` and `calendar` are the default set; `tasks` and `inbox` are the older set `gtd` replaces. |
-| `src/apps/` | One Gradle build for the Android app (`android/`), the Mac app (`macos/`) and the code they share (`shared/`). |
+| `src/apps/` | One Gradle build for the Android app (`android/`), the desktop app for macOS and Linux (`desktop/`) and the code they share (`shared/`). |
 | [`deploy/`](deploy) | **Putting it on machines,** one folder per machine. |
 | `deploy/workstation/iso/` | The installer ISO: Omarchy forked with HubidubiOS added (`build-fork-in-colima.sh`, see `FORK.md`), plus the seed vault it ships with. |
 | `deploy/workstation/addon/` | The other route: install HubidubiOS onto a stock Omarchy. |
@@ -35,7 +35,7 @@ workspace, and `.gitlab-ci.yml` is the (currently disabled) pipeline.
 
 ```sh
 uv sync && uv run pytest tests/unit tests/integration   # workstation code
-cd src/apps && ./gradlew :shared:test :android:assembleDebug :macos:createDistributable
+cd src/apps && ./gradlew :shared:test :android:assembleDebug :desktop:createDistributable
 distribution/pacman/build-repo.sh                         # on Arch: all packages -> ./repo/
 deploy/workstation/iso/build-fork-in-colima.sh            # the installer ISO, on a Mac via Colima
 ```

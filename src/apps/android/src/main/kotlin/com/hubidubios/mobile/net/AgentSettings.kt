@@ -16,7 +16,7 @@ object AgentSettings {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val protocol = p.getString("protocol", null) ?: "selfhostedai"
         return AgentConfig(
-            endpoint = if (protocol == "harness") harnessEndpoint(context).orEmpty()
+            endpoint = if (protocol == "harness") harnessEndpoint(context)
                        else p.getString("endpoint", null) ?: AgentConfig.DEFAULT_ENDPOINT,
             protocol = protocol,
             model = p.getString("model", null)?.takeIf { it.isNotBlank() }
@@ -28,7 +28,8 @@ object AgentSettings {
                 "harness" -> harnessToken(context)
                 else -> p.getString("api_key", null)
             },
-            tlsFingerprint = p.getString("tls_fingerprint", null),
+            tlsFingerprint = if (protocol == "harness") MacLink.load(context)?.fingerprint
+                             else p.getString("tls_fingerprint", null),
             language = p.getString("language", null) ?: "auto",
         )
     }
@@ -36,33 +37,34 @@ object AgentSettings {
     fun save(context: Context, c: AgentConfig) {
         val own = c.protocol == "claude" || c.protocol == "harness"
         if (c.protocol == "claude") c.apiKey?.let { Keystore.putSecret(context, CLAUDE_KEY, it) }
-        if (c.protocol == "harness") c.apiKey?.let { Keystore.putSecret(context, HARNESS_TOKEN, it) }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             // Claude and the harness keep their own address and secret, so a
             // feed can use either whichever agent chat is set to.
-            .apply { if (c.protocol == "harness") putString("harness_endpoint", c.endpoint)
-                     else if (!own) putString("endpoint", c.endpoint) }
+            .apply { if (!own) putString("endpoint", c.endpoint) }
             .putString("protocol", c.protocol)
             .putString("model", c.model)
             .apply { if (!own) c.apiKey?.let { putString("api_key", it) } }
-            .putString("tls_fingerprint", c.tlsFingerprint).putString("language", c.language)
+            .apply { if (!own) putString("tls_fingerprint", c.tlsFingerprint) }
+            .putString("language", c.language)
             .apply()
     }
 
     private const val CLAUDE_KEY = "claude_api_key"
-    private const val HARNESS_TOKEN = "harness_token"
+    /**
+     * The Harness is Claude Code on the computer this phone is paired with,
+     * asked over the pairing's own link: its address, its pinned certificate
+     * and its token. Nothing extra to type, and nothing at all unpaired.
+     */
+    fun harnessEndpoint(context: Context): String =
+        MacLink.load(context)?.let { "https://${it.host}:${it.port}/peer" }.orEmpty()
 
-    fun harnessEndpoint(context: Context): String? =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("harness_endpoint", null)
-
-    fun harnessToken(context: Context): String? =
-        runCatching { Keystore.getSecret(context, HARNESS_TOKEN) }.getOrNull()
+    fun harnessToken(context: Context): String? = MacLink.load(context)?.token
 
     /** The agent a feed writes its task with: "claude" or "harness". Never with
      *  tools: a feed's text comes from a stranger's web page. */
     fun configFor(context: Context, model: String): AgentConfig = if (model == "harness")
-        AgentConfig(endpoint = harnessEndpoint(context).orEmpty(), protocol = "harness",
-            apiKey = harnessToken(context), tools = false)
+        AgentConfig(endpoint = harnessEndpoint(context), protocol = "harness",
+            apiKey = harnessToken(context), tlsFingerprint = MacLink.load(context)?.fingerprint, tools = false)
     else AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey(context))
 
     fun claudeKey(context: Context): String? =

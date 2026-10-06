@@ -43,15 +43,18 @@ import com.hubidubios.desktop.ui.ImportScreen
 import com.hubidubios.desktop.ui.NextScreen
 import com.hubidubios.desktop.ui.ProjectsScreen
 import com.hubidubios.desktop.ui.SettingsScreen
+import com.hubidubios.desktop.harness.Harness
+import com.hubidubios.desktop.harness.Items
 
 private data class Dest(val route: String, val label: String, val icon: ImageVector)
 
 fun main() {
     val store = Store()
     var vm: HubidubiOsViewModel? = null
-    val server = PeerServer(store, deviceName = macName()) { vm?.refresh() }
+    val harness = Harness(Items(store) { vm?.refresh() }, store.dir)
+    val server = PeerServer(store, deviceName = Platform.computerName(), harness = harness) { vm?.refresh() }
     server.start()
-    vm = HubidubiOsViewModel(store, server)
+    vm = HubidubiOsViewModel(store, server, harness)
     // The window goes the moment it is closed. Withdrawing the LAN
     // announcement (JmDNS) can take seconds, so it runs after, with a limit:
     // the phone copes with a Mac that vanished without saying goodbye.
@@ -62,14 +65,11 @@ fun main() {
             state = rememberWindowState(size = DpSize(1080.dp, 780.dp)),
         ) { App(vm) }
     }
-    val goodbye = Thread { runCatching { server.stop() } }.apply { isDaemon = true; start() }
+    val goodbye = Thread { runCatching { server.stop() }; harness.stop() }.apply { isDaemon = true; start() }
     goodbye.join(1500)
     kotlin.system.exitProcess(0)
 }
 
-private fun macName(): String = runCatching {
-    ProcessBuilder("scutil", "--get", "ComputerName").start().inputStream.bufferedReader().readText().trim()
-}.getOrNull()?.takeIf { it.isNotBlank() } ?: "Mac"
 
 @Composable
 fun App(vm: HubidubiOsViewModel, start: String = "projects") {
