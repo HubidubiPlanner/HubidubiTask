@@ -25,8 +25,8 @@ android {
             ?: "com.saferendering.hubidubios.projects"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (project.property("hubidubios.versionCode") as String).toInt()
+        versionName = project.property("hubidubios.version") as String
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

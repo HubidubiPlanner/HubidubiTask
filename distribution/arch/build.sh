@@ -39,6 +39,9 @@ fi
 echo "==> 2/2 Arch package"
 mkdir -p "$work/pkg"
 cp "$here"/hubidubios/* "$work/pkg/"
+# The package's version is the app's: one number for every platform.
+version="$(sed -n 's/^hubidubios.version=//p' "$repo/src/apps/gradle.properties")"
+sed -i.bak "s/^pkgver=.*/pkgver=$version/" "$work/pkg/PKGBUILD" && rm -f "$work/pkg/PKGBUILD.bak"
 cp "$image" "$work/pkg/"
 docker --context "$ctx" run --rm --platform linux/amd64 -v "$work/pkg:/pkg" archlinux:latest bash -c '
     set -e

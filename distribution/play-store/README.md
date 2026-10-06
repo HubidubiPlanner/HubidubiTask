@@ -44,7 +44,7 @@ These stop an upload or a review; none of them are listing work.
       `android-keystore-hubidubitask-upload`; CI sets `HUBIDUBIOS_KEYSTORE` and
       `HUBIDUBIOS_KEYSTORE_PASSWORD`). Still enrol in **Play App Signing** when
       creating the app: this key then acts as the upload key.
-- [ ] **Version.** `versionCode = 1`, `versionName = "0.1.0"`. Every upload
+- [ ] **Version.** One number for every platform, in `src/apps/gradle.properties` (`hubidubios.version`, `hubidubios.versionCode`). Every upload
       needs a higher `versionCode`; add `changelogs/<versionCode>.txt` each time.
 - [ ] **The package name is permanent.** `com.saferendering.hubidubios.projects` can never be
       changed or reused once uploaded.

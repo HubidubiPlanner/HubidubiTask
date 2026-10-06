@@ -3,7 +3,7 @@
 # Built from the Compose app image that distribution/arch/build.sh makes in
 # an x86_64 container; it carries its own Java runtime.
 pkgname=hubidubios
-pkgver=1.6.0
+pkgver=1.7.0  # set from src/apps/gradle.properties by build.sh
 pkgrel=1
 pkgdesc="HubidubiOS: tasks, notes and feeds, synced with your phone"
 arch=('x86_64')

@@ -1,0 +1,26 @@
+# Changelog
+
+## 1.7.0 — 6 October 2026
+
+The first release of HubidubiOS as one app on Android, macOS and Linux.
+
+- **Linux.** The desktop app runs on Linux, packaged for Arch and Omarchy.
+  An Omarchy installer image can carry it preinstalled.
+- **Phone and computer.** A phone pairs with a Mac or a Linux computer by a
+  typed code and keeps it current over your own Wi-Fi. No workstation, no
+  account, no cloud.
+- **One + for everything new:** a project, a task (into a project or the
+  inbox), a note, a photo, a picture from the gallery, a voice memo or a
+  file. On the computer, drop a file on the window.
+- **Feeds.** Watch a web page; once a day, week or month, what changed on it
+  becomes one task.
+- **Four agents:** Claude (your API key), SelfHostedAI, Model (any
+  OpenAI-compatible server) and Harness (Claude Code on your computer, on
+  your own Claude plan; a paired phone uses it through the computer). The
+  Harness can read your items, use them as tools, fetch pages and use
+  subagents; it never runs commands. Any item can be reviewed by the agent.
+- **One typeface,** IBM Plex Sans, everywhere; the phone is portrait only.
+- Photos go through the phone's camera app without a camera permission.
+
+Builds: Android `versionCode 2`; macOS `HubidubiOS-1.7.0.dmg`; Linux
+`hubidubios-1.7.0-1-x86_64.pkg.tar.zst`.

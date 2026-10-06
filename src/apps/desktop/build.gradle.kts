@@ -29,7 +29,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Deb)
             packageName = "HubidubiOS"
-            packageVersion = "1.6.0"
+            packageVersion = project.property("hubidubios.version") as String
             description = "HubidubiOS: tasks, notes and feeds, synced with your phone"
             // The embedded HTTPS server, SQLite (JDBC) and the TLS/crypto the
             // peer protocol needs, kept in the bundled runtime.

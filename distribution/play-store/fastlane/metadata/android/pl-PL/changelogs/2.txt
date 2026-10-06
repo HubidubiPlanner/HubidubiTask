@@ -1,0 +1,5 @@
+• Jeden + do wszystkiego, co nowe: projekt, zadanie, notatka, zdjęcie, notatka głosowa lub plik.
+• Kanały: obserwuj stronę, a raz dziennie, w tygodniu lub w miesiącu zmiana stanie się jednym zadaniem.
+• Cztery opcje AI: Claude, SelfHostedAI, własny model lub Claude Code na komputerze.
+• Parowanie z aplikacją HubidubiOS na Macu lub Linuksie.
+• Przegląd dowolnego elementu przez AI.
