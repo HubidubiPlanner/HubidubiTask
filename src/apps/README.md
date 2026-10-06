@@ -51,22 +51,10 @@ Requires an Android SDK (path in `local.properties`, gitignored). The wrapper
 pins Gradle 8.13; the build uses AGP 8.7.3 / Kotlin 2.0.21, compileSdk 34,
 minSdk 26.
 
-## Conflict resolution (PLAN.md Phase 5)
+## Sync between devices
 
-- **Structured entities** (task, event, inbox_item): three-way field-level
-  merge against the last-synced base; a field both sides changed is
-  last-write-wins by `updated`. Two devices editing different fields both win.
-- **Note bodies**: never auto-merged. Server body stays canonical; the local
-  body is preserved as a conflict copy and surfaced in the UI.
-- **Deletion beats edit**: a tombstone always wins.
-
-All three, plus outbox durability across app-kill and the full pull→merge→push
-cycle, are covered in `shared/src/test`.
-
-## Verified vs. on-device
-
-Built and tested here: `:shared` JVM suite (20 tests) green; debug and release
-APKs assemble and lint clean. Device-level acceptance from the plan — airplane
-mode UX, `mitmproxy` unreadability, cert-mismatch refusal end to end, and
-home-screen widget capture with the app never opened — needs an emulator/device
-and is exercised as instrumented tests in CI (Phase 7).
+A phone and a computer (Mac or Linux) pair once with a typed code and then
+keep each other current over the LAN: each side keeps a numbered log of its
+changes and sends what the other has not seen yet (core `peer`). When both
+changed the same item, the later edit wins, and a deletion beats an edit.
+Attachments travel by their SHA-256 after the records.

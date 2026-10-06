@@ -9,7 +9,7 @@ import javax.net.ssl.X509TrustManager
 
 /**
  * Where the agent lives and how to speak to it. Held by each app itself — the
- * phone and the Mac ask the agent directly, with no workstation in between.
+ * phone and the computer ask the agent directly, with nothing in between.
  *
  * [protocol] "claude" is Anthropic's Claude API, reached with an API key and
  * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually

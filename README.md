@@ -1,41 +1,44 @@
 # HubidubiOS
 
-A personal productivity system that lives on hardware you own: a Linux
-workstation that holds everything, an Android phone app and a Mac app that
-carry a full copy, and a thin client for the desk. The whole ecosystem, how
-the parts talk and what runs where, is described in
-[`docs/ecosystem.html`](docs/ecosystem.html).
+One app for tasks, notes and feeds, on **Android, macOS and Linux**. A phone
+and a computer pair once and then keep each other current over your own
+Wi-Fi, with no account and no cloud. Any item can be reviewed by AI, and a
+feed turns a changed web page into one task a day, week or month.
+
+The whole picture: [`docs/ecosystem.html`](docs/ecosystem.html).
 
 ## Where things are
 
 | Folder | What is in it |
 |---|---|
-| [`src/`](src) | **All source code.** |
-| `src/workstation/` | The workstation's Python services. Each folder is one Arch package, its PKGBUILD beside its code: `hubidubios-vault` (the files, the index, the `hubidubios` CLI), `hubidubios-sync` (the phone's change feed, port 5233), `hubidubios-agent` (the model loop), `hubidubios-plugin-host` (plugin loader and skill sandbox), `hubidubios-desktop` (the Omarchy layer: keybinds, panel, user services), `hubidubios-harness` (Claude Code served to the apps, port 5240) and `metapackages`. |
-| `src/plugins/` | Plugins, also Arch packages: `gtd` and `calendar` are the default set; `tasks` and `inbox` are the older set `gtd` replaces. |
-| `src/apps/` | One Gradle build for the Android app (`android/`), the desktop app for macOS and Linux (`desktop/`) and the code they share (`shared/`). |
-| [`deploy/`](deploy) | **Putting it on machines,** one folder per machine. |
-| `deploy/workstation/iso/` | The installer ISO: Omarchy forked with HubidubiOS added (`build-fork-in-colima.sh`, see `FORK.md`), plus the seed vault it ships with. |
-| `deploy/workstation/addon/` | The other route: install HubidubiOS onto a stock Omarchy. |
-| `deploy/workstation/config/` | Host config the workstation needs: systemd units, Avahi, Radicale, nftables. |
-| `deploy/workstation/hubidubios-update` | Rebuild and reinstall the packages on a running workstation. |
-| `deploy/thin-client/` | Turn a Raspberry Pi into a terminal for the workstation. |
-| [`distribution/`](distribution) | **How builds reach people.** |
-| `distribution/play-store/` | The Google Play listing: texts, graphics, screenshots, fastlane metadata. |
-| `distribution/pacman/` | Builds every Arch package into a private pacman repo. |
-| [`site/`](site) | The public website for the phone and Mac apps. |
-| [`tests/`](tests) | Unit, integration and acceptance tests for the Python side; sandbox escape tests; QEMU and emulator smoke tests; container runners. The apps' tests live with them in `src/apps/`. |
-| [`tools/`](tools) | Release tooling. |
-| [`docs/`](docs) | The ecosystem page, the user manual and the original build plan. |
+| [`src/apps/`](src/apps) | The app: one Gradle build. `android/` the phone app, `desktop/` the macOS and Linux app, `shared/` what both use (items, sync, feeds, agents). |
+| [`distribution/arch/`](distribution/arch) | The Linux package for Arch and Omarchy, built in containers by `build.sh`. |
+| [`distribution/play-store/`](distribution/play-store) | The Google Play listing: texts, graphics, screenshots, fastlane metadata. |
+| [`deploy/omarchy/`](deploy/omarchy) | An Omarchy installer image with the app installed. |
+| [`site/`](site) | The public website. |
+| [`docs/`](docs) | The ecosystem page and the manual. |
 
-`pyproject.toml` and `uv.lock` at the top make `src/workstation/` one uv
-workspace, and `.gitlab-ci.yml` is the (currently disabled) pipeline.
+## AI
+
+Settings offers four agents, the same on every system:
+
+| Agent | What it is |
+|---|---|
+| Claude | Anthropic's Claude, with your API key |
+| SelfHostedAI | A SelfHostedAI server, over its encrypted connection |
+| Model | Any OpenAI-compatible model you run yourself |
+| Harness | Claude Code on your computer, on your own Claude plan. The desktop app runs it; a paired phone uses it through that computer. |
 
 ## Everyday commands
 
 ```sh
-uv sync && uv run pytest tests/unit tests/integration   # workstation code
-cd src/apps && ./gradlew :shared:test :android:assembleDebug :desktop:createDistributable
-distribution/pacman/build-repo.sh                         # on Arch: all packages -> ./repo/
-deploy/workstation/iso/build-fork-in-colima.sh            # the installer ISO, on a Mac via Colima
+cd src/apps
+./gradlew :shared:test :desktop:test          # tests
+./gradlew :android:assembleDebug              # phone app
+./gradlew :desktop:createDistributable        # Mac app (on a Mac)
+distribution/arch/build.sh                    # Linux: the Arch package, from any Docker host
+deploy/omarchy/build-fork-in-colima.sh        # Omarchy image with the app
 ```
+
+The last commit with the old workstation (Python services, plugins, OS
+layering) is tagged `workstation-final`.

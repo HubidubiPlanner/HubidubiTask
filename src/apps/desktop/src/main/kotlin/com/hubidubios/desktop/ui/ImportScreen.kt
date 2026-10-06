@@ -122,7 +122,7 @@ fun ImportScreen(vm: HubidubiOsViewModel, onBack: () -> Unit) {
                         n.onSuccess {
                             done = "Imported ${it - p.subtasks} tasks, ${p.subtasks} notes and " +
                                 "${p.newProjects.size} projects. " +
-                                "They reach the workstation on the next sync."
+                                "They reach your phone on the next sync."
                         }.onFailure { error = it.message ?: "The import failed." }
                     }
                 }
@@ -144,8 +144,8 @@ fun ImportScreen(vm: HubidubiOsViewModel, onBack: () -> Unit) {
                         val n = runCatching { vm.importCalendar(p) }
                         busy = false
                         n.onSuccess {
-                            done = "Imported $it events. They show in Next, and reach the " +
-                                "workstation on the next sync."
+                            done = "Imported $it events. They show in Next, and reach your " +
+                                "phone on the next sync."
                         }.onFailure { error = it.message ?: "The import failed." }
                     }
                 }

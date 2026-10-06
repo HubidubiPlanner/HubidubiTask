@@ -98,7 +98,6 @@ import com.hubidubios.mobile.browse.Agenda
 import com.hubidubios.mobile.browse.ItemDetail
 import com.hubidubios.mobile.browse.ReviewBrowse
 import com.hubidubios.mobile.capture.AudioRecorder
-import com.hubidubios.mobile.pairing.PairingActivity
 import com.hubidubios.mobile.tree.ProjectTree
 import java.io.File
 import kotlinx.coroutines.launch
@@ -1251,46 +1250,31 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader("Settings")
-        SectionLabel("Connection", modifier = Modifier.padding(top = 0.dp))
-        CardGroup {
-            StatusRow("Workstation", if (state.paired) "Paired" else "Not paired", state.paired)
-            StatusRow("Agent", state.inference.server ?: "not configured",
-                state.inference.connected, last = true)
-        }
-        val openPairing = { context.startActivity(Intent(context, PairingActivity::class.java)) }
-        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Unpaired, pairing is the only thing this screen can do, so it is
-            // the filled button; once paired it steps back beside Sync.
-            if (state.paired) {
-                SecondaryButton("Re-pair", openPairing, Modifier.weight(1f), icon = Icons.Outlined.Link)
-                SecondaryButton(if (state.syncing) "Syncing…" else "Sync now", { vm.syncNow() },
-                    Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)
-            } else {
-                PrimaryButton("Pair workstation", openPairing, Modifier.weight(1f),
-                    icon = Icons.Outlined.Link)
-            }
-        }
-
-        // The Mac app: the phone keeps it up to date directly, every minute.
+        // The computer (Mac or Linux) this phone keeps in step with, every minute.
         var pairingMac by remember { mutableStateOf(false) }
         PairMacSheet(pairingMac, vm) { pairingMac = false }
-        SectionLabel("Mac", modifier = Modifier.padding(top = 10.dp))
+        SectionLabel("Computer", modifier = Modifier.padding(top = 0.dp))
         val mac = state.mac
         if (mac != null) {
             CardGroup {
                 StatusRow(mac.name, mac.lastSync?.let { "synced " + it.take(16).replace('T', ' ') + " UTC" }
-                    ?: "paired, not synced yet", mac.lastSync != null, last = true)
+                    ?: "paired, not synced yet", mac.lastSync != null)
+                StatusRow("Agent", state.inference.server ?: "not configured",
+                    state.inference.connected, last = true)
             }
             Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton("Sync now", { vm.syncMacNow() }, Modifier.weight(1f),
-                    icon = Icons.Outlined.Sync)
+                SecondaryButton(if (state.syncing) "Syncing…" else "Sync now", { vm.syncMacNow() },
+                    Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)
                 SecondaryButton("Unpair", { vm.unpairMac() }, Modifier.weight(1f))
             }
         } else {
-            Row(Modifier.padding(start = 12.dp, end = 12.dp)) {
-                SecondaryButton("Pair with a Mac", { pairingMac = true }, Modifier.weight(1f),
+            CardGroup {
+                StatusRow("Agent", state.inference.server ?: "not configured",
+                    state.inference.connected, last = true)
+            }
+            Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp)) {
+                PrimaryButton("Pair with a computer", { pairingMac = true }, Modifier.weight(1f),
                     icon = Icons.Outlined.Link)
             }
         }

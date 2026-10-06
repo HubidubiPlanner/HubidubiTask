@@ -9,7 +9,6 @@ import com.hubidubios.core.agent.AgentConfig
 import com.hubidubios.core.agent.Health
 import com.hubidubios.core.agent.ModelClient
 import com.hubidubios.mobile.net.AgentSettings
-import com.hubidubios.mobile.net.PairedServer
 import com.hubidubios.mobile.sync.Sync
 import com.hubidubios.mobile.importer.Ics
 import com.hubidubios.mobile.importer.Todoist
@@ -41,12 +40,10 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val projects: List<EntityRecord> = emptyList(),
         /** Everything carrying a date, soonest first — what Next shows. */
         val dated: List<EntityRecord> = emptyList(),
-        /** Calendar events (imported or from the workstation), for Next. */
+        /** Calendar events (imported here or on the computer), for Next. */
         val events: List<EntityRecord> = emptyList(),
         /** The paired Mac, if any. */
         val mac: com.hubidubios.mobile.net.MacLink.Mac? = null,
-        /** Host of the paired workstation, to propose a default endpoint. */
-        val workstationHost: String? = null,
         /** Watched pages, each turned into at most one task per period. */
         val feeds: List<EntityRecord> = emptyList(),
     )
@@ -105,10 +102,12 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         return msg
     }
 
-    /** Sync with the Mac now, not at the next minute. */
+    /** Sync with the paired computer now, not at the next minute. */
     fun syncMacNow() = viewModelScope.launch {
+        _state.value = _state.value.copy(syncing = true)
         withContext(Dispatchers.IO) { runCatching { Sync.syncMac(getApplication()) } }
         refresh()
+        _state.value = _state.value.copy(syncing = false)
     }
 
     fun unpairMac() {
@@ -137,14 +136,14 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         // Typed on this phone and the Mac refused it: wrong code.
                         com.hubidubios.mobile.net.MacLink.PairOutcome.WrongCode ->
-                            if (!shownHere) return@withContext "The Mac didn't accept that code."
+                            if (!shownHere) return@withContext "The computer didn't accept that code."
                         else -> {}
                     }
                 }
                 if (!kotlinx.coroutines.currentCoroutineContext().isActiveSafe()) break
                 Thread.sleep(2500)
             }
-            "No Mac took the code in time."
+            "No computer took the code in time."
         }
 
     private fun kotlin.coroutines.CoroutineContext.isActiveSafe() =
@@ -156,7 +155,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         val s = withContext(Dispatchers.IO) {
             val sync = sync()
             UiState(
-                paired = sync.isPaired,
+                paired = com.hubidubios.mobile.net.MacLink.load(getApplication()) != null,
                 inbox = sync.inbox(),
                 nextActions = sync.nextActions(),
                 staleProjects = sync.projectsWithoutNextAction(),
@@ -166,7 +165,6 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
                 events = sync.events(),
                 mac = com.hubidubios.mobile.net.MacLink.load(getApplication()),
                 inference = _state.value.inference,
-                workstationHost = PairedServer.load(getApplication())?.host,
                 feeds = sync.feeds().sortedBy { com.hubidubios.core.feed.Feeds.label(it).lowercase() },
             )
         }
@@ -179,7 +177,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // --- the agent, asked directly (no workstation in between). One client is
+    // --- the agent, asked directly (nothing in between). One client is
     // kept while the settings stay the same, so its session stays warm.
 
     @Volatile private var agentConfig: AgentConfig? = null
@@ -226,7 +224,7 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
-    // --- media notes: text / image / audio, uploaded to the workstation ---
+    // --- media notes: text / image / audio; peer sync carries them to the computer ---
 
     fun noteText(title: String, due: String? = null, body: String = "") = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().noteText(title, body = body, due = due) }
@@ -347,12 +345,8 @@ class HubidubiOsViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
-    fun syncNow() = viewModelScope.launch {
-        _state.value = _state.value.copy(syncing = true)
-        withContext(Dispatchers.IO) { runCatching { sync().syncNow() } }
-        refresh()
-        _state.value = _state.value.copy(syncing = false)
-    }
+    /** Sync with the paired computer now. */
+    fun syncNow() = syncMacNow()
 
     /**
      * Ask the agent. A review ([plain]) sends the item alone; a chat question

@@ -11,17 +11,15 @@ import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
 
 /**
- * Background sync (PLAN.md Phase 5). Triggers: app foreground, network change
- * to a known SSID, and this periodic job. Never poll aggressively — the
- * workstation may be asleep. The outbox is durable, so a failed run just
- * retries; nothing is lost.
+ * Background work, hourly on Wi-Fi: a sync round with the paired computer,
+ * then the feeds whose period has turned. The app does the same every minute
+ * while it is open. A failed round loses nothing: the change log keeps what
+ * the computer has not seen yet.
  */
 class SyncWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
-        // Each on its own: an unreachable Mac must not stop the workstation sync.
-        runCatching { Sync.open(applicationContext).syncNow() }
         runCatching { Sync.syncMac(applicationContext) }
         // Feeds whose day, week or month has turned; the tasks they make go
         // out with the next sync.

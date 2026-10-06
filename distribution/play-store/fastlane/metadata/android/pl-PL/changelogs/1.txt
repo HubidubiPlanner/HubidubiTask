@@ -2,5 +2,5 @@ Pierwsze wydanie.
 • Zapisuj tekst, zdjęcia, notatki głosowe i dokumenty; każdą rzecz jako zadanie albo notatkę, z datą lub bez.
 • Next: domyślnie dziś, na życzenie tydzień lub miesiąc. Wydarzenia z kalendarza obok zadań.
 • Projekty, notatki pod zadaniami, Mark done.
-• Parowanie z aplikacją HubidubiOS na Maca i synchronizacja przez własne Wi-Fi. Bez konta, bez chmury.
+• Parowanie z aplikacją HubidubiOS na Macu lub Linuksie i synchronizacja przez własne Wi-Fi. Bez konta, bez chmury.
 • Jednorazowy import z Todoist lub Kalendarza Google.

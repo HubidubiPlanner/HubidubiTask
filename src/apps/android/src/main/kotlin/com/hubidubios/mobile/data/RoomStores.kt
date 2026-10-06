@@ -2,8 +2,6 @@ package com.hubidubios.mobile.data
 
 import com.hubidubios.core.EntityRecord
 import com.hubidubios.core.LocalStore
-import com.hubidubios.core.OutboxEntry
-import com.hubidubios.core.OutboxStore
 
 /** core.LocalStore backed by Room/SQLCipher. */
 class RoomLocalStore(private val db: HubidubiOsDatabase) : LocalStore {
@@ -74,16 +72,3 @@ class RoomLocalStore(private val db: HubidubiOsDatabase) : LocalStore {
     companion object { const val KEY_CURSOR = "cursor" }
 }
 
-/** core.OutboxStore backed by Room. Its rows are the durable outbox. */
-class RoomOutboxStore(db: HubidubiOsDatabase) : OutboxStore {
-    private val dao = db.outbox()
-
-    override fun add(entry: OutboxEntry): Long =
-        dao.add(OutboxRow(op = entry.op, record_json = Json.recordToJson(entry.record)))
-
-    override fun pending(): List<OutboxEntry> = dao.pending().map {
-        OutboxEntry(op = it.op, record = Json.recordFromJson(it.record_json), seq = it.seq)
-    }
-
-    override fun remove(seq: Long) = dao.remove(seq)
-}

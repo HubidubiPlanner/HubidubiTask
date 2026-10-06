@@ -10,7 +10,7 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * Device-to-device sync: the phone and the Mac keep each other up to date
- * directly, over the LAN, with no workstation in between.
+ * directly, over the LAN, with nothing in between.
  *
  * Every change a device makes (or takes in) is written to its change log with
  * the next local sequence number. Each round — every 60 seconds — the phone
@@ -20,8 +20,7 @@ import javax.crypto.spec.SecretKeySpec
  * records too (tombstones), so they travel and win the same way.
  *
  * A change taken in from a peer is logged with that peer as its origin and is
- * never sent back to it — no echo — while still going on to everyone else
- * (the phone forwards it to the workstation).
+ * never sent back to it — no echo — while still going on to everyone else.
  */
 
 /** One logged change: a local sequence number and the record as it now stands. */

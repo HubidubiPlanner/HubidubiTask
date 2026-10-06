@@ -2,29 +2,19 @@ package com.hubidubios.mobile.sync
 
 import android.content.Context
 import com.hubidubios.core.EntityRecord
-import com.hubidubios.core.Outbox
-import com.hubidubios.core.SyncEngine
-import com.hubidubios.mobile.data.BlobUploadDao
-import com.hubidubios.mobile.data.BlobUploadRow
 import com.hubidubios.mobile.data.Database
 import com.hubidubios.mobile.data.RoomLocalStore
-import com.hubidubios.mobile.data.RoomOutboxStore
-import com.hubidubios.mobile.net.PairedServer
-import com.hubidubios.mobile.net.PinnedTransport
 import java.io.File
 import java.security.MessageDigest
 import java.security.SecureRandom
 
 /**
- * Wires the Room-backed stores to the pure-Kotlin core SyncEngine. Everything
- * here except the store/transport construction is tested in :shared.
+ * The phone's items: reads and writes on its own database. Every write is
+ * logged for peer sync, which carries it to the paired computer (Mac or
+ * Linux) on the next round; attachments sit in blobsDir by their hash.
  */
 class Sync private constructor(
     val store: RoomLocalStore,
-    val outbox: Outbox,
-    private val engine: SyncEngine?,
-    private val transport: PinnedTransport?,
-    private val blobDao: BlobUploadDao,
     private val blobsDir: File,
 ) {
     fun capture(text: String, due: String? = null): String {
@@ -38,7 +28,6 @@ class Sync private constructor(
             },
         )
         store.put(record)
-        outbox.enqueueUpsert(record)
         return id
     }
 
@@ -64,14 +53,10 @@ class Sync private constructor(
             },
         )
         store.put(record)
-        outbox.enqueueUpsert(record)
-        blobDao.add(BlobUploadRow(sha256 = sha, local_path = local.path,
-            mime = mime, note_id = id))
-        uploadPendingBlobs()   // best-effort now; the queue survives if offline
         return id
     }
 
-    // ---- notes: text / image / audio (each uploaded to the workstation) ----
+    // ---- notes: text / image / audio (attachments travel by hash with peer sync) ----
 
     /** A plain text note. */
     fun noteText(title: String, body: String = "", due: String? = null,
@@ -99,43 +84,13 @@ class Sync private constructor(
             "media_mime" to mime, "media_bytes" to bytes.size.toString())
         if (!due.isNullOrBlank()) f["due"] = due
         upsert("note", id, f, com.hubidubios.core.nowUtc())
-        blobDao.add(BlobUploadRow(sha256 = sha, local_path = local.path,
-            mime = mime, note_id = id))
-        uploadPendingBlobs()   // best-effort now; the queue survives if offline
         return id
     }
 
     fun notes(): List<EntityRecord> = store.byType("note")
 
-    /** Local bytes for a media note: the cached file, else downloaded on demand
-     *  from the workstation and cached. Null if unavailable (offline, no blob). */
-    fun mediaFile(sha: String): File? {
-        val local = File(blobsDir, sha)
-        if (local.exists()) return local
-        val bytes = transport?.downloadBlob(sha) ?: return null
-        blobsDir.mkdirs()
-        local.writeBytes(bytes)
-        return local
-    }
-
-    private fun uploadPendingBlobs() {
-        val t = transport ?: return
-        for (row in blobDao.pending()) {
-            val f = File(row.local_path)
-            if (!f.exists()) { blobDao.remove(row.sha256); continue }
-            runCatching { if (t.uploadBlob(row.sha256, f.readBytes())) blobDao.remove(row.sha256) }
-        }
-    }
-
-    /** Returns true if a sync cycle ran (a server is paired). */
-    fun syncNow(): Boolean {
-        val e = engine ?: return false
-        e.sync()
-        uploadPendingBlobs()
-        return true
-    }
-
-    val isPaired: Boolean get() = engine != null
+    /** Local bytes for a media note, or null until peer sync has brought them. */
+    fun mediaFile(sha: String): File? = File(blobsDir, sha).takeIf { it.exists() }
 
     // ---- reads for the native UI (from the local mirror; work offline) ----
 
@@ -161,7 +116,7 @@ class Sync private constructor(
         }
     }
 
-    // ---- writes (queued to the durable outbox; sync on reconnect) ----
+    // ---- writes (logged for peer sync; they reach the computer on the next round) ----
 
     /** Client-side clarify commit: create the target entity, tombstone the
      *  inbox item. Mirrors the gtd-file skill; deletion beats edit downstream. */
@@ -188,7 +143,6 @@ class Sync private constructor(
         val item = store.get(inboxId)
         if (item != null) {
             store.put(item.tombstone())
-            outbox.enqueueDelete(item)
         }
     }
 
@@ -197,7 +151,6 @@ class Sync private constructor(
         val updated = rec.copy(updated = com.hubidubios.core.nowUtc(),
             fields = rec.fields + ("done" to "true"))
         store.put(updated)
-        outbox.enqueueUpsert(updated)
     }
 
     /** Put a date on an item, or clear it with null.
@@ -210,7 +163,6 @@ class Sync private constructor(
         if (due.isNullOrBlank()) fields.remove("due") else fields["due"] = due
         val updated = rec.copy(updated = com.hubidubios.core.nowUtc(), fields = fields)
         store.put(updated)
-        outbox.enqueueUpsert(updated)
         return true
     }
 
@@ -224,7 +176,6 @@ class Sync private constructor(
         if (text.isNullOrBlank()) fields["review"] = "" else fields["review"] = text.trim()
         val updated = rec.copy(updated = com.hubidubios.core.nowUtc(), fields = fields)
         store.put(updated)
-        outbox.enqueueUpsert(updated)
         return true
     }
 
@@ -236,7 +187,6 @@ class Sync private constructor(
     fun delete(id: String): Boolean {
         val rec = store.get(id) ?: return false
         store.put(rec.tombstone())
-        outbox.enqueueDelete(rec)
         rec.fields["media_sha256"]?.takeIf { it.isNotBlank() }?.let { sha ->
             val stillReferenced = (store.byType("note") + store.byType("inbox_item"))
                 .any { it.id != id && it.fields["media_sha256"] == sha }
@@ -264,7 +214,6 @@ class Sync private constructor(
         val updated = rec.copy(updated = com.hubidubios.core.nowUtc(),
             fields = rec.fields + ("title" to title.trim()))
         store.put(updated)
-        outbox.enqueueUpsert(updated)
         return true
     }
 
@@ -275,7 +224,6 @@ class Sync private constructor(
         val updated = rec.copy(updated = com.hubidubios.core.nowUtc(),
             fields = rec.fields + ("title" to title.trim()) + ("body" to body.trim()))
         store.put(updated)
-        outbox.enqueueUpsert(updated)
         return true
     }
 
@@ -289,7 +237,6 @@ class Sync private constructor(
         if (parentId.isNullOrBlank()) fields.remove("parent") else fields["parent"] = parentId
         val updated = rec.copy(updated = com.hubidubios.core.nowUtc(), fields = fields)
         store.put(updated)
-        outbox.enqueueUpsert(updated)
         return true
     }
 
@@ -329,11 +276,9 @@ class Sync private constructor(
         return rec
     }
 
-    /** A feed as it now stands. The workstation does not keep feeds and says
-     *  so; the outbox lets go of it then (see SyncEngine). */
+    /** A feed as it now stands; peer sync carries it to the computer. */
     fun putFeed(rec: EntityRecord) {
         store.put(rec)
-        outbox.enqueueUpsert(rec)
     }
 
     /**
@@ -357,42 +302,18 @@ class Sync private constructor(
     private fun upsert(type: String, id: String, fields: Map<String, String?>, now: String) {
         val rec = EntityRecord(id = id, type = type, updated = now, fields = fields)
         store.put(rec)
-        outbox.enqueueUpsert(rec)
     }
 
     companion object {
-        fun open(context: Context): Sync {
-            val db = Database.get(context)
-            val store = RoomLocalStore(db)
-            val outbox = Outbox(RoomOutboxStore(db))
-            val server = PairedServer.load(context)
-            val transport = server?.let { PinnedTransport(it) }
-            val engine = transport?.let {
-                SyncEngine(store, outbox, it, deviceIdFor(context))
-            }
-            val blobsDir = File(context.filesDir, "blobs")
-            return Sync(store, outbox, engine, transport, db.blobUploads(), blobsDir)
-        }
+        fun open(context: Context): Sync =
+            Sync(RoomLocalStore(Database.get(context)), File(context.filesDir, "blobs"))
 
-        /**
-         * One round with the paired Mac, if there is one. What comes from the
-         * Mac is queued for the workstation too, so the phone relays between
-         * them: records through the outbox, and their bytes through the same
-         * upload queue a capture made here would use.
-         */
+        /** One round with the paired computer, if there is one. */
         fun syncMac(context: Context): com.hubidubios.mobile.net.MacLink.Round? {
             val db = Database.get(context)
-            val store = RoomLocalStore(db)
-            val peers = com.hubidubios.mobile.data.PhonePeerStore(db, store,
-                Outbox(RoomOutboxStore(db)))
-            return com.hubidubios.mobile.net.MacLink.sync(context, peers, File(context.filesDir, "blobs")) { got ->
-                db.blobUploads().add(BlobUploadRow(sha256 = got.sha, local_path = got.file.path,
-                    mime = got.mime, note_id = got.noteId))
-            }
+            val peers = com.hubidubios.mobile.data.PhonePeerStore(db, RoomLocalStore(db))
+            return com.hubidubios.mobile.net.MacLink.sync(context, peers, File(context.filesDir, "blobs"))
         }
-
-        private fun deviceIdFor(context: Context): String =
-            com.hubidubios.mobile.security.Keystore.getSecret(context, "device-id") ?: "phone"
     }
 }
 

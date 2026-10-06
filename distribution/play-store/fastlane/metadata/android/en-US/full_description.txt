@@ -1,6 +1,6 @@
 HubidubiOS is a task app built around one idea: what you capture should get done, not pile up.
 
-Your tasks, notes and calendar live on your own devices. Your phone and your Mac sync directly with each other over your own Wi-Fi. There is no account, no cloud service and no server of ours in between.
+Your tasks, notes and calendar live on your own devices. Your phone and your computer (Mac or Linux) sync directly with each other over your own Wi-Fi. There is no account, no cloud service and no server of ours in between.
 
 GET IT OUT OF YOUR HEAD
 • Capture four ways: type a thought, take or pick a photo, record a voice memo, or attach a document.
@@ -25,7 +25,7 @@ DONE MEANS DONE
 • Open any item to see what it is, when it is due, and what is filed under it.
 
 SYNC WITHOUT A CLOUD
-• Pair the phone with the HubidubiOS Mac app by typing a short code. Both on the same Wi-Fi is all it takes.
+• Pair the phone with the HubidubiOS app on your Mac or Linux computer by typing a short code. Both on the same Wi-Fi is all it takes.
 • From then on they keep each other current on their own. Every edit carries a time; the newest one wins, and deletions travel too, so nothing you removed comes back.
 • Everything works offline. The phone keeps a full copy of your data in an encrypted database.
 • Traffic between your devices is encrypted and pinned to the certificate exchanged when you paired.

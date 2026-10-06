@@ -51,7 +51,7 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiOsViewModel, state: HubidubiOsView
         when {
             newcomer != null -> {
                 SheetTitle("Paired", overline = "Phone")
-                Text("${newcomer.name} and this Mac now keep each other up to date — every " +
+                Text("${newcomer.name} and this computer now keep each other up to date — every " +
                     "minute while the app is open on the phone, on the same Wi-Fi.",
                     style = MaterialTheme.typography.bodyMedium)
                 PrimaryButton("Done", ::close, Modifier.fillMaxWidth().padding(top = 18.dp))
@@ -67,7 +67,7 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiOsViewModel, state: HubidubiOsView
                 ActionRow(Icons.Outlined.Keyboard, "Enter the phone's code", last = true) { mode = "enter" }
             }
             mode == "show" -> {
-                SheetTitle("Type this on the phone", overline = "Settings → Pair with a Mac")
+                SheetTitle("Type this on the phone", overline = "Settings → Pair with a computer")
                 Text(shown.orEmpty(), fontSize = 40.sp, fontWeight = FontWeight.Medium,
                     color = c.ink, modifier = Modifier.fillMaxWidth().background(c.raised)
                         .border(1.dp, c.line).padding(vertical = 22.dp, horizontal = 20.dp))
@@ -99,7 +99,7 @@ private fun Waiting(vm: HubidubiOsViewModel) {
         }
         val addrs = vm.server.addresses()
         if (addrs.isNotEmpty())
-            Text("If the phone doesn't find this Mac, type its address there: " + addrs.joinToString(", "),
+            Text("If the phone doesn't find this computer, type its address there: " + addrs.joinToString(", "),
                 style = MaterialTheme.typography.bodySmall, color = c.muted)
     }
 }

@@ -1,6 +1,6 @@
 HubidubiOS to aplikacja do zadań zbudowana wokół jednej myśli: to, co zapiszesz, ma zostać zrobione, a nie odkładać się w stosie.
 
-Zadania, notatki i kalendarz żyją na Twoich urządzeniach. Telefon i Mac synchronizują się bezpośrednio ze sobą przez Twoje Wi-Fi. Nie ma konta, nie ma chmury i nie ma po drodze żadnego naszego serwera.
+Zadania, notatki i kalendarz żyją na Twoich urządzeniach. Telefon i komputer (Mac lub Linux) synchronizują się bezpośrednio ze sobą przez Twoje Wi-Fi. Nie ma konta, nie ma chmury i nie ma po drodze żadnego naszego serwera.
 
 WYRZUĆ TO Z GŁOWY
 • Cztery sposoby zapisu: wpisz myśl, zrób lub wybierz zdjęcie, nagraj notatkę głosową albo dołącz dokument.
@@ -25,7 +25,7 @@ ZROBIONE ZNACZY ZROBIONE
 • Otwórz dowolną rzecz, by zobaczyć, czym jest, kiedy ma termin i co jest pod nią.
 
 SYNCHRONIZACJA BEZ CHMURY
-• Sparuj telefon z aplikacją HubidubiOS na Maca, wpisując krótki kod. Wystarczy to samo Wi-Fi.
+• Sparuj telefon z aplikacją HubidubiOS na Macu lub Linuksie, wpisując krótki kod. Wystarczy to samo Wi-Fi.
 • Od tej chwili urządzenia same dbają o aktualność. Każda zmiana ma swój czas; wygrywa najnowsza, a usunięcia też się przenoszą, więc nic, co usunięte, nie wraca.
 • Wszystko działa offline. Telefon trzyma pełną kopię danych w zaszyfrowanej bazie.
 • Ruch między urządzeniami jest szyfrowany i przypięty do certyfikatu wymienionego przy parowaniu.

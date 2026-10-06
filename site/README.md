@@ -16,8 +16,9 @@ Preview locally: `python3 -m http.server -d site 8000` → http://localhost:8000
 Before going live, replace:
 - `hubidubios.example` — canonical and Open Graph URLs in both pages
 - `hello@hubidubios.example` — contact address (also used in the Play listing)
-- `downloads/HubidubiOS.dmg` — the Mac download (`cd src/apps && ./gradlew :desktop:packageDmg`),
-  or remove the Mac buttons from `index.html`
+- `downloads/HubidubiOS.dmg` and `downloads/hubidubios-x86_64.pkg.tar.zst` — the Mac and Linux
+  downloads (`cd src/apps && ./gradlew :desktop:packageDmg`; `distribution/arch/build.sh`),
+  or remove those buttons from `index.html`
 
 The page is one column that tells the story in four steps, then a table of
 taps per action and the choice of AI. It follows the system light or dark

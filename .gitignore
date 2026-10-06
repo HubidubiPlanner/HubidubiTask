@@ -1,27 +1,19 @@
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-dist/
-*.egg-info/
-deploy/workstation/iso/out/
-*.iso
-
-# Vendored upstream checkouts for the fork ISO build. Pristine clones with their
-# own .git, restored per deploy/workstation/iso/FORK.md; our delta lives in
-# hubidubios-omarchy-iso.patch, so committing these would add ~165MB for nothing.
-deploy/workstation/iso/omarchy/
-deploy/workstation/iso/omarchy-iso/
-deploy/workstation/iso/omarchy-pkgs/
-
-# Build outputs
-# The private pacman repo distribution/pacman/build-repo.sh writes by default.
-/repo/
-*.pkg.tar.zst
-dist-update/
-
 # macOS folder metadata
 .DS_Store
 
+# Gradle, Kotlin and IDE output (src/apps keeps its own .gitignore too)
+build/
+.gradle/
+.kotlin/
+
+# Vendored upstream checkouts for the Omarchy image build. Pristine clones
+# with their own .git, restored per deploy/omarchy/FORK.md; our delta lives in
+# hubidubios-omarchy-iso.patch.
+deploy/omarchy/omarchy/
+deploy/omarchy/omarchy-iso/
+deploy/omarchy/omarchy-pkgs/
+*.iso
+
 # The app package distribution/arch/build.sh makes
 distribution/arch/out/
+*.pkg.tar.zst

@@ -1,163 +1,39 @@
-# hubidubios CI (PLAN.md Phase 7 + Phase 8).
+# HubidubiOS CI: the app on Android, macOS and Linux.
 #
-# The light jobs (lint, unit, skill sandbox, android build, packages) run on
-# GitLab's shared runners so CI works out of the box. The heavy jobs that the
-# plan wants on a self-hosted LAN runner — the Omarchy ISO build (privileged
-# Docker + loop devices), the QEMU smoke test (KVM), and the Android emulator —
-# are tagged `hubidubios-workstation` and set `when: manual`, so they only run once
-# that runner is registered and someone triggers them.
-#
-# Pipeline: lint -> unit -> sandbox escape -> android build (+manual instrumented)
-# -> packages -> [manual] ISO -> [manual] QEMU smoke -> publish (tags).
-
-# ---------------------------------------------------------------------------
-# CI IS DISABLED FOR NOW. This workflow rule prevents ANY pipeline from being
-# created, so no runner — shared or self-hosted — is ever engaged. The job
-# definitions below are kept for later. To re-enable, delete this `workflow`
-# block (and, for the heavy jobs, register a self-hosted runner and tag them).
-# ---------------------------------------------------------------------------
+# CI IS DISABLED FOR NOW: the workflow rule below prevents any pipeline. To
+# turn it on, delete the `workflow` block. The macOS app is built on a Mac
+# (jpackage builds only for the system it runs on), so it has no job here.
 workflow:
   rules:
     - when: never
 
 stages:
-  - lint
   - test
-  - sandbox
-  - android
-  - package
-  - iso
-  - smoke
-  - publish
+  - build
 
-# ------------------------------------------------------------------ lint
-
-lint:
-  stage: lint
-  image: python:3.12
-  script:
-    - pip install ruff
-    - ruff check src/workstation src/plugins tests
-    - bash -n deploy/workstation/iso/build.sh deploy/thin-client/provision.sh
-        tests/smoke/qemu_smoke.sh tests/smoke/emulator_pairing.sh
-
-# ------------------------------------------------------------------ tests
-
-unit:
+shared-and-desktop-tests:
   stage: test
-  image: python:3.12
+  image: eclipse-temurin:17-jdk
   script:
-    - pip install uv
-    - uv sync
-    - uv run pytest tests/unit tests/integration tests/acceptance -q
-
-# ------------------------------------------------------------- skill sandbox
-
-# bwrap needs a NATIVE-arch runner (its user-namespace + mount syscalls are not
-# emulated) — GitLab.com's shared runners are native amd64, so this works.
-sandbox-escape:
-  stage: sandbox
-  image: archlinux:latest
-  script:
-    # pacman 7's landlock download sandbox may be blocked by the runner kernel.
-    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
-    - pacman -Sy --noconfirm --needed python python-pip bubblewrap
-    - pip install --break-system-packages ./src/workstation/hubidubios-vault
-        ./src/workstation/hubidubios-plugin-host pytest pyyaml jsonschema icalendar
-    - python -m pytest tests/sandbox -v
-
-# (The Phase-3 view-sandbox suite was retired in Phase 8: plugins are headless
-# and the WebView bridge is gone, so there is no plugin UI code to sandbox.)
-
-# ------------------------------------------------------------------ android
+    - cd src/apps
+    - ./gradlew --no-daemon -Phubidubios.desktopOnly=true :shared:test :desktop:test
 
 android:
-  stage: android
+  stage: build
   image: ghcr.io/cirruslabs/android-sdk:34
   script:
     - cd src/apps
-    - ./gradlew :shared:test :android:assembleDebug :android:assembleRelease
+    - ./gradlew :android:assembleDebug :android:bundleRelease
   artifacts:
     paths:
       - src/apps/android/build/outputs/apk/debug/android-debug.apk
     expire_in: 1 week
 
-android-instrumented:
-  stage: android
-  image: ghcr.io/cirruslabs/android-sdk:34
-  # Needs a KVM-accelerated emulator on the runner — opt-in until provisioned.
+linux-package:
+  stage: build
+  image: archlinux:latest
+  # The Arch package needs the Linux app image, which needs a Docker host;
+  # run distribution/arch/build.sh on a machine with Docker instead.
   when: manual
-  allow_failure: true
   script:
-    - cd src/apps
-    - ./gradlew :android:assembleDebug :android:assembleDebugAndroidTest
-    - ../../tests/smoke/emulator_pairing.sh android/build/outputs/apk/debug/android-debug.apk
-
-# ------------------------------------------------------------------ packages
-
-packages:
-  stage: package
-  image: archlinux:latest
-  script:
-    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
-    - pacman -Sy --noconfirm --needed base-devel python-build python-installer
-        python-hatchling python-wheel
-    - useradd -m build && chown -R build .
-    - |
-      for p in src/workstation/hubidubios-vault src/workstation/hubidubios-plugin-host \
-               src/workstation/hubidubios-sync src/workstation/hubidubios-agent \
-               src/workstation/hubidubios-harness \
-               src/plugins/gtd src/plugins/calendar src/workstation/metapackages; do
-        ( cd "$p" && sudo -u build makepkg -f --nodeps --skipinteg )
-      done
-  artifacts:
-    paths:
-      - "**/*.pkg.tar.*"
-    expire_in: 1 week
-
-# ------------------------------------------------------------------ iso
-
-iso:
-  stage: iso
-  image: archlinux:latest
-  # Privileged executor: the Omarchy ISO build (Docker + loop devices).
-  # Opt-in until a privileged self-hosted runner + Omarchy base are provisioned.
-  when: manual
-  allow_failure: true
-  variables:
-    OMARCHY_ISO_REF: "v4.0.0"   # pin the Omarchy base; bump deliberately
-  script:
-    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
-    - pacman -Sy --noconfirm --needed archiso git docker
-    - OMARCHY_ISO_REF="$OMARCHY_ISO_REF" deploy/workstation/iso/build.sh deploy/workstation/iso/out
-  artifacts:
-    paths:
-      - deploy/workstation/iso/out/*.iso
-    expire_in: 1 week
-
-# ------------------------------------------------------------------ smoke
-
-qemu-smoke:
-  stage: smoke
-  image: archlinux:latest
-  # Privileged + KVM; consumes the iso artifact. Opt-in like the iso job.
-  when: manual
-  allow_failure: true
-  script:
-    - "sed -i '/^\\[options\\]/a DisableSandbox' /etc/pacman.conf"
-    - pacman -Sy --noconfirm --needed qemu-base openssh
-    - tests/smoke/qemu_smoke.sh deploy/workstation/iso/out/*.iso
-
-# ------------------------------------------------------------------ publish
-
-publish:
-  stage: publish
-  image: archlinux:latest
-  rules:
-    - if: '$CI_COMMIT_TAG'         # publish only on tagged releases
-  script:
-    # Signed APK and packages become GitLab release artifacts; the F-Droid repo
-    # metadata is generated and served from the workstation over the LAN. The
-    # signing key stays offline and out of the repo.
-    - echo "publishing release $CI_COMMIT_TAG to the LAN F-Droid repo and package repo"
-    - ./tools/publish-release.sh "$CI_COMMIT_TAG"
+    - echo "Run distribution/arch/build.sh on a host with Docker."

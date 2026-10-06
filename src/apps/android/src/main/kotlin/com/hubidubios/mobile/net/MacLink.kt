@@ -45,7 +45,7 @@ object MacLink {
 
     fun load(context: Context): Mac? {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return Mac(p.getString("id", null) ?: return null, p.getString("name", "Mac")!!,
+        return Mac(p.getString("id", null) ?: return null, p.getString("name", "Computer")!!,
             p.getString("host", null) ?: return null, p.getInt("port", 5244),
             p.getString("fp", null) ?: return null, p.getString("token", null) ?: return null,
             p.getString("last_sync", null))
@@ -112,7 +112,7 @@ object MacLink {
         override fun checkServerTrusted(chain: Array<out X509Certificate>, a: String?) {
             val fp = PeerPairing.sha256Hex(chain[0].encoded)
             seen = fp
-            if (pin != null && fp != pin) throw javax.net.ssl.SSLPeerUnverifiedException("not the paired Mac")
+            if (pin != null && fp != pin) throw javax.net.ssl.SSLPeerUnverifiedException("not the paired computer")
         }
         override fun getAcceptedIssuers() = arrayOf<X509Certificate>()
     }
@@ -204,7 +204,7 @@ object MacLink {
         fun auth(b: Request.Builder) = b.header("Authorization", "Bearer ${mac.token}")
         // What the Mac sends that names bytes this phone lacks: a photo, memo
         // or file captured there. Fetched after the round, so the phone holds
-        // what the Mac holds and can pass it on to the workstation.
+        // what the computer holds.
         val wanted = LinkedHashMap<String, Pair<String, String>>()   // sha -> (mime, record id)
         val watching = object : PeerStore by store {
             override fun applyFromPeer(record: com.hubidubios.core.EntityRecord, peer: String) {
@@ -219,8 +219,8 @@ object MacLink {
             send = { req ->
                 http.newCall(auth(Request.Builder().url("$base/peer/sync"))
                     .post(PeerJson.request(req).toRequestBody(json)).build()).execute().use { r ->
-                    if (r.code == 401) throw IllegalStateException("the Mac no longer knows this phone")
-                    if (!r.isSuccessful) throw java.io.IOException("the Mac answered ${r.code}")
+                    if (r.code == 401) throw IllegalStateException("the computer no longer knows this phone")
+                    if (!r.isSuccessful) throw java.io.IOException("the computer answered ${r.code}")
                     PeerJson.response(r.body!!.string())
                 }
             },

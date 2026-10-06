@@ -109,11 +109,6 @@ dependencies {
     // QR scanning for pairing — ZXing core only, no Play Services / ML Kit.
     // CameraX (androidx) supplies the preview + frame stream; ZXing decodes the
     // Y plane of each frame. Nothing here pulls in Google Play Services.
-    implementation("com.google.zxing:core:3.5.3")
-    implementation("androidx.camera:camera-core:1.4.2")
-    implementation("androidx.camera:camera-camera2:1.4.2")
-    implementation("androidx.camera:camera-lifecycle:1.4.2")
-    implementation("androidx.camera:camera-view:1.4.2")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
