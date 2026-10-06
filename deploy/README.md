@@ -1,15 +1,33 @@
-# Distribution (Phase 7)
+# Deploying HubidubiOS
 
-Bootable media and the thin-client image. **Start only after two months of
-daily use** (PLAN.md). None of this builds on the macOS dev machine — ISO
-builds need a privileged Linux host (loop devices), QEMU needs KVM. It all runs
-in CI on the self-hosted workstation runner; the files here are authored and
-syntax-checked, not built here.
+One folder per machine: `workstation/` (the Linux box) and `thin-client/`
+(a Raspberry Pi). The phone and Mac apps are built from `src/apps/` and
+published through `distribution/`.
 
-## Delivery model — an ADD-ON to stock Omarchy (current)
+## Workstation — the installer ISO (main route)
 
-HubidubiOS is **Omarchy, unchanged, with our layer added on top** — not a forked
-or rebuilt ISO. The user installs **official Omarchy** (its own ISO, pristine),
+HubidubiOS is a **fork of Omarchy**: one installer that lays down stock
+Omarchy *and* the HubidubiOS layer, with Omarchy left intact. The build
+vendors three upstream checkouts and applies `hubidubios-omarchy-iso.patch`;
+restoring them is described in [`workstation/iso/FORK.md`](workstation/iso/FORK.md).
+
+```sh
+deploy/workstation/iso/build-fork-in-colima.sh   # on a Mac, in Colima's x86_64 VM
+```
+
+Stage 1 builds every hubidubios package; stage 2 runs Omarchy's own ISO
+builder with them injected. The result lands in
+`workstation/iso/omarchy-iso/release/`. Installing and first boot are in
+[`docs/MANUAL.md`](../docs/MANUAL.md).
+
+`workstation/iso/make-image.sh`, `build-plain.sh` and `build.sh` build the
+older stand-alone console image and an earlier fork attempt. They are kept
+for reference, not for installing.
+
+## Workstation — onto a stock Omarchy (alternative)
+
+For a machine that already runs official Omarchy, the same packages can be
+added on top instead of reinstalling. The user installs **official Omarchy**,
 then runs our one-command add-on. Omarchy is never limited or reconfigured; our
 layer is purely additive and reversible.
 

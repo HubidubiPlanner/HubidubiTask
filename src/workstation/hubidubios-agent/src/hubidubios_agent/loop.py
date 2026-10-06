@@ -24,7 +24,6 @@ from .context import run_vault_query
 from .log import log_event
 from .prompt import build_system_prompt, skill_index
 
-
 _THINK_RE = re.compile(r"<(think|thinking|reasoning)>.*?</\1>", re.S | re.I)
 
 

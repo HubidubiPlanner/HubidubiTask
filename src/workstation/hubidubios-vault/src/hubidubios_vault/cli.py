@@ -219,6 +219,7 @@ def cmd_archive(vault: Vault, args) -> int:
     """Move a done/dropped action out of current/waiting/maybe into
     archive/YYYY-MM.md — it leaves the active views but stays searchable."""
     import re
+
     from .formats import meta as _meta
     from .index import indexer
 
@@ -446,6 +447,7 @@ def cmd_todoist_import(vault: Vault, args) -> int:
     from TODOIST_API_TOKEN or asked for, used once, and never stored."""
     import getpass
     import os
+
     from . import todoist
     from .index import indexer
 

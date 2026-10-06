@@ -8,8 +8,6 @@ from hubidubios_vault import apply as vault_apply
 from hubidubios_vault import blobs, cli
 from hubidubios_vault.entities import Note, now_rfc3339
 from hubidubios_vault.formats import notes_md
-from hubidubios_vault.index import indexer
-
 
 # ------------------------------------------------------------ model round-trip
 
@@ -64,7 +62,8 @@ def test_cli_note_new_with_media(vault, tmp_path, monkeypatch, capsys):
     assert "kind: image" in md and "media_sha256:" in md
     assert list(vault.notes_dir.rglob("*.png"))
     # indexed + listable + showable
-    cli.main(["index", "rebuild"]); capsys.readouterr()
+    cli.main(["index", "rebuild"])
+    capsys.readouterr()
     cli.main(["note", "list", "--kind", "image", "--json"])
     listed = json.loads(capsys.readouterr().out)
     assert listed and listed[0]["kind"] == "image" and listed[0]["id"] == nid

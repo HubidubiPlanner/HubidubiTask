@@ -10,7 +10,6 @@ import tomllib
 from unittest.mock import MagicMock
 
 import pytest
-
 from hubidubios_sync import server as server_mod
 
 

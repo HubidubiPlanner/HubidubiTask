@@ -322,7 +322,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>Phone app</td><td><code>./gradlew :android:assembleDebug</code> or <code>:android:bundleRelease</code></td><td>src/apps/</td></tr>
         <tr><td>Mac app</td><td><code>./gradlew :macos:createDistributable</code></td><td>src/apps/, on a Mac</td></tr>
         <tr><td>All Arch packages</td><td><code>distribution/pacman/build-repo.sh</code></td><td>An Arch machine</td></tr>
-        <tr><td>Installer ISO</td><td><code>deploy/workstation/iso/make-image.sh</code></td><td>x86_64 Linux, or a Mac through Colima</td></tr>
+        <tr><td>Installer ISO</td><td><code>deploy/workstation/iso/build-fork-in-colima.sh</code></td><td>A Mac with Colima's x86_64 VM; upstream checkouts restored per FORK.md</td></tr>
         <tr><td>Store graphics</td><td><code>distribution/play-store/graphics/render.sh</code></td><td>Any machine with librsvg</td></tr>
       </tbody>
     </table>
@@ -333,12 +333,9 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   <h2 id="status-h">Current state</h2>
   <ul class="status">
     <li><span class="pill ok">Works</span><span>Phone and Mac apps, peer sync between them, the "+" for every kind of new item, file drops on the Mac. Claude is the first agent choice in both apps. The Mac app is at 1.4.0.</span></li>
-    <li><span class="pill ok">Works</span><span>211 Python tests and all Gradle tests pass after the restructure, with results identical to before it.</span></li>
-    <li><span class="pill warn">Open</span><span>Five acceptance tests in <span class="path">tests/acceptance/test_phase1.py</span> fail because they still expect the old <span class="path">tasks/</span> vault folder. They failed the same way before the restructure.</span></li>
-    <li><span class="pill warn">Open</span><span>Ten lint findings in the Python code, nine of them auto-fixable. Also unchanged by the restructure.</span></li>
-    <li><span class="pill warn">Open</span><span>The site and the Play listing still show screenshots of the old Capture screen and the old typefaces.</span></li>
-    <li><span class="pill warn">Open</span><span>The deploy README calls the add-on the current route, while the manual describes the installer ISO. One of them should be retired.</span></li>
-    <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off until a self-hosted runner exists.</span></li>
+        <li><span class="pill ok">Works</span><span>All 216 Python tests pass, the Phase 1 acceptance suite included, and the Python code is lint-clean.</span></li>
+    <li><span class="pill warn">Open</span><span>The Play listing still shows screenshots of the old Capture screen and the old typefaces. The site no longer uses screenshots.</span></li>
+        <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off until a self-hosted runner exists.</span></li>
   </ul>
 </section>
 

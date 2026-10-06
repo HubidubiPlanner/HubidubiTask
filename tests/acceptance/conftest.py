@@ -1,23 +1,30 @@
 """Fixtures for the Phase 1 acceptance suite (PLAN.md § Phase 1 Acceptance)."""
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
+from hubidubios_plugin_host.registry import discover, export_entity_types
 from hubidubios_vault.formats import ics
 from hubidubios_vault.vault import Vault
+
+REPO_PLUGINS = Path(__file__).parents[2] / "src" / "plugins"
 
 
 @pytest.fixture
 def vault(tmp_path):
+    """A vault as a workstation has it: the default plugin set, gtd and
+    calendar, registered, so next actions live in current/."""
     v = Vault(tmp_path / "vault")
     v.ensure_layout()
+    export_entity_types(v, discover([REPO_PLUGINS], names={"gtd", "calendar"}))
     return v
 
 
 @pytest.fixture
 def big_vault(vault):
     """A synthetic vault with 5,000 entities:
-    2,000 tasks, 2,000 notes, 500 inbox items, 500 events."""
+    2,000 next actions, 2,000 notes, 500 inbox items, 500 events."""
     base = datetime(2026, 9, 1, 9, 0, tzinfo=timezone.utc)
 
     for p in range(40):  # 40 projects x 50 tasks
@@ -28,7 +35,7 @@ def big_vault(vault):
             lines.append(
                 f"- [ ] task number {n} about topic-{n % 97}"
                 f"  <!-- id:t_gen{n:05d}{due} ctx:@computer -->")
-        (vault.tasks_dir / f"project-{p:02d}.md").write_text("\n".join(lines) + "\n")
+        (vault.current_dir / f"project-{p:02d}.md").write_text("\n".join(lines) + "\n")
 
     for n in range(2000):
         d = vault.notes_dir / "2026" / f"{(n % 12) + 1:02d}"

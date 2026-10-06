@@ -15,9 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import reviews
-from .sidecars import BODY
 from .formats import meta as _meta
 from .formats import notes_md
+from .sidecars import BODY
 
 _CHECKBOX_RE = re.compile(r"^(\s*)- \[( |x|X)\] (.*)$")
 

@@ -217,10 +217,9 @@ class Handler(BaseHTTPRequestHandler):
         look at afterwards, so without it a bad answer leaves nothing to debug
         — which is exactly the state it was in.
         """
+        from hubidubios_agent.config import language_instruction
         from hubidubios_agent.log import log_event
         from hubidubios_agent.loop import strip_reasoning
-
-        from hubidubios_agent.config import language_instruction
 
         system = ("You are the user's assistant. Answer in plain prose. "
                   "Be concise and concrete. Do not use JSON, markdown fences, "
