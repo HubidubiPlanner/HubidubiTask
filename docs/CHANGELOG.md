@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Next comes first.** It is the first tab and where the apps open, and it has
+  no title: the day, or the range's dates, then the tasks.
 - **No Agent tab.** General questions to an agent are not what the app is for, so the
   chat tab is gone on the phone and the computer. The agent chosen in Settings
   reviews items (long-press, Review with the agent), and feeds still write

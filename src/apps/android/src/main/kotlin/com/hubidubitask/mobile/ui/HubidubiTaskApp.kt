@@ -43,8 +43,9 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
         Surface(color = c.paper) {
             val nav = rememberNavController()
             val dests = listOf(
-                Dest("projects", "Projects", Icons.Outlined.Folder),
+                // Next first, and where the app opens: what to do comes before where it is filed.
                 Dest("next", "Next", Icons.Outlined.CheckCircle),
+                Dest("projects", "Projects", Icons.Outlined.Folder),
                 Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
                 Dest("settings", "Settings", Icons.Outlined.Tune),
             )
@@ -64,7 +65,7 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                                     selected = selected,
                                     onClick = {
                                         nav.navigate(d.route) {
-                                            popUpTo("projects"); launchSingleTop = true
+                                            popUpTo("next"); launchSingleTop = true
                                         }
                                     },
                                     icon = { Icon(d.icon, contentDescription = null) },
@@ -97,7 +98,7 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                 val state by vm.state.collectAsStateWithLifecycle()
                 // Consumed here so a screen asking for imePadding() gets only the
                 // part of the keyboard that rises above the bottom bar.
-                NavHost(nav, startDestination = "projects",
+                NavHost(nav, startDestination = "next",
                     modifier = Modifier.padding(pad).consumeWindowInsets(pad)) {
                     composable("projects") { ProjectsScreen(state, vm) }
                     composable("next") { NextScreen(state, vm) }

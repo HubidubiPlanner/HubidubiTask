@@ -892,12 +892,15 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Next", remember(range) {
-            when (range) {
-                Agenda.Range.DAY -> todayLong()
-                else -> rangeSpan(today, range.days)
-            }
-        })
+        // No title: the tab says where you are. The day, or the stretch the
+        // range covers, is the first line, and the content follows at once.
+        Text(remember(range) {
+                when (range) {
+                    Agenda.Range.DAY -> todayLong()
+                    else -> rangeSpan(today, range.days)
+                }
+            }, style = MaterialTheme.typography.bodySmall, color = c.muted,
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 10.dp))
         Segmented(Agenda.Range.entries.map { it to it.label }, range, { range = it },
             Modifier.padding(horizontal = 20.dp))
         LazyColumn(Modifier.fillMaxSize()) {

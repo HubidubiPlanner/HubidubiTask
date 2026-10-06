@@ -67,14 +67,15 @@ fun main() {
 
 
 @Composable
-fun App(vm: HubidubiTaskViewModel, start: String = "projects") {
+fun App(vm: HubidubiTaskViewModel, start: String = "next") {
     HubidubiTaskTheme {
         val c = HubidubiTaskTheme.colors
         val state by vm.state.collectAsState()
         var route by remember { mutableStateOf(start) }
         val dests = listOf(
-            Dest("projects", "Projects", Icons.Outlined.Folder),
+            // Next first, and where the app opens: what to do comes before where it is filed.
             Dest("next", "Next", Icons.Outlined.CheckCircle),
+            Dest("projects", "Projects", Icons.Outlined.Folder),
             Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
             Dest("settings", "Settings", Icons.Outlined.Tune),
         )

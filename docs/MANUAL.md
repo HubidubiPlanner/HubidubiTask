@@ -21,10 +21,11 @@ and the phone also hourly in the background.
 
 ## Everyday use
 
+- **Next**, the first tab and where the app opens: today, this week or this
+  month. A long press marks a task done.
 - **+** on Projects: a project, a task, a note, a photo, a picture from the
   gallery, a voice memo or a file. On the computer you can also drop a file
   on the window.
-- **Next:** today, this week or this month. A long press marks a task done.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, **Claude**
   or **Harness**, and a project (or none, for the inbox). The first look only
   remembers the page; after that, once per period, a change becomes one task.
