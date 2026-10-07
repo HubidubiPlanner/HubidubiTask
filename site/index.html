@@ -4,117 +4,214 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HubidubiTask</title>
-  <meta name="description" content="Tasks and notes on your phone and your computer. One + for everything new, and an AI that reviews any item you ask it to.">
+  <meta name="description" content="Tasks and notes on your phone and your computer, kept in step over your own Wi-Fi. One + for everything new, and AI that reviews any item you ask it to.">
   <meta name="theme-color" content="#E9E1CF" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1C1D18" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://hubidubitask.example/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="HubidubiTask">
-  <meta property="og:description" content="One + for everything new. AI review for every item.">
+  <meta property="og:description" content="Write it down. Get it done. Free on Android, Mac and Linux.">
   <meta property="og:image" content="https://hubidubitask.example/assets/og-image.jpg">
-  <link rel="preload" href="fonts/plex_sans_regular.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="preload" href="fonts/plex_sans_semibold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="fonts/plex_sans_regular.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+  <link rel="preload" href="fonts/plex_sans_semibold.ttf" as="font" type="font/ttf" crossorigin="anonymous">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="./" aria-label="HubidubiTask home"><img src="assets/favicon.svg" alt="" width="26" height="26">HubidubiTask</a>
+    <a class="brand" href="index.html"><img src="assets/favicon.svg" alt="" width="28" height="28">HubidubiTask</a>
     <nav class="site-nav" aria-label="Main">
-      <a class="keep" href="#get">Get it</a>
+      <a href="download.html">Download</a>
+      <a href="agent.html">Agent</a>
+      <a href="privacy.html">Privacy</a>
     </nav>
   </div>
 </header>
 
-<main class="wrap">
+<main>
 
-  <section class="hero">
-    <h1>Write it down.<br>Get it done.</h1>
-    <p class="lede">Tasks and notes on your phone and your computer. One + for everything new, and an AI that reviews any item you ask it to.</p>
-    <div class="actions">
-      <a class="btn" href="https://play.google.com/store/apps/details?id=com.saferendering.hubidubios.projects">Get it on Google Play</a>
-      <a class="btn btn-quiet" href="downloads/HubidubiTask.dmg">Mac</a>
-      <a class="btn btn-quiet" href="downloads/hubidubitask-x86_64.pkg.tar.zst">Linux</a>
+  <section class="wrap hero">
+    <div>
+      <p class="eyebrow">Android, Mac and Linux · Free</p>
+      <h1>Write it down.<br>Get it done.</h1>
+      <p class="lede">Tasks and notes on your phone and your computer, kept in step over your own Wi-Fi. One + for everything new, and AI that reviews any item you ask it to.</p>
+      <div class="actions">
+        <a class="btn" href="https://play.google.com/store/apps/details?id=com.saferendering.hubidubios.projects">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"></rect><path d="M11 18h2"></path></svg>Get it on Google Play</a>
+        <a class="btn btn-quiet" href="download.html#mac">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5"></rect><path d="M2 19h20"></path></svg>Download for Mac</a>
+      </div>
+      <p class="assure">No account. No cloud. Also for <a href="download.html#linux">Linux</a>.</p>
+    </div>
+    <div class="phone">
+      <picture>
+        <source srcset="assets/screens/next-day-dark.jpg" media="(prefers-color-scheme: dark)">
+        <img src="assets/screens/next-day.jpg" width="540" height="1080" alt="Next, Day view: one overdue task, then today's stand-up and three tasks, each with its project.">
+      </picture>
     </div>
   </section>
 
-  <section class="story" aria-label="How it works">
-    <ol>
+  <section class="wrap section" aria-labelledby="how-h">
+    <div class="section-head">
+      <h2 id="how-h">It opens on what is next</h2>
+      <p>Today first, overdue on its own, then the week or the month. Everything else is one + away.</p>
+    </div>
+    <ol class="steps">
       <li>
-        <h2>Press +</h2>
-        <p>Pick what it is: a project, a task, a note, a photo, a voice memo or a file. That is the only way in, so there is nothing to remember.</p>
+        <div class="phone">
+          <picture>
+            <source srcset="assets/screens/new-dark.jpg" media="(prefers-color-scheme: dark)">
+            <img src="assets/screens/new.jpg" width="540" height="1080" loading="lazy" alt="The + sheet: a project, a task, a note, a photo, from the gallery, a voice memo, a file.">
+          </picture>
+        </div>
+        <div>
+          <h3>Press +</h3>
+          <p>A project, a task, a note, a photo, a voice memo or a file. That is the only way in, so there is nothing to remember.</p>
+        </div>
       </li>
       <li>
-        <h2>It goes where it belongs</h2>
-        <p>A task goes into a project, or straight to your inbox. A photo, memo or file asks once: is it something to do, or something to keep?</p>
+        <div class="phone">
+          <picture>
+            <source srcset="assets/screens/projects-dark.jpg" media="(prefers-color-scheme: dark)">
+            <img src="assets/screens/projects.jpg" width="540" height="1080" loading="lazy" alt="Projects, two of them open, with tasks and a note filed under them.">
+          </picture>
+        </div>
+        <div>
+          <h3>It goes where it belongs</h3>
+          <p>A task goes into a project or your inbox. A photo, memo or file asks once: something to do, or something to keep?</p>
+        </div>
       </li>
       <li>
-        <h2>See what is next</h2>
-        <p>Next shows today, this week or this month. A long press marks a task done.</p>
+        <div class="phone">
+          <picture>
+            <source srcset="assets/screens/feeds-dark.jpg" media="(prefers-color-scheme: dark)">
+            <img src="assets/screens/feeds.jpg" width="540" height="1080" loading="lazy" alt="Feeds: three watched web pages, each checked daily, weekly or monthly.">
+          </picture>
+        </div>
+        <div>
+          <h3>Watch a page</h3>
+          <p>Add a web page as a feed. Once a day, week or month it is checked, and a change becomes one task.</p>
+        </div>
       </li>
       <li>
-        <h2>Watch a page</h2>
-        <p>Add a web page as a feed. Once a day, week or month it is checked, and if something changed, AI turns the change into one task.</p>
-      </li>
-      <li>
-        <h2>Ask the AI about it</h2>
-        <p>Every item can be reviewed by AI: a task, a note, a project. It reads that one item and tells you what is unclear, missing, or the next step.</p>
+        <div class="phone">
+          <picture>
+            <source srcset="assets/screens/review-dark.jpg" media="(prefers-color-scheme: dark)">
+            <img src="assets/screens/review.jpg" width="540" height="1080" loading="lazy" alt="A long press on a task: move, mark done, add a note, date, review with AI, delete.">
+          </picture>
+        </div>
+        <div>
+          <h3>Review with AI</h3>
+          <p>Long-press any task, note or project. The AI you chose says what is unclear, missing, or the next step.</p>
+        </div>
       </li>
     </ol>
   </section>
 
-  <section aria-labelledby="taps-h">
-    <h2 id="taps-h">How many taps</h2>
-    <table class="taps">
-      <thead><tr><th scope="col">To</th><th scope="col">Taps</th></tr></thead>
-      <tbody>
-        <tr><td>Add a task to a project</td><td>4</td></tr>
-        <tr><td>Add a task to the inbox</td><td>4</td></tr>
-        <tr><td>Write a note</td><td>3</td></tr>
-        <tr><td>Start a project</td><td>3</td></tr>
-        <tr><td>Keep a photo from the gallery</td><td>4</td></tr>
-        <tr><td>Record a voice memo</td><td>4</td></tr>
-        <tr><td>Attach a file</td><td>4</td></tr>
-        <tr><td>Capture from the home-screen widget</td><td>2</td></tr>
-        <tr><td>Mark a task done</td><td>2</td></tr>
-        <tr><td>Review any item with AI</td><td>2</td></tr>
-        <tr><td>Watch a web page</td><td>3</td></tr>
-        <tr><td>Capture a file on the computer</td><td>Drop it, then 1</td></tr>
-      </tbody>
-    </table>
-    <p class="note">Typing is not counted. The + is the first tap; a long press counts as one.</p>
-  </section>
-
-  <section aria-labelledby="ai-h">
-    <h2 id="ai-h">Your AI, your choice</h2>
-    <ul class="agents">
-      <li><strong>SelfHostedAI</strong><span>A SelfHostedAI server, over its encrypted connection.</span></li>
-      <li><strong>OpenAI</strong><span>Any server that speaks OpenAI's API, with a model you run yourself.</span></li>
-      <li><strong>Claude</strong><span>Anthropic's Claude, with your API key.</span></li>
-      <li><strong>Agent</strong><span>Claude Code on any computer in your home, at the IP and port you give it.</span></li>
-    </ul>
-    <p class="note">Questions go straight from your device to the AI you picked. Nothing passes through us.</p>
-  </section>
-
-  <section id="get" aria-labelledby="get-h">
-    <h2 id="get-h">Phone and computer, kept in step</h2>
-    <p>Pair them once with a short code. They sync over your own Wi-Fi, with no account and no cloud.</p>
-    <div class="actions">
-      <a class="btn" href="https://play.google.com/store/apps/details?id=com.saferendering.hubidubios.projects">Get it on Google Play</a>
-      <a class="btn btn-quiet" href="downloads/HubidubiTask.dmg">Mac</a>
-      <a class="btn btn-quiet" href="downloads/hubidubitask-x86_64.pkg.tar.zst">Linux</a>
+  <section class="wrap section split" aria-labelledby="taps-h">
+    <div class="section-head">
+      <h2 id="taps-h">How many taps</h2>
+      <p>Typing is not counted. The + is the first tap, and a long press counts as one.</p>
     </div>
-    <p class="note">Android 8 or later. macOS on Apple silicon or Intel. Linux on x86_64, packaged for Arch and Omarchy.</p>
+    <div class="taps-box">
+      <table class="taps">
+        <thead><tr><th scope="col">To</th><th scope="col">Taps</th></tr></thead>
+        <tbody>
+          <tr><td>See what is due today<small>The app opens on it</small></td><td>0</td></tr>
+          <tr><td>Add a task to a project</td><td>4</td></tr>
+          <tr><td>Add a task to the inbox</td><td>4</td></tr>
+          <tr><td>Write a note</td><td>3</td></tr>
+          <tr><td>Start a project</td><td>3</td></tr>
+          <tr><td>Keep a photo from the gallery</td><td>4</td></tr>
+          <tr><td>Record a voice memo</td><td>4</td></tr>
+          <tr><td>Attach a file</td><td>4</td></tr>
+          <tr><td>Capture from the home-screen widget</td><td>2</td></tr>
+          <tr><td>Mark a task done</td><td>2</td></tr>
+          <tr><td>Review any item with AI</td><td>2</td></tr>
+          <tr><td>Watch a web page</td><td>3</td></tr>
+          <tr><td>Capture a file on the computer<small>Drop it on the window</small></td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="wrap section" aria-labelledby="ai-h">
+    <div class="section-head">
+      <h2 id="ai-h">Your AI, your choice</h2>
+      <p>Pick one in Settings. Reviews go straight from your device to it. Nothing passes through us.</p>
+    </div>
+    <ul class="cards cards-4">
+      <li class="card">
+        <span class="card-mark">Default</span>
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"></path></svg>SelfHostedAI</h3>
+        <p>Your SelfHostedAI server, over its own encrypted connection.</p>
+      </li>
+      <li class="card">
+        <span class="card-mark">Your model</span>
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5"></path></svg>OpenAI</h3>
+        <p>Any server that speaks OpenAI's API, with a model you run yourself.</p>
+      </li>
+      <li class="card">
+        <span class="card-mark">Your key</span>
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"></circle><path d="M11 12l8-8M16 7l3 3"></path></svg>Claude</h3>
+        <p>Anthropic's Claude, with your own API key.</p>
+      </li>
+      <li class="card">
+        <span class="card-mark">Your home</span>
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path><path d="M10 20v-5h4v5"></path></svg>Agent</h3>
+        <p>Claude Code on a computer in your home. It looks across all your items and the web, and adds or finishes tasks when you ask.</p>
+        <a class="more" href="agent.html">Set up your Agent</a>
+      </li>
+    </ul>
+  </section>
+
+  <section class="wrap section" aria-labelledby="step-h">
+    <div class="section-head">
+      <h2 id="step-h">Phone and computer, kept in step</h2>
+      <p>Pair them once with a short code. From then on they keep each other current by themselves.</p>
+    </div>
+    <ul class="cards cards-3">
+      <li class="card">
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.8 16a5 5 0 0 1 6.4 0"></path><circle cx="12" cy="19.5" r="0.9"></circle></svg>Your own Wi-Fi</h3>
+        <p>The phone and the computer talk to each other directly. Every edit carries its time, and deletions travel too.</p>
+      </li>
+      <li class="card">
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="1.5"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path></svg>Yours, offline</h3>
+        <p>Each device keeps a full copy and works without a connection. On the phone it is an encrypted database.</p>
+      </li>
+      <li class="card">
+        <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path><path d="M3 3l18 18"></path></svg>No account</h3>
+        <p>Nothing to sign up for, and no server of ours. No ads, no analytics, no tracking.</p>
+      </li>
+    </ul>
   </section>
 
 </main>
 
+<section class="get" aria-labelledby="get-h">
+  <div class="wrap">
+    <div>
+      <h2 id="get-h">Free on Android, Mac and Linux.</h2>
+      <p>Android 8 or later. A Mac with Apple silicon. Arch Linux or Omarchy on x86_64.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="https://play.google.com/store/apps/details?id=com.saferendering.hubidubios.projects">Get it on Google Play</a>
+      <a class="btn btn-quiet" href="download.html">All downloads</a>
+    </div>
+  </div>
+</section>
+
 <footer class="site-footer">
   <div class="wrap">
-    <span>HubidubiTask</span>
-    <a href="privacy.html">Privacy policy</a>
+    <a class="brand" href="index.html"><img src="assets/favicon.svg" alt="" width="24" height="24">HubidubiTask</a>
+    <nav aria-label="Footer">
+      <a href="download.html">Download</a>
+      <a href="agent.html">Agent</a>
+      <a href="privacy.html">Privacy policy</a>
+      <a href="mailto:hello@hubidubitask.example">Contact</a>
+    </nav>
   </div>
 </footer>
 

@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.8.0 — 7 October 2026
+
+HubidubiOS is now HubidubiTask, with the Agent on any computer at home, Next
+first, and no chat.
 
 - **New names and order in Settings.** The section is **AI**, and its choices
   are, in this order, SelfHostedAI (the default), **OpenAI** (was Model), Claude and
@@ -9,8 +12,8 @@
   no title: the day, or the range's dates, then the tasks.
 - **No Agent tab.** General questions to an agent are not what the app is for, so the
   chat tab is gone on the phone and the computer. The agent chosen in Settings
-  reviews items (long-press, Review with the agent), and feeds still write
-  their task with Claude or the Harness.
+  reviews items (long-press, Review with AI), and feeds still write
+  their task with Claude or the Agent.
 - **The Harness is its own server, on any computer at home.** Settings asks for
   its IP and port; the desktop app no longer runs Claude Code, and the phone no
   longer goes through the paired computer for it. `sh deploy/harness/install.sh`

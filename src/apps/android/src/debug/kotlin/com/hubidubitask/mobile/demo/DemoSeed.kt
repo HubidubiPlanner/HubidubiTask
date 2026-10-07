@@ -72,5 +72,16 @@ class DemoSeed : BroadcastReceiver() {
             false, "Ramiro"), "Home")
         s.addEvent(Ics.Occurrence("demo-dentist", "Dentist", at(4, 8, 15), at(4, 9, 0),
             false, null), "Home")
+
+        // Feeds, as if each had been looked at already.
+        fun feed(title: String, url: String, period: String, project: String?, changed: Long?) =
+            s.newFeed(mapOf("kind" to "web", "url" to url, "title" to title, "period" to period,
+                "model" to "claude", "project" to project, "last_checked" to day(0) + "T07:00:00Z",
+                // Looked at this period already, so the app does not fetch the made-up pages.
+                "last_period" to com.hubidubitask.core.feed.Feeds.periodKey(period, today),
+                "last_changed" to changed?.let(::day)))
+        feed("Lisbon tram timetable", "https://www.carris.pt/en/", "week", lisbon, -2L)
+        feed("Tiler's price list", "https://example.com/tiles/prices", "month", null, null)
+        feed("Board meeting agenda", "https://example.com/board", "day", null, 0L)
     }
 }

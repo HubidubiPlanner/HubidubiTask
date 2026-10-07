@@ -1,0 +1,5 @@
+• HubidubiOS is now HubidubiTask.
+• Next is the first tab and opens straight on today.
+• Review any item with AI: long-press, then Review with AI.
+• Settings, AI: SelfHostedAI, OpenAI, Claude, or your own Agent at home, by its IP and port.
+• The chat tab is gone: AI works on your items, not in a chat.

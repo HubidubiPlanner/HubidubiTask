@@ -1,0 +1,44 @@
+HubidubiTask is a task app built around one idea: what you write down should get done, not pile up.
+
+It opens on what is next. Everything new starts from one +. Your phone and your computer (Mac or Linux) keep each other current over your own Wi-Fi. There is no account, no cloud and no server of ours in between.
+
+SEE WHAT IS NEXT
+• The app opens on today. Overdue tasks get their own heading at the top, because "should already have happened" calls for a different decision than "happens today".
+• Switch to Week or Month when you plan. Weeks roll from today, so on a Saturday "this week" still means seven days.
+• Tomorrow never ambushes you: the Day view says how much more is due this week.
+• Calendar events sit in the same days as your tasks, with their start time.
+
+ONE + FOR EVERYTHING NEW
+• A project, a task, a note, a photo, a picture from the gallery, a voice memo or a file.
+• A task goes into a project or straight to the inbox. A photo, memo or file asks once: something to do, or something to keep?
+• Add a date while you still remember it, or skip it.
+• Capture text from the home-screen widget or from any app's share menu.
+
+DONE MEANS DONE
+• A long press marks a task done, moves it, dates it or reviews it.
+• Projects are plain containers of tasks and notes. Put a note under a task to keep the details where the work is.
+
+WATCH A PAGE
+• Add a web page as a feed. Once a day, week or month it is checked, and when something changed, AI turns the change into one task in the project you chose.
+
+REVIEW WITH AI (OPTIONAL)
+• Long-press any task, note or project and choose Review with AI. It tells you what is unclear, missing, or the next step.
+• Pick the AI in Settings: your SelfHostedAI server, any OpenAI-compatible model you run, Anthropic's Claude with your own API key, or your own Agent: Claude Code on a computer in your home, which can look across all your items and add or finish tasks when you ask.
+• Reviews go straight from your phone to the AI you chose. Nothing passes through us. Without an AI, everything else works the same.
+
+SYNC WITHOUT A CLOUD
+• Pair the phone with the HubidubiTask app on your Mac or Linux computer by typing a short code.
+• From then on they keep each other current. Every edit carries its time, the newest wins, and deletions travel too.
+• Everything works offline. The phone keeps a full copy in an encrypted database.
+• Traffic between your devices is encrypted and pinned to the certificate exchanged when you paired.
+
+COMING FROM ANOTHER APP?
+• One-time import from Todoist (with your API token) or Google Calendar (with your private iCal address). The token is used once and not kept.
+
+PRIVACY
+• No account, no sign-in, no ads, no analytics, no trackers.
+• We run no servers, so we never receive your data.
+• Taking a photo opens your camera app; the microphone is used only while you record a voice memo.
+
+Plain paper by day, moss green by night: HubidubiTask follows your system's light and dark theme.
+Get it done. Keep it yours.

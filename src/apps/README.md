@@ -23,8 +23,7 @@ no browser.
   `./gradlew :desktop:createDistributable` (or `:desktop:packageDmg`). Linux:
   `distribution/arch/build.sh` builds the Arch package in containers.
 
-The Play Store listing and fastlane metadata live in
-`distribution/play-store/`, not here.
+Publishing on Google Play, step by step, lives in `deploy/google-play/`.
 
 ## What the native shell owns (and why it can't be a pure web app)
 

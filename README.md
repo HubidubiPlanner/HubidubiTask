@@ -13,10 +13,8 @@ The whole picture: [`docs/ecosystem.html`](docs/ecosystem.html).
 |---|---|
 | [`src/apps/`](src/apps) | The app: one Gradle build. `android/` the phone app, `desktop/` the macOS and Linux app, `shared/` what both use (items, sync, feeds, agents). |
 | [`src/harness/`](src/harness) | The Harness: Claude Code as an agent the apps reach by IP and port. One Python file. |
-| [`deploy/harness/`](deploy/harness) | Its installer, for any Linux or macOS computer at home. |
+| [`deploy/`](deploy) | Getting it out: Google Play (`google-play/`), the website with its downloads (`website/`), the Agent's installer (`harness/`), the Omarchy image (`omarchy/`). Numbered steps inside each. |
 | [`distribution/arch/`](distribution/arch) | The Linux package for Arch and Omarchy, built in containers by `build.sh`. |
-| [`distribution/play-store/`](distribution/play-store) | The Google Play listing: texts, graphics, screenshots, fastlane metadata. |
-| [`deploy/omarchy/`](deploy/omarchy) | An Omarchy installer image with the app installed. |
 | [`site/`](site) | The public website. |
 | [`docs/`](docs) | The ecosystem page and the manual. |
 
@@ -41,6 +39,9 @@ cd src/apps
 ./gradlew :desktop:createDistributable        # Mac app (on a Mac)
 distribution/arch/build.sh                    # Linux: the Arch package, from any Docker host
 deploy/omarchy/build-fork-in-colima.sh        # Omarchy image with the app
+sh deploy/google-play/1-app-bundle/build.sh   # the signed Play bundle, checked
+sh deploy/website/1-downloads/build.sh        # website: Mac, Linux and Agent downloads
+sh deploy/website/2-site/assemble.sh          # website: ready to publish
 ```
 
 The last commit with the old workstation (Python services, plugins, OS

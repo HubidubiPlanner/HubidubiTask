@@ -12,7 +12,10 @@ set -eu
 
 PORT="${PORT:-8765}"
 HERE=$(cd "$(dirname "$0")" && pwd)
-SRC="$HERE/../../src/harness/hubidubitask_harness.py"
+# Next to this script in the download (hubidubitask-agent.tar.gz); in the repo,
+# under src/harness.
+SRC="$HERE/hubidubitask_harness.py"
+[ -f "$SRC" ] || SRC="$HERE/../../src/harness/hubidubitask_harness.py"
 APP="$HOME/.local/share/hubidubitask-harness"
 CONF="${XDG_CONFIG_HOME:-$HOME/.config}/hubidubitask-harness"
 OS=$(uname -s)
@@ -112,7 +115,7 @@ UN
 fi
 
 echo
-echo "The Harness is running on port $PORT. In the app: Settings, AI, Agent:"
+echo "The Agent is running on port $PORT. In the app: Settings, AI, Agent:"
 for ip in $IPS; do echo "    IP $ip    Port $PORT"; done
 echo "Logs: $LOGS"
 if command -v ufw >/dev/null 2>&1; then

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Download HubidubiTask</title>
+  <meta name="description" content="HubidubiTask is free on Android, Mac and Linux. Download the Mac app, the Linux package, or get it on Google Play.">
+  <meta name="theme-color" content="#E9E1CF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1C1D18" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://hubidubitask.example/download.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Download HubidubiTask">
+  <meta property="og:description" content="Free on Android, Mac and Linux.">
+  <meta property="og:image" content="https://hubidubitask.example/assets/og-image.jpg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/favicon.svg" alt="" width="28" height="28">HubidubiTask</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="download.html" aria-current="page">Download</a>
+      <a href="agent.html">Agent</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="page-head">
+    <p class="eyebrow">Version 1.8.0</p>
+    <h1>Download HubidubiTask</h1>
+    <p class="lede">Free on every system, with nothing to sign up for. Get it on your phone and your computer, then pair them once.</p>
+  </section>
+
+  <section class="section" aria-label="Downloads">
+    <ul class="cards cards-3">
+      <li class="card platform" id="android">
+        <h2><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"></rect><path d="M11 18h2"></path></svg>Android <span class="free">Free</span></h2>
+        <p>The phone app: capture anywhere, see what is next, works offline.</p>
+        <a class="btn" href="https://play.google.com/store/apps/details?id=com.saferendering.hubidubios.projects">Get it on Google Play</a>
+        <dl>
+          <dt>Needs</dt><dd>Android 8 or later</dd>
+          <dt>Price</dt><dd>Free, no ads</dd>
+        </dl>
+      </li>
+      <li class="card platform" id="mac">
+        <h2><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5"></rect><path d="M2 19h20"></path></svg>Mac <span class="free">Free</span></h2>
+        <p>The same app on a big screen. Drop a file on the window to capture it.</p>
+        <a class="btn" href="downloads/HubidubiTask.dmg" download="">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Download for Mac</a>
+        <dl>
+          <dt>Needs</dt><dd>Apple silicon (M1 or later), macOS 11 or later</dd>
+          <dt>File</dt><dd>HubidubiTask.dmg, 153 MB</dd>
+        </dl>
+      </li>
+      <li class="card platform" id="linux">
+        <h2><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1.5"></rect><path d="M7 9l3 3-3 3M13 15h4"></path></svg>Linux <span class="free">Free</span></h2>
+        <p>The computer app for Arch Linux and Omarchy, with its own Java runtime.</p>
+        <a class="btn" href="downloads/hubidubitask-x86_64.pkg.tar.zst" download="">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Download for Linux</a>
+        <dl>
+          <dt>Needs</dt><dd>Arch Linux or Omarchy, x86_64</dd>
+          <dt>File</dt><dd>hubidubitask-x86_64.pkg.tar.zst, 148 MB</dd>
+        </dl>
+      </li>
+    </ul>
+    <p class="small muted" style="margin-top: 16px">Check a download against <a href="downloads/SHA256SUMS">its SHA-256</a>.</p>
+  </section>
+
+  <section class="section split" aria-labelledby="mac-h">
+    <div class="section-head">
+      <h2 id="mac-h">Opening the Mac app the first time</h2>
+      <p>HubidubiTask is free and not signed with an Apple developer certificate, so macOS asks you once to confirm that you want to open it. After that it opens like any other app.</p>
+    </div>
+    <ol class="numbered">
+      <li>
+        <h3>Move it to Applications</h3>
+        <p>Open HubidubiTask.dmg and drag HubidubiTask into the Applications folder.</p>
+      </li>
+      <li>
+        <h3>Open it once</h3>
+        <p>macOS says it could not verify the app. Click Done.</p>
+      </li>
+      <li>
+        <h3>Allow it in System Settings</h3>
+        <p>Open System Settings, then Privacy &amp; Security. Under Security, click Open Anyway next to “HubidubiTask was blocked”, and confirm with your password or Touch ID.</p>
+      </li>
+      <li>
+        <h3>Or, in Terminal</h3>
+        <p>One line does the same:</p>
+        <code class="cmd">xattr -dr com.apple.quarantine /Applications/HubidubiTask.app</code>
+      </li>
+    </ol>
+  </section>
+
+  <section class="section split" aria-labelledby="linux-h">
+    <div class="section-head">
+      <h2 id="linux-h">Installing on Linux</h2>
+      <p>One package with everything it needs. On upgrade it replaces the older hubidubios package, and your items move with it.</p>
+    </div>
+    <ol class="numbered">
+      <li>
+        <h3>Install the package</h3>
+        <code class="cmd">sudo pacman -U hubidubitask-x86_64.pkg.tar.zst</code>
+      </li>
+      <li>
+        <h3>Start it</h3>
+        <p>From the app launcher, or with <strong>hubidubitask</strong> in a terminal. The package opens the sync port to your home network if ufw is on.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="section split" aria-labelledby="pair-h">
+    <div class="section-head">
+      <h2 id="pair-h">Pair your phone and your computer</h2>
+      <p>Both on the same Wi-Fi. You do this once.</p>
+    </div>
+    <ol class="numbered">
+      <li>
+        <h3>On the computer</h3>
+        <p>Settings, then Pair a phone. It shows a short code.</p>
+      </li>
+      <li>
+        <h3>On the phone</h3>
+        <p>Settings, then Pair with a computer. Type the code.</p>
+      </li>
+      <li>
+        <h3>Done</h3>
+        <p>They keep each other current from now on, over your own Wi-Fi.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="section" aria-labelledby="agent-h">
+    <div class="card" style="padding: 28px">
+      <h2 id="agent-h" style="font-size: 24px">Want AI that can look things up?</h2>
+      <p>Run your own Agent: Claude Code on a computer in your home, which every review can use.</p>
+      <a class="more" href="agent.html">Set up your Agent</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/favicon.svg" alt="" width="24" height="24">HubidubiTask</a>
+    <nav aria-label="Footer">
+      <a href="download.html">Download</a>
+      <a href="agent.html">Agent</a>
+      <a href="privacy.html">Privacy policy</a>
+      <a href="mailto:hello@hubidubitask.example">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
