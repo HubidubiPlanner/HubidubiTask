@@ -5,6 +5,9 @@
 HubidubiOS is now HubidubiTask, with the Agent on any computer at home, Next
 first, and no chat.
 
+- **The + is on Next too**, in exactly the same place as on Projects, so
+  anything new starts from where the app opens. On the computer, a file
+  dropped on Next is captured too.
 - **New names and order in Settings.** The section is **AI**, and its choices
   are, in this order, SelfHostedAI (the default), **OpenAI** (was Model), Claude and
   **Agent** (was Harness). Reviews are **Review with AI**. Saved settings carry over unchanged.

@@ -1,5 +1,5 @@
 • HubidubiOS to teraz HubidubiTask.
-• Next jest pierwszą kartą i otwiera się od razu na dzisiejszym dniu.
+• Next jest pierwszą kartą i otwiera się od razu na dzisiejszym dniu, z + pod ręką.
 • Przegląd dowolnej rzeczy z AI: przytrzymaj, potem Review with AI.
 • Ustawienia, AI: SelfHostedAI, OpenAI, Claude albo własny Agent w domu, po adresie IP i porcie.
 • Karty czatu już nie ma: AI pracuje na Twoich rzeczach, nie w czacie.

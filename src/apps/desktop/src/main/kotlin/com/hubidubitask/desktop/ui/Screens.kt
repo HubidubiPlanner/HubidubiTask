@@ -621,6 +621,11 @@ private fun AnalysisSheet(
  */
 @Composable
 fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
+    var adding by remember { mutableStateOf(false) }
+    val capture = rememberCaptureActions(vm)
+    NewMenu(adding, { adding = false }, state, vm, capture)
+    // A file dropped anywhere here is a capture, as on Projects: the app opens here.
+    var dragging by remember { mutableStateOf(false) }
     val c = HubidubiTaskTheme.colors
     var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
@@ -663,16 +668,29 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
         })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(
+        Modifier.fillMaxSize()
+            .fileDrop(onHover = { dragging = it }, onFiles = capture.drop)
+            .border(2.dp, if (dragging) c.accent else Color.Transparent)
+    ) {
         // No title: the tab says where you are. The day, or the stretch the
-        // range covers, is the first line, and the content follows at once.
-        Text(remember(range) {
-                when (range) {
-                    Agenda.Range.DAY -> todayLong()
-                    else -> rangeSpan(today, range.days)
-                }
-            }, style = MaterialTheme.typography.bodySmall, color = c.muted,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 10.dp))
+        // range covers, is the first line; the + sits exactly where Projects
+        // has it, so anything new is one tap from where the app opens.
+        // The row is as tall as Projects' title line and the + sits on its
+        // bottom, as there, so switching tabs leaves it in the same spot.
+        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.Bottom) {
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                Text("", style = MaterialTheme.typography.headlineLarge)
+                Text(remember(range) {
+                        when (range) {
+                            Agenda.Range.DAY -> todayLong()
+                            else -> rangeSpan(today, range.days)
+                        }
+                    }, style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
+            PlusButton("New project or task") { adding = true }
+        }
         Segmented(Agenda.Range.entries.map { it to it.label }, range, { range = it },
             Modifier.padding(horizontal = 20.dp))
         LazyColumn(Modifier.fillMaxSize()) {
@@ -1017,139 +1035,59 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * What the + starts, the same on Next and Projects: what it is (a project, a
+ * task, a note, a picture, a voice memo, a file), then where it goes. The
+ * screen hands in its capture helpers, which also take files dropped on it.
+ */
 @Composable
-fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
+internal fun NewMenu(
+    open: Boolean,
+    onClose: () -> Unit,
+    state: HubidubiTaskViewModel.UiState,
+    vm: HubidubiTaskViewModel,
+    capture: CaptureActions,
+    onTaskAdded: (EntityRecord) -> Unit = {},
+) {
     val c = HubidubiTaskTheme.colors
-    // A project is a flat container holding its items — notes and tasks alike.
-    // The shape and move rules live in ProjectTree so they are testable without
-    // driving the UI.
-    val records = remember(state.projects, state.nextActions, state.notes, state.inbox) {
-        ProjectTree.records(state.projects, state.nextActions, state.notes, state.inbox)
-    }
-    // Every project starts closed: the view opens as a list of projects, and a
-    // tap opens the one being looked for. Only the ones opened are remembered,
-    // so a project that arrives later (a sync, a new one) is closed too.
-    var expanded by remember { mutableStateOf(setOf<String>()) }
-    var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
     var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
-    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
-    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
-    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
-    var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
-    val nodes = remember(records, expanded) {
-        val closed = records.filter { it.type == "project" }.mapTo(HashSet()) { it.id } - expanded
-        ProjectTree.build(records, closed)
-    }
-    // Counted from the full tree, so a collapsed project still says how much it holds.
-    val counts = remember(records) {
-        val out = HashMap<String, Int>()
-        var owner: String? = null
-        ProjectTree.build(records).forEach { n ->
-            if (n.isProject) { owner = n.id; out[n.id] = 0 }
-            else if (n.depth == 1) owner?.let { out[it] = (out[it] ?: 0) + 1 }
-        }
-        out
-    }
-    // Each project with the items shown under it, then the loose ones.
-    val groups = remember(nodes) {
-        val out = mutableListOf<Pair<ProjectTree.Node, MutableList<ProjectTree.Node>>>()
-        nodes.forEach { n ->
-            if (n.isProject) out += n to mutableListOf()
-            else if (n.depth == 1) out.lastOrNull()?.second?.add(n)
-        }
-        out
-    }
-    val free = remember(nodes) { nodes.filter { it.isFree } }
-    // How many sub-tasks each item holds: shown as a count, opened on tap.
-    val subCount = remember(records) {
-        records.mapNotNull { it.fields["parent"] }.groupingBy { it }.eachCount()
-    }
-
-    var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
-    var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
-    var renaming by remember { mutableStateOf<EntityRecord?>(null) }
-    // The plus asks what is wanted first: a project, or a task into one.
-    var choosingKind by remember { mutableStateOf(false) }
     var pickingProjectForTask by remember { mutableStateOf(false) }
     var addingLooseTask by remember { mutableStateOf(false) }
+    var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
     var writingNote by remember { mutableStateOf(false) }
-    val capture = rememberCaptureActions(vm)
-    val projects = remember(nodes) { nodes.filter { it.isProject } }
-    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
-    ItemActionsMenu(
-        record = menuFor, canMove = menuFor?.type != "project", vm = vm,
-        onMove = { rec -> moving = nodes.firstOrNull { it.id == rec.id } },
-        onReview = { rec -> reviewing = rec },
-        onDelete = { rec -> pendingDelete = rec },
-        onDismiss = { menuFor = null },
-        onAddNote = { rec -> addingNoteTo = rec },
-        onAddTask = { rec -> addingTaskTo = rec },
-        onRename = { rec -> renaming = rec },
-    )
-    AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
-    // Open the project the task went into, so the new task is seen landing.
-    AddTaskSheet(addingTaskTo, vm, onAdded = { expanded = expanded + it.id }) { addingTaskTo = null }
+    val projects = remember(state.projects, state.nextActions, state.notes, state.inbox) {
+        ProjectTree.build(ProjectTree.records(state.projects, state.nextActions, state.notes, state.inbox))
+            .filter { it.isProject }
+    }
+    AddTaskSheet(addingTaskTo, vm, onAdded = onTaskAdded) { addingTaskTo = null }
     AddTaskSheet(null, vm, onAdded = {}, loose = addingLooseTask) { addingLooseTask = false }
     NewNoteSheet(writingNote, vm) { writingNote = false }
-    RenameProjectDialog(renaming, vm) { renaming = null }
-    val allItems = remember(state.nextActions, state.inbox, state.notes) {
-        state.nextActions + state.inbox + state.notes
-    }
-    DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
-        onDismiss = { detailFor = null },
-        subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
-        onOpen = { detailFor = it },
-        onDone = { vm.complete(it) },
-        // The sheet keeps showing the edited copy: the lists refresh behind it.
-        onEdit = { edited ->
-            vm.editNote(edited.id, edited.fields["title"].orEmpty(), edited.fields["body"].orEmpty())
-            detailFor = edited
-        })
-    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
-    moving?.let { node ->
-        val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
-        AppSheet(onDismiss = { moving = null }) {
-            SheetTitle(node.title, overline = "Move to")
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                val current = node.record.fields["parent"]
-                targets.forEachIndexed { i, (id, label) ->
-                    val here = id == current || (id == null && current.isNullOrBlank())
-                    ActionRow(Icons.Outlined.Folder, label, meta = if (here) "here" else null,
-                        color = c.accent, enabled = !here, last = i == targets.lastIndex) {
-                        vm.move(node.id, id); moving = null
-                    }
-                }
-            }
-            SecondaryButton("Cancel", { moving = null }, Modifier.fillMaxWidth().padding(top = 16.dp))
-        }
-    }
-
-    if (choosingKind) {
-        AppSheet(onDismiss = { choosingKind = false }) {
+    if (open) {
+        AppSheet(onDismiss = onClose) {
             SheetTitle("New")
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             ActionRow(Icons.Outlined.Folder, "A project", color = c.accent) {
-                choosingKind = false; creating = true
+                onClose(); creating = true
             }
             ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task", color = c.accent) {
-                choosingKind = false; pickingProjectForTask = true
+                onClose(); pickingProjectForTask = true
             }
             ActionRow(Icons.AutoMirrored.Filled.Notes, "A note", color = c.accent) {
-                choosingKind = false; writingNote = true
+                onClose(); writingNote = true
             }
             ActionRow(Icons.Outlined.Image, "A picture", color = c.accent) {
-                choosingKind = false; capture.picture()
+                onClose(); capture.picture()
             }
             ActionRow(Icons.Outlined.Mic, "A voice memo", color = c.accent) {
-                choosingKind = false; capture.voice()
+                onClose(); capture.voice()
             }
             ActionRow(Icons.Outlined.Description, "A file", color = c.accent, last = true) {
-                choosingKind = false; capture.file()
+                onClose(); capture.file()
             }
             }
-            SecondaryButton("Cancel", { choosingKind = false },
+            SecondaryButton("Cancel", onClose,
                 Modifier.fillMaxWidth().padding(top = 16.dp))
         }
     }
@@ -1200,6 +1138,132 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
         )
     }
 
+}
+
+/**
+ * The + at the top right of a tab, in the same place on each. Its 48dp tap
+ * target reports only the title's line height, so it never makes a header
+ * taller than the other tabs' or pushes what is beside it down.
+ */
+@Composable
+fun PlusButton(description: String, onClick: () -> Unit) {
+    val c = HubidubiTaskTheme.colors
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.layout { m, cs ->
+            val p = m.measure(cs.copy(minHeight = 0))
+            val h = 34.sp.roundToPx()
+            layout(p.width, h) { p.place(0, (h - p.height) / 2) }
+        }.size(48.dp),
+    ) {
+        Icon(Icons.Filled.Add, contentDescription = description, tint = c.accent,
+            modifier = Modifier.size(30.dp))
+    }
+}
+
+@Composable
+fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
+    val c = HubidubiTaskTheme.colors
+    // A project is a flat container holding its items — notes and tasks alike.
+    // The shape and move rules live in ProjectTree so they are testable without
+    // driving the UI.
+    val records = remember(state.projects, state.nextActions, state.notes, state.inbox) {
+        ProjectTree.records(state.projects, state.nextActions, state.notes, state.inbox)
+    }
+    // Every project starts closed: the view opens as a list of projects, and a
+    // tap opens the one being looked for. Only the ones opened are remembered,
+    // so a project that arrives later (a sync, a new one) is closed too.
+    var expanded by remember { mutableStateOf(setOf<String>()) }
+    var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
+    var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
+    var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
+    var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
+    var detailFor by remember { mutableStateOf<EntityRecord?>(null) }
+    val nodes = remember(records, expanded) {
+        val closed = records.filter { it.type == "project" }.mapTo(HashSet()) { it.id } - expanded
+        ProjectTree.build(records, closed)
+    }
+    // Counted from the full tree, so a collapsed project still says how much it holds.
+    val counts = remember(records) {
+        val out = HashMap<String, Int>()
+        var owner: String? = null
+        ProjectTree.build(records).forEach { n ->
+            if (n.isProject) { owner = n.id; out[n.id] = 0 }
+            else if (n.depth == 1) owner?.let { out[it] = (out[it] ?: 0) + 1 }
+        }
+        out
+    }
+    // Each project with the items shown under it, then the loose ones.
+    val groups = remember(nodes) {
+        val out = mutableListOf<Pair<ProjectTree.Node, MutableList<ProjectTree.Node>>>()
+        nodes.forEach { n ->
+            if (n.isProject) out += n to mutableListOf()
+            else if (n.depth == 1) out.lastOrNull()?.second?.add(n)
+        }
+        out
+    }
+    val free = remember(nodes) { nodes.filter { it.isFree } }
+    // How many sub-tasks each item holds: shown as a count, opened on tap.
+    val subCount = remember(records) {
+        records.mapNotNull { it.fields["parent"] }.groupingBy { it }.eachCount()
+    }
+
+    var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
+    var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
+    var renaming by remember { mutableStateOf<EntityRecord?>(null) }
+    // The + asks what is wanted first; its menu is shared with Next.
+    var adding by remember { mutableStateOf(false) }
+    val capture = rememberCaptureActions(vm)
+    // Open the project a new task went into, so it is seen landing.
+    NewMenu(adding, { adding = false }, state, vm, capture, onTaskAdded = { expanded = expanded + it.id })
+    ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
+    ItemActionsMenu(
+        record = menuFor, canMove = menuFor?.type != "project", vm = vm,
+        onMove = { rec -> moving = nodes.firstOrNull { it.id == rec.id } },
+        onReview = { rec -> reviewing = rec },
+        onDelete = { rec -> pendingDelete = rec },
+        onDismiss = { menuFor = null },
+        onAddNote = { rec -> addingNoteTo = rec },
+        onAddTask = { rec -> addingTaskTo = rec },
+        onRename = { rec -> renaming = rec },
+    )
+    AddNoteSheet(addingNoteTo, vm) { addingNoteTo = null }
+    // Open the project the task went into, so the new task is seen landing.
+    AddTaskSheet(addingTaskTo, vm, onAdded = { expanded = expanded + it.id }) { addingTaskTo = null }
+    RenameProjectDialog(renaming, vm) { renaming = null }
+    val allItems = remember(state.nextActions, state.inbox, state.notes) {
+        state.nextActions + state.inbox + state.notes
+    }
+    DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
+        onDismiss = { detailFor = null },
+        subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
+        onOpen = { detailFor = it },
+        onDone = { vm.complete(it) },
+        // The sheet keeps showing the edited copy: the lists refresh behind it.
+        onEdit = { edited ->
+            vm.editNote(edited.id, edited.fields["title"].orEmpty(), edited.fields["body"].orEmpty())
+            detailFor = edited
+        })
+    AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
+
+    moving?.let { node ->
+        val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
+        AppSheet(onDismiss = { moving = null }) {
+            SheetTitle(node.title, overline = "Move to")
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                val current = node.record.fields["parent"]
+                targets.forEachIndexed { i, (id, label) ->
+                    val here = id == current || (id == null && current.isNullOrBlank())
+                    ActionRow(Icons.Outlined.Folder, label, meta = if (here) "here" else null,
+                        color = c.accent, enabled = !here, last = i == targets.lastIndex) {
+                        vm.move(node.id, id); moving = null
+                    }
+                }
+            }
+            SecondaryButton("Cancel", { moving = null }, Modifier.fillMaxWidth().padding(top = 16.dp))
+        }
+    }
+
     // A file dropped anywhere here is a capture, the same as choosing it.
     var dragging by remember { mutableStateOf(false) }
     Column(
@@ -1208,22 +1272,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
             .border(2.dp, if (dragging) c.accent else Color.Transparent)
     ) {
         ScreenHeader("Projects") {
-            // The plus alone, no box around it. It asks whether a project or a
-            // task is wanted before anything opens. The tap target stays 48dp.
-            IconButton(
-                onClick = { choosingKind = true },
-                // Reports only the title's line height, centred on it, so the
-                // 48dp touch target doesn't make this header taller than the
-                // other tabs' and push the title down.
-                modifier = Modifier.layout { m, cs ->
-                    val p = m.measure(cs.copy(minHeight = 0))
-                    val h = 34.sp.roundToPx()
-                    layout(p.width, h) { p.place(0, (h - p.height) / 2) }
-                }.size(48.dp),
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "New project or task", tint = c.accent,
-                    modifier = Modifier.size(30.dp))
-            }
+            PlusButton("New project or task") { adding = true }
         }
         if (nodes.isEmpty()) {
             Text("No projects yet. Tap + to start one, then file notes and tasks into it.",
