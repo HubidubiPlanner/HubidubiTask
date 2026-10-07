@@ -27,22 +27,22 @@ and the phone also hourly in the background.
   gallery, a voice memo or a file. On the computer you can also drop a file
   on the window.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, **Claude**
-  or **Harness**, and a project (or none, for the inbox). The first look only
+  or **Agent**, and a project (or none, for the inbox). The first look only
   remembers the page; after that, once per period, a change becomes one task.
-- **Review:** long-press any item → **Review with the agent**.
+- **Review:** long-press any item, then **Review with AI**.
 
 ## AI
 
-**Settings → Agent** chooses one of four:
+**Settings**, under **AI**, chooses one of four:
 
-| Agent | What to enter |
+| Choice | What to enter |
 |---|---|
 | Claude | An API key from the Anthropic Console (kept in the system's keychain) |
 | SelfHostedAI | The server's address |
-| Model | The address of an OpenAI-compatible server |
-| Harness | The IP and port of the computer running the Harness (port 8765 unless you chose another) |
+| OpenAPI | The address of a server that speaks OpenAI's API, and the model's name |
+| Agent | The IP and port of the computer running the Harness (port 8765 unless you chose another) |
 
-**Harness** is Claude Code on a computer in your home network, any Linux or
+**Agent** is the Harness: Claude Code on a computer in your home network, any Linux or
 macOS machine with Claude Code installed. Set it up there once:
 
 ```sh
@@ -50,7 +50,7 @@ sh deploy/harness/install.sh
 ```
 
 It runs as a service, starts with the computer, and prints the IP and port to
-type in **Settings → Agent → Harness**. Saving trusts the certificate the
+type in **Settings**, under **AI**, after choosing **Agent**. Saving trusts the certificate the
 Harness shows at that moment; after that only that certificate is accepted.
 If you reinstall it on a new machine, save again.
 

@@ -39,11 +39,12 @@ data class AgentConfig(
         const val CLAUDE_MODEL = "claude-opus-5-5"
 
         /** Every agent the apps can use, in the order Settings offers them. */
+        /** Labels only: the ids are what settings store, so they never change. "Agent" is the Harness. */
         val PROTOCOLS = listOf("claude" to "Claude", "selfhostedai" to "SelfHostedAI",
-            "openai" to "Model", "harness" to "Harness")
+            "openai" to "OpenAPI", "harness" to "Agent")
 
         /** The agents a feed may use: the two that write good one-line tasks. */
-        val FEED_MODELS = listOf("claude" to "Claude", "harness" to "Harness")
+        val FEED_MODELS = listOf("claude" to "Claude", "harness" to "Agent")
 
         const val HARNESS_MODEL = "claude-code"
 

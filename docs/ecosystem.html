@@ -129,14 +129,14 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <text class="t" x="60" y="56">Claude</text>
       <text class="s" x="60" y="80">your API key</text>
       <rect class="ext" x="355" y="24" width="250" height="76"/>
-      <text class="t" x="375" y="56">SelfHostedAI or Model</text>
+      <text class="t" x="375" y="56">SelfHostedAI or OpenAPI</text>
       <text class="s" x="375" y="80">your own server</text>
       <rect class="ext" x="670" y="24" width="250" height="76"/>
       <text class="t" x="690" y="56">Web pages</text>
       <text class="s" x="690" y="80">what feeds watch</text>
 
       <rect class="hub" x="330" y="400" width="300" height="112"/>
-      <text class="t" x="350" y="432">Harness</text>
+      <text class="t" x="350" y="432">Agent: the Harness</text>
       <text class="s" x="350" y="456">any computer at home · :8765, pinned TLS</text>
       <text class="s" x="350" y="478">Claude Code, restricted, on its own</text>
       <text class="s" x="350" y="498">login or a local model</text>
@@ -212,7 +212,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>Apps and the Harness</td><td>Questions in the OpenAI shape over HTTPS; with tools, the app's items go along and the changes the Harness made come back</td><td>8765</td><td>IP and port in Settings</td><td>Its self-signed certificate, pinned at the first answer after Save; only home-network addresses are answered</td></tr>
         <tr><td>Harness and Claude Code</td><td>One restricted <code>claude -p</code> per question, with the items as MCP tools and a Markdown copy</td><td>none</td><td>The same computer</td><td>A fresh folder per question, deleted after the answer</td></tr>
         <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring</td></tr>
-        <tr><td>Apps and SelfHostedAI or Model</td><td>Encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>Encryption or a pinned TLS certificate</td></tr>
+        <tr><td>Apps and SelfHostedAI or OpenAPI</td><td>Encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>Encryption or a pinned TLS certificate</td></tr>
         <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
       </tbody>
     </table>
@@ -221,7 +221,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
 <section aria-labelledby="ai-h">
   <h2 id="ai-h">AI</h2>
-  <p>Settings offers four agents on every system: Claude, SelfHostedAI, Model and Harness. There is no chat: the agent reviews any item you long-press, and feeds use Claude or the Harness to write their task.</p>
+  <p>Settings offers four AI choices on every system: Claude, SelfHostedAI, OpenAPI and Agent, which is the Harness. There is no chat: the AI reviews any item you long-press, and feeds use Claude or the Agent to write their task.</p>
   <div class="table">
     <table>
       <thead><tr><th>Harness request</th><th>Claude Code may use</th><th>Works in</th></tr></thead>

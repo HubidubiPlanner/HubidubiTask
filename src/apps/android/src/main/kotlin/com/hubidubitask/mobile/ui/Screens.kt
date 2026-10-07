@@ -368,7 +368,7 @@ private fun ItemActionsMenu(
         }
         ActionRow(Icons.Outlined.CalendarToday, if (due.isBlank()) "Set a date" else "Date",
             meta = due.takeIf { it.isNotBlank() }?.let(::shortDate)) { picking = true }
-        ActionRow(Icons.Outlined.RateReview, "Review with the agent") {
+        ActionRow(Icons.Outlined.RateReview, "Review with AI") {
             onDismiss(); onReview(record)
         }
         ActionRow(Icons.Outlined.DeleteOutline, "Delete", color = c.danger, last = true) {
@@ -595,7 +595,7 @@ private fun AnalysisSheet(
         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             when {
                 !connected -> Text(
-                    "Agent not connected. Set it up in Settings.",
+                    "AI not connected. Set it up in Settings.",
                     style = MaterialTheme.typography.bodyMedium, color = c.muted)
                 busy -> Text("Thinking… a cold model can take a minute.",
                     style = MaterialTheme.typography.bodyMedium, color = c.muted)
@@ -1160,7 +1160,7 @@ fun SettingsScreen(
             CardGroup {
                 StatusRow(mac.name, mac.lastSync?.let { "synced " + it.take(16).replace('T', ' ') + " UTC" }
                     ?: "paired, not synced yet", mac.lastSync != null)
-                StatusRow("Agent", state.inference.server ?: "not configured",
+                StatusRow("AI", state.inference.server ?: "not configured",
                     state.inference.connected, last = true)
             }
             Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp),
@@ -1171,7 +1171,7 @@ fun SettingsScreen(
             }
         } else {
             CardGroup {
-                StatusRow("Agent", state.inference.server ?: "not configured",
+                StatusRow("AI", state.inference.server ?: "not configured",
                     state.inference.connected, last = true)
             }
             Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp)) {
@@ -1180,7 +1180,7 @@ fun SettingsScreen(
             }
         }
 
-        SectionLabel("Agent", modifier = Modifier.padding(top = 10.dp))
+        SectionLabel("AI", modifier = Modifier.padding(top = 10.dp))
 
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Segmented(
@@ -1212,7 +1212,7 @@ fun SettingsScreen(
                     enabled = true, placeholder = defaultModel)
 
             PrimaryButton(
-                if (saving) "Saving…" else "Save agent",
+                if (saving) "Saving…" else "Save",
                 {
                     saving = true; message = null
                     val address = if (harness)
@@ -1229,9 +1229,9 @@ fun SettingsScreen(
                         val h = vm.checkInference()
                         message = if (h.connected) "Connected to ${h.server ?: endpoint}"
                             else if (claude) "Saved, but Claude did not answer: ${h.error ?: "no reply"}"
-                            else if (harness) "Saved, but the harness at $address did not answer: ${h.error ?: "no reply"}"
+                            else if (harness) "Saved, but the agent at $address did not answer: ${h.error ?: "no reply"}"
                             else "Saved, but nothing answered at $endpoint — check the " +
-                                "address and that the agent is running there."
+                                "address and that the server is running there."
                         saving = false
                     }
                 },

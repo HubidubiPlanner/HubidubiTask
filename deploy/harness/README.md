@@ -12,7 +12,8 @@ sh deploy/harness/install.sh --remove  # stop and remove; settings stay
 
 It installs a service: a systemd user service on Linux (kept running without a
 login through `loginctl enable-linger`), a LaunchAgent on macOS. At the end it
-prints the IP and port to type in the apps: **Settings → Agent → Harness**.
+prints the IP and port to type in the apps: **Settings**, under **AI**, after
+choosing **Agent**.
 
 ## A local model
 

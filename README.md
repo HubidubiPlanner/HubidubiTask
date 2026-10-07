@@ -22,14 +22,14 @@ The whole picture: [`docs/ecosystem.html`](docs/ecosystem.html).
 
 ## AI
 
-Settings offers four agents, the same on every system:
+Settings, under AI, offers four choices, the same on every system:
 
-| Agent | What it is |
+| Choice | What it is |
 |---|---|
 | Claude | Anthropic's Claude, with your API key |
 | SelfHostedAI | A SelfHostedAI server, over its encrypted connection |
-| Model | Any OpenAI-compatible model you run yourself |
-| Harness | Claude Code on any computer at home, at the IP and port you type. Install it there with `sh deploy/harness/install.sh`. |
+| OpenAPI | Any server that speaks OpenAI's API, with a model you run yourself |
+| Agent | The Harness: Claude Code on any computer at home, at the IP and port you type. Install it there with `sh deploy/harness/install.sh`. |
 
 ## Everyday commands
 

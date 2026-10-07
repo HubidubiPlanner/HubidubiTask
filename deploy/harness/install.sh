@@ -112,7 +112,7 @@ UN
 fi
 
 echo
-echo "The Harness is running on port $PORT. In the app: Settings, Agent, Harness:"
+echo "The Harness is running on port $PORT. In the app: Settings, AI, Agent:"
 for ip in $IPS; do echo "    IP $ip    Port $PORT"; done
 echo "Logs: $LOGS"
 if command -v ufw >/dev/null 2>&1; then
