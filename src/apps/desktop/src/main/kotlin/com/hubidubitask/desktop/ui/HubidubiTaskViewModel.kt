@@ -200,7 +200,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     private var lastHealth: Pair<Long, Health>? = null
 
     fun agentConfig(): AgentConfig {
-        val p = store.kv("agent_protocol") ?: "selfhostedai"
+        val p = store.kv("agent_protocol") ?: AgentConfig.DEFAULT_PROTOCOL
         val harness = p == "harness"
         return AgentConfig(
             endpoint = if (harness) harnessEndpoint()

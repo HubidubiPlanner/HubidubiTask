@@ -14,7 +14,7 @@ object AgentSettings {
 
     fun load(context: Context): AgentConfig {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val protocol = p.getString("protocol", null) ?: "selfhostedai"
+        val protocol = p.getString("protocol", null) ?: AgentConfig.DEFAULT_PROTOCOL
         val harness = protocol == "harness"
         return AgentConfig(
             endpoint = if (harness) harnessEndpoint(context)
