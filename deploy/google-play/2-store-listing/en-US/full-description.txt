@@ -10,7 +10,7 @@ SEE WHAT IS NEXT
 
 ONE + FOR EVERYTHING NEW
 • A project, a task, a note, a photo, a picture from the gallery, a voice memo or a file.
-• The + is right on Next, where the app opens, and in the same place on Projects.
+• The + is right on Incoming, where the app opens, and in the same place on Projects.
 • A task goes into a project or straight to the inbox. A photo, memo or file asks once: something to do, or something to keep?
 • Add a date while you still remember it, or skip it.
 • Capture text from the home-screen widget or from any app's share menu.
@@ -42,4 +42,6 @@ PRIVACY
 • Taking a photo opens your camera app; the microphone is used only while you record a voice memo.
 
 Plain paper by day, moss green by night: HubidubiTask follows your system's light and dark theme.
+
+In English, Polish, German, French and Spanish. Choose in Settings; until then the app follows your phone's language.
 Get it done. Keep it yours.

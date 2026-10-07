@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.importer.Todoist
 import kotlinx.coroutines.launch
 
@@ -74,44 +75,44 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         IconButton(onClick = { if (source != null && done == null) reset() else onBack() },
             modifier = Modifier.padding(start = 8.dp, top = 8.dp).size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = c.ink)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"), tint = c.ink)
         }
         ScreenHeader(
-            when (source) { null -> "Import"; Source.TODOIST -> "Todoist"; Source.GOOGLE -> "Google Calendar" },
-            "One time. Nothing is kept afterwards — not the token, not the address.",
+            when (source) { null -> t("Import"); Source.TODOIST -> "Todoist"; Source.GOOGLE -> "Google Calendar" },
+            t("One time. Nothing is kept afterwards — not the token, not the address."),
         )
 
         val body = Modifier.padding(horizontal = 20.dp)
         when {
             done != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(done!!, style = MaterialTheme.typography.bodyLarge)
-                PrimaryButton("Done", onBack, Modifier.fillMaxWidth())
+                PrimaryButton(t("Done"), onBack, Modifier.fillMaxWidth())
             }
 
             source == null -> {
-                SectionLabel("Import from", modifier = Modifier.padding(top = 0.dp))
+                SectionLabel(t("Import from"), modifier = Modifier.padding(top = 0.dp))
                 CardGroup {
-                    SourceRow(Icons.Outlined.TaskAlt, "Todoist", "Projects and open tasks") {
+                    SourceRow(Icons.Outlined.TaskAlt, "Todoist", t("Projects and open tasks")) {
                         source = Source.TODOIST
                     }
                     SourceRow(Icons.Outlined.CalendarMonth, "Google Calendar",
-                        "Events from the next 12 months", last = true) { source = Source.GOOGLE }
+                        t("Events from the next 12 months"), last = true) { source = Source.GOOGLE }
                 }
             }
 
             todo != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 val p = todo!!
                 Summary(buildList {
-                    add(Line("${p.newProjects.size} new projects" +
-                        if (p.joinedProjects > 0) ", ${p.joinedProjects} existing ones get new tasks" else ""))
-                    add(Line("${p.tasks.size - p.subtasks} tasks" + if (p.dated > 0) ", ${p.dated} with a date" else ""))
-                    if (p.subtasks > 0) add(Line("${p.subtasks} of them are sub-tasks — they come in as notes under their task"))
-                    if (p.withDescription > 0) add(Line("${p.withDescription} with a description"))
-                    if (p.alreadyHere > 0) add(Line("${p.alreadyHere} already in the app — skipped", true))
+                    add(Line(t("%d new projects", p.newProjects.size) +
+                        if (p.joinedProjects > 0) t(", %d existing ones get new tasks", p.joinedProjects) else ""))
+                    add(Line(t("%d tasks", p.tasks.size - p.subtasks) + if (p.dated > 0) t(", %d with a date", p.dated) else ""))
+                    if (p.subtasks > 0) add(Line(t("%d of them are sub-tasks — they come in as notes under their task", p.subtasks)))
+                    if (p.withDescription > 0) add(Line(t("%d with a description", p.withDescription)))
+                    if (p.alreadyHere > 0) add(Line(t("%d already in the app — skipped", p.alreadyHere), true))
                 }, buildList {
-                    if (p.recurring > 0) add("${p.recurring} repeats (the next date is kept)")
-                    if (p.withLabels > 0) add("${p.withLabels} tasks' labels")
-                    if (p.inSections > 0) add("${p.inSections} tasks' sections")
+                    if (p.recurring > 0) add(t("%d repeats (the next date is kept)", p.recurring))
+                    if (p.withLabels > 0) add(t("%d tasks' labels", p.withLabels))
+                    if (p.inSections > 0) add(t("%d tasks' sections", p.inSections))
                 })
                 error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
                 Confirm(busy, p.tasks.isEmpty() && p.newProjects.isEmpty(), onCancel = ::reset) {
@@ -120,10 +121,9 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                         val n = runCatching { vm.importTodoist(p) }
                         busy = false
                         n.onSuccess {
-                            done = "Imported ${it - p.subtasks} tasks, ${p.subtasks} notes and " +
-                                "${p.newProjects.size} projects. " +
-                                "They reach your phone on the next sync."
-                        }.onFailure { error = it.message ?: "The import failed." }
+                            done = t("Imported %d tasks, %d notes and %d projects. They reach your phone on the next sync.",
+                                it - p.subtasks, p.subtasks, p.newProjects.size)
+                        }.onFailure { error = it.message ?: t("The import failed.") }
                     }
                 }
             }
@@ -131,11 +131,11 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
             cal != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 val p = cal!!
                 Summary(buildList {
-                    add(Line("${p.events.size} events in the next 12 months"))
-                    if (p.alreadyHere > 0) add(Line("${p.alreadyHere} already in the app — skipped", true))
+                    add(Line(t("%d events in the next 12 months", p.events.size)))
+                    if (p.alreadyHere > 0) add(Line(t("%d already in the app — skipped", p.alreadyHere), true))
                 }, buildList {
                     if (p.unsupportedRules > 0)
-                        add("${p.unsupportedRules} repeating events use a rule this can't expand — only their first date comes in")
+                        add(t("%d repeating events use a rule this can't expand — only their first date comes in", p.unsupportedRules))
                 })
                 error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
                 Confirm(busy, p.events.isEmpty(), onCancel = ::reset) {
@@ -144,9 +144,8 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                         val n = runCatching { vm.importCalendar(p) }
                         busy = false
                         n.onSuccess {
-                            done = "Imported $it events. They show in Next, and reach your " +
-                                "phone on the next sync."
-                        }.onFailure { error = it.message ?: "The import failed." }
+                            done = t("Imported %d events. They show in Incoming, and reach your phone on the next sync.", it)
+                        }.onFailure { error = it.message ?: t("The import failed.") }
                     }
                 }
             }
@@ -154,7 +153,7 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
             else -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 val todoist = source == Source.TODOIST
                 Text(
-                    if (todoist) "API token" else "Secret address in iCal format",
+                    if (todoist) t("API token") else t("Secret address in iCal format"),
                     style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold,
                 )
                 OutlinedTextField(
@@ -169,15 +168,14 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    if (todoist) "In Todoist: Settings → Integrations → Developer → API token."
-                    else "In Google Calendar on the web: Settings → your calendar → Integrate " +
-                        "calendar → Secret address in iCal format. Treat it like a password.",
+                    if (todoist) t("In Todoist: Settings → Integrations → Developer → API token.")
+                    else t("In Google Calendar on the web: Settings → your calendar → Integrate calendar → Secret address in iCal format. Treat it like a password."),
                     style = MaterialTheme.typography.bodySmall, color = c.muted,
                 )
                 error?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger)
                 }
-                PrimaryButton(if (busy) "Reading…" else "Continue", {
+                PrimaryButton(if (busy) t("Reading…") else t("Continue"), {
                     busy = true; error = null
                     scope.launch {
                         val res = runCatching {
@@ -188,9 +186,9 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                         res.onSuccess { secret = "" }   // read once; not needed any more
                         res.onFailure {
                             error = when (it) {
-                                is Todoist.TokenRejected -> "Todoist didn't accept that token."
-                                is java.net.UnknownHostException -> "No internet connection."
-                                else -> it.message ?: "Couldn't read it."
+                                is Todoist.TokenRejected -> t("Todoist didn't accept that token.")
+                                is java.net.UnknownHostException -> t("No internet connection.")
+                                else -> it.message ?: t("Couldn't read it.")
                             }
                         }
                     }
@@ -214,7 +212,7 @@ private fun Summary(lines: List<Line>, lost: List<String>) {
         lines.forEach { Text(it.text, style = MaterialTheme.typography.bodyMedium,
             color = if (it.muted) c.muted else c.ink) }
         if (lost.isNotEmpty()) {
-            Text("NOT CARRIED OVER", style = MaterialTheme.typography.labelSmall, color = c.muted,
+            Text(t("NOT CARRIED OVER"), style = MaterialTheme.typography.labelSmall, color = c.muted,
                 modifier = Modifier.padding(top = 8.dp))
             lost.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted) }
         }
@@ -224,14 +222,14 @@ private fun Summary(lines: List<Line>, lost: List<String>) {
 @Composable
 private fun Confirm(busy: Boolean, nothing: Boolean, onCancel: () -> Unit, onImport: () -> Unit) {
     if (nothing) {
-        Text("Nothing new to import.", style = MaterialTheme.typography.bodyMedium,
+        Text(t("Nothing new to import."), style = MaterialTheme.typography.bodyMedium,
             color = HubidubiTaskTheme.colors.muted)
-        SecondaryButton("Back", onCancel, Modifier.fillMaxWidth())
+        SecondaryButton(t("Back"), onCancel, Modifier.fillMaxWidth())
         return
     }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        SecondaryButton("Cancel", onCancel, Modifier.weight(1f), enabled = !busy)
-        PrimaryButton(if (busy) "Importing…" else "Import", onImport, Modifier.weight(1f),
+        SecondaryButton(t("Cancel"), onCancel, Modifier.weight(1f), enabled = !busy)
+        PrimaryButton(if (busy) t("Importing…") else t("Import"), onImport, Modifier.weight(1f),
             enabled = !busy)
     }
 }

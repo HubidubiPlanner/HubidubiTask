@@ -10,6 +10,8 @@ import com.hubidubitask.core.agent.HarnessItems
 import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
+import com.hubidubitask.core.i18n.Language
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.net.AgentSettings
 import com.hubidubitask.mobile.sync.Sync
 import com.hubidubitask.mobile.importer.Ics
@@ -30,6 +32,16 @@ import kotlinx.coroutines.withContext
  * drive the two native status chips.
  */
 class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
+
+    /** The language the screens speak; changing it redraws them in place. */
+    private val _language = MutableStateFlow(UiLanguage.apply(app))
+    val language: StateFlow<Language> = _language.asStateFlow()
+
+    fun setLanguage(l: Language) {
+        UiLanguage.save(getApplication(), l)
+        _language.value = l
+    }
+
 
     data class UiState(
         val paired: Boolean = false,
@@ -98,7 +110,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun checkFeed(id: String): String {
         val msg = withContext(Dispatchers.IO) {
             runCatching { com.hubidubitask.mobile.feed.FeedWork.run(getApplication(), only = id)[id] }
-                .getOrElse { it.message } ?: "Nothing to look at"
+                .getOrElse { it.message } ?: t("Nothing to look at")
         }
         refresh()
         return msg
@@ -121,10 +133,10 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
      * may be typed on the Mac after it is shown here, and the Mac may be found by
      * Bonjour or at a typed [address]. Returns a line to show.
      */
-    suspend fun pairMac(code: String, address: String?, shownHere: Boolean): String =
+    suspend fun pairMac(code: String, address: String?, shownHere: Boolean): Pair<Boolean, String> =
         withContext(Dispatchers.IO) {
             val ctx = getApplication<Application>()
-            val name = android.os.Build.MODEL ?: "Phone"
+            val name = android.os.Build.MODEL ?: t("Phone")
             val until = System.currentTimeMillis() + com.hubidubitask.core.peer.PeerPairing.CODE_TTL_MS
             while (System.currentTimeMillis() < until) {
                 val candidates = listOfNotNull(address?.let(com.hubidubitask.mobile.net.MacLink::parseAddress)) +
@@ -134,18 +146,18 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
                         is com.hubidubitask.mobile.net.MacLink.PairOutcome.Paired -> {
                             runCatching { Sync.syncMac(ctx) }
                             withContext(Dispatchers.Main) { refresh() }
-                            return@withContext "Paired with ${out.mac.name}."
+                            return@withContext true to t("Paired with %s.", out.mac.name)
                         }
                         // Typed on this phone and the Mac refused it: wrong code.
                         com.hubidubitask.mobile.net.MacLink.PairOutcome.WrongCode ->
-                            if (!shownHere) return@withContext "The computer didn't accept that code."
+                            if (!shownHere) return@withContext false to t("The computer didn't accept that code.")
                         else -> {}
                     }
                 }
                 if (!kotlinx.coroutines.currentCoroutineContext().isActiveSafe()) break
                 Thread.sleep(2500)
             }
-            "No computer took the code in time."
+            false to t("No computer took the code in time.")
         }
 
     private fun kotlin.coroutines.CoroutineContext.isActiveSafe() =

@@ -12,13 +12,13 @@ Tablet screenshots are optional; skip them, the app is made for phones.
 
 The real app, light theme, with made-up demo data and a clean status bar:
 
-1. `1-next-day.jpg`: Next, where the app opens: one overdue task, today's tasks and a stand-up
+1. `1-next-day.jpg`: Incoming, where the app opens: one overdue task, today's tasks and a stand-up
 2. `2-new.jpg`: the + sheet: project, task, note, photo, gallery, voice memo, file
 3. `3-projects.jpg`: Projects, two of them open, a note filed under a task
 4. `4-item.jpg`: an opened task with its due date, its note, Mark done and Review
 5. `5-review-with-ai.jpg`: a long press on a task, with Review with AI
 6. `6-feeds.jpg`: three watched web pages
-7. `7-next-week.jpg`: Next, Week view, grouped by day
+7. `7-next-week.jpg`: Incoming, Week view, grouped by day
 8. `8-settings-ai.jpg`: Settings, with the four AI choices
 
 ## Making them again

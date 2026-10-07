@@ -85,7 +85,7 @@ class Phone:
 
 
 # What each tab shows once it is open, to know the tap landed.
-LANDMARK = {"Next": "Day", "Projects": "New project or task", "Feeds": "New feed", "Settings": "AI"}
+LANDMARK = {"Incoming": "Day", "Projects": "New project or task", "Feeds": "New feed", "Settings": "AI"}
 
 
 def tab(p, name):
@@ -124,7 +124,7 @@ def start(p, night):
     clean_status_bar(p)
     p.sh("am", "force-stop", APP)
     p.sh("am", "start", "-n", MAIN)
-    # Next opens first; it has an overdue task once the items have loaded.
+    # Incoming opens first; it has an overdue task once the items have loaded.
     # Seen twice, so the shot is not taken while the screen is being redrawn.
     p.find("OVERDUE", tries=20)
     time.sleep(2.5)
@@ -151,7 +151,7 @@ def play_set(p, out):
     p.back()
     tab(p, "Feeds")
     p.shot(os.path.join(out, "6-feeds.jpg"))
-    tab(p, "Next")
+    tab(p, "Incoming")
     p.tap("Week")
     p.shot(os.path.join(out, "7-next-week.jpg"))
     tab(p, "Settings")
@@ -175,7 +175,7 @@ def web_set(p, out, night):
     p.back()
     tab(p, "Feeds")
     p.shot(os.path.join(out, "feeds%s.jpg" % suffix))
-    tab(p, "Next")
+    tab(p, "Incoming")
 
 
 def main():

@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.hubidubitask.core.i18n.I18n
 
 // The few pieces every screen is built from. Keeping them here is what makes
 // five screens look like one app: the same title, the same grouped card, the
@@ -57,19 +58,18 @@ fun ScreenHeader(
     trailing: @Composable (RowScope.() -> Unit)? = null,
 ) {
     val c = HubidubiTaskTheme.colors
-    Row(
-        Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 14.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.headlineLarge, color = c.ink)
-            subtitle?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
-                    modifier = Modifier.padding(top = 2.dp))
-            }
+    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 14.dp)) {
+        // The trailing button sits on the title's line, so a subtitle never
+        // moves it: the + is in the same place on every tab.
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.headlineLarge, color = c.ink,
+                modifier = Modifier.weight(1f))
+            trailing?.invoke(this)
         }
-        trailing?.invoke(this)
+        subtitle?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
+                modifier = Modifier.padding(top = 2.dp))
+        }
     }
 }
 
@@ -289,12 +289,12 @@ private fun utc(pattern: String) = java.text.SimpleDateFormat(pattern, java.util
 
 fun todayIso(): String = utc("yyyy-MM-dd").format(java.util.Date())
 
-/** "Friday, 25 September": the line under the Next title. */
-fun todayLong(): String = utc("EEEE, d MMMM").format(java.util.Date())
+/** "Friday, 25 September", in the chosen language: the line under the Incoming title. */
+fun todayLong(): String = I18n.dayLong(java.time.LocalDate.now())
 
-/** "2026-09-22" → "Tue 22 Sep". Anything unparseable is shown as stored. */
+/** "2026-09-22" → "Tue 22 Sep", in the chosen language. Anything unparseable is shown as stored. */
 fun shortDate(iso: String): String = runCatching {
-    utc("EEE d MMM").format(utc("yyyy-MM-dd").parse(iso)!!)
+    I18n.dayShort(java.time.LocalDate.parse(iso.take(10)))
 }.getOrDefault(iso)
 
 /** Two or three mutually exclusive choices side by side: protocol, range. */

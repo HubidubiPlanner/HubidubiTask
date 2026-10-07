@@ -22,6 +22,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.desktop.ui.HubidubiTaskTheme
 import com.hubidubitask.desktop.ui.HubidubiTaskViewModel
 import com.hubidubitask.desktop.ui.FeedsScreen
@@ -72,9 +74,11 @@ fun App(vm: HubidubiTaskViewModel, start: String = "next") {
         val c = HubidubiTaskTheme.colors
         val state by vm.state.collectAsState()
         var route by remember { mutableStateOf(start) }
+        // A new language redraws the tabs and the page, and keeps the place.
+        val language by vm.language.collectAsState()
         val dests = listOf(
-            // Next first, and where the app opens: what to do comes before where it is filed.
-            Dest("next", "Next", Icons.Outlined.CheckCircle),
+            // Incoming first, and where the app opens: what to do comes before where it is filed.
+            Dest("next", "Incoming", Icons.Outlined.CheckCircle),
             Dest("projects", "Projects", Icons.Outlined.Folder),
             Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
             Dest("settings", "Settings", Icons.Outlined.Tune),
@@ -82,13 +86,13 @@ fun App(vm: HubidubiTaskViewModel, start: String = "next") {
         Surface(color = c.paper, modifier = Modifier.fillMaxSize()) {
             Row {
                 // On a desktop the tabs sit on the left, the page gets the width.
-                NavigationRail(containerColor = c.nav, modifier = Modifier.width(92.dp)) {
+                key(language) { NavigationRail(containerColor = c.nav, modifier = Modifier.width(92.dp)) {
                     dests.forEach { d ->
                         val selected = route == d.route || (d.route == "settings" && route == "import")
                         NavigationRailItem(
                             selected = selected, onClick = { route = d.route },
                             icon = { Icon(d.icon, contentDescription = null) },
-                            label = { Text(d.label, style = MaterialTheme.typography.labelMedium,
+                            label = { Text(t(d.label), style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium) },
                             colors = NavigationRailItemDefaults.colors(
                                 selectedIconColor = c.accent, selectedTextColor = c.accent,
@@ -96,17 +100,17 @@ fun App(vm: HubidubiTaskViewModel, start: String = "next") {
                                 indicatorColor = Color.Transparent),
                         )
                     }
-                }
+                } }
                 VerticalDivider(color = c.line, modifier = Modifier.fillMaxHeight())
                 // The page takes the whole window: long titles get the room
                 // instead of wrapping beside empty space.
-                Box(Modifier.fillMaxSize()) { when (route) {
+                Box(Modifier.fillMaxSize()) { key(language, route) { when (route) {
                     "projects" -> ProjectsScreen(state, vm)
                     "next" -> NextScreen(state, vm)
                     "feeds" -> FeedsScreen(state, vm)
                     "settings" -> SettingsScreen(state, vm, onImport = { route = "import" })
                     "import" -> ImportScreen(vm, onBack = { route = "settings" })
-                } }
+                } } }
             }
         }
     }

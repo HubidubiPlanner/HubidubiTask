@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.feed.Feeds
+import com.hubidubitask.core.i18n.t
 import kotlinx.coroutines.launch
 
 /**
@@ -56,15 +57,15 @@ fun FeedsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel)
 
     if (choosingKind) {
         AppSheet(onDismiss = { choosingKind = false }) {
-            SheetTitle("New feed")
+            SheetTitle(t("New feed"))
             Feeds.KINDS.forEachIndexed { i, (kind, label) ->
-                ActionRow(Icons.Outlined.Language, label, color = c.accent,
+                ActionRow(Icons.Outlined.Language, t(label), color = c.accent,
                     last = i == Feeds.KINDS.lastIndex) {
                     choosingKind = false
                     if (kind == Feeds.KIND_WEB) addingWeb = true
                 }
             }
-            SecondaryButton("Cancel", { choosingKind = false },
+            SecondaryButton(t("Cancel"), { choosingKind = false },
                 Modifier.fillMaxWidth().padding(top = 16.dp))
         }
     }
@@ -74,7 +75,7 @@ fun FeedsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel)
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Feeds") {
+        ScreenHeader(t("Feeds")) {
             IconButton(
                 onClick = { choosingKind = true },
                 // Same as Projects: the 48dp target is not allowed to make the
@@ -85,12 +86,12 @@ fun FeedsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel)
                     layout(p.width, h) { p.place(0, (h - p.height) / 2) }
                 }.size(48.dp),
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "New feed", tint = c.accent,
+                Icon(Icons.Filled.Add, contentDescription = t("New feed"), tint = c.accent,
                     modifier = Modifier.size(30.dp))
             }
         }
         if (state.feeds.isEmpty()) {
-            Text("No feeds yet.", style = MaterialTheme.typography.bodyMedium, color = c.muted,
+            Text(t("No feeds yet."), style = MaterialTheme.typography.bodyMedium, color = c.muted,
                 modifier = Modifier.padding(horizontal = 20.dp))
             return@Column
         }
@@ -112,16 +113,16 @@ fun FeedsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel)
     }
 }
 
-private fun periodLabel(p: String?) = Feeds.PERIODS.firstOrNull { it.first == p }?.second ?: "Day"
+private fun periodLabel(p: String?) = t(Feeds.PERIODS.firstOrNull { it.first == p }?.second ?: "Day")
 
 /** "Week · Trip to Lisbon · changed 6 Oct": how often, where its task goes, what it last saw. */
 private fun summary(f: EntityRecord, projectTitle: Map<String, String>): String {
-    val where = f.fields["project"]?.let { projectTitle[it] } ?: "Inbox"
+    val where = f.fields["project"]?.let { projectTitle[it] } ?: t("Inbox")
     val last = when {
-        f.fields["last_error"] != null -> "could not check"
-        f.fields["last_changed"] != null -> "changed " + shortDate(f.fields["last_changed"]!!)
-        f.fields["last_checked"] != null -> "watching"
-        else -> "not checked yet"
+        f.fields["last_error"] != null -> t("could not check")
+        f.fields["last_changed"] != null -> t("changed %s", shortDate(f.fields["last_changed"]!!))
+        f.fields["last_checked"] != null -> t("watching")
+        else -> t("not checked yet")
     }
     return "${periodLabel(f.fields["period"])} · $where · $last"
 }
@@ -139,9 +140,9 @@ private fun NewWebFeedSheet(state: HubidubiTaskViewModel.UiState, vm: HubidubiTa
 
     if (picking) {
         AppSheet(onDismiss = { picking = false }) {
-            SheetTitle("Which project?")
+            SheetTitle(t("Which project?"))
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                ActionRow(Icons.Outlined.Inbox, "No project", color = c.accent,
+                ActionRow(Icons.Outlined.Inbox, t("No project"), color = c.accent,
                     last = state.projects.isEmpty()) { project = null; picking = false }
                 state.projects.sortedBy { (it.fields["title"] ?: it.id).lowercase() }
                     .forEachIndexed { i, p ->
@@ -154,22 +155,22 @@ private fun NewWebFeedSheet(state: HubidubiTaskViewModel.UiState, vm: HubidubiTa
     }
 
     AppSheet(onDismiss) {
-        SheetTitle("A web page")
+        SheetTitle(t("A web page"))
         Column(Modifier.imePadding(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(value = url, onValueChange = { url = it },
-                label = { Text("Address") }, singleLine = true, colors = appFieldColors(),
+                label = { Text(t("Address")) }, singleLine = true, colors = appFieldColors(),
                 shape = RectangleShape, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = title, onValueChange = { title = it },
-                label = { Text("Name (optional)", color = c.muted) }, singleLine = true,
+                label = { Text(t("Name (optional)"), color = c.muted) }, singleLine = true,
                 colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-            Segmented(Feeds.PERIODS, period, { period = it })
-            Segmented(AgentConfig.FEED_MODELS, model, { model = it })
-            ActionRow(Icons.Outlined.Folder, project?.fields?.get("title") ?: "No project",
+            Segmented(Feeds.PERIODS.map { (id, label) -> id to t(label) }, period, { period = it })
+            Segmented(AgentConfig.FEED_MODELS.map { (id, label) -> id to t(label) }, model, { model = it })
+            ActionRow(Icons.Outlined.Folder, project?.fields?.get("title") ?: t("No project"),
                 color = c.accent, last = true) { picking = true }
         }
         val ok = url.trim().let { it.startsWith("http://") || it.startsWith("https://") } &&
             url.trim().length > 10
-        PrimaryButton("Watch", {
+        PrimaryButton(t("Watch"), {
             vm.addFeed(url, title, period, model, project?.id); onDismiss()
         }, Modifier.fillMaxWidth().padding(top = 18.dp), enabled = ok)
     }
@@ -188,8 +189,8 @@ private fun FeedSheet(feed: EntityRecord, projectTitle: Map<String, String>, vm:
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(f["url"].orEmpty(), style = MaterialTheme.typography.bodySmall, color = c.muted,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val model = AgentConfig.FEED_MODELS.firstOrNull { it.first == f["model"] }?.second ?: "Claude"
-            Text("${periodLabel(f["period"])} · ${f["project"]?.let { projectTitle[it] } ?: "Inbox"} · $model",
+            val model = t(AgentConfig.FEED_MODELS.firstOrNull { it.first == f["model"] }?.second ?: "Claude")
+            Text("${periodLabel(f["period"])} · ${f["project"]?.let { projectTitle[it] } ?: t("Inbox")} · $model",
                 style = MaterialTheme.typography.bodyMedium)
             (result ?: f["last_error"])?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
@@ -197,9 +198,9 @@ private fun FeedSheet(feed: EntityRecord, projectTitle: Map<String, String>, vm:
             }
         }
         Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SecondaryButton("Delete", { vm.deleteFeed(feed.id); onDismiss() }, Modifier.weight(1f),
+            SecondaryButton(t("Delete"), { vm.deleteFeed(feed.id); onDismiss() }, Modifier.weight(1f),
                 icon = Icons.Outlined.DeleteOutline)
-            PrimaryButton(if (busy) "Checking…" else "Check now", {
+            PrimaryButton(if (busy) t("Checking…") else t("Check now"), {
                 busy = true; result = null
                 scope.launch { result = vm.checkFeed(feed.id); busy = false }
             }, Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !busy)

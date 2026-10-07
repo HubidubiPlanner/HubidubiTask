@@ -19,6 +19,7 @@ object FeedWork {
     /** Returns what happened to each feed looked at, by feed id. */
     @Synchronized
     fun run(context: Context, only: String? = null): Map<String, String> {
+        com.hubidubitask.mobile.ui.UiLanguage.apply(context)
         val sync = Sync.open(context.applicationContext)
         val today = LocalDate.now()
         val out = LinkedHashMap<String, String>()

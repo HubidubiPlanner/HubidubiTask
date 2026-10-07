@@ -1,6 +1,7 @@
 package com.hubidubitask.mobile.browse
 
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.i18n.t
 
 /**
  * What one item looks like when you open it: its date, and whatever the agent
@@ -40,20 +41,20 @@ object ItemDetail {
     /** What kind of thing this is, in the user's words. */
     fun typeLabel(record: EntityRecord): String = when (record.type) {
         "note" -> when (record.fields["kind"]) {
-            "image" -> "Photo"
-            "audio" -> "Voice note"
-            "document" -> "Document"
-            else -> "Note"
+            "image" -> t("Photo")
+            "audio" -> t("Voice note")
+            "document" -> t("Document")
+            else -> t("Note")
         }
         "inbox_item" -> when (record.fields["kind"]) {
-            "image" -> "Photo task"
-            "audio" -> "Voice task"
-            "document" -> "Document task"
-            else -> "Task"
+            "image" -> t("Photo task")
+            "audio" -> t("Voice task")
+            "document" -> t("Document task")
+            else -> t("Task")
         }
-        "next_action" -> "Next action"
-        "project" -> "Project"
-        "event" -> "Event"
+        "next_action" -> t("Next action")
+        "project" -> t("Project")
+        "event" -> t("Event")
         else -> record.type.replace('_', ' ')
     }
 
@@ -72,6 +73,6 @@ object ItemDetail {
     /** The line under the title: what it is, and when it is due. */
     fun subtitle(record: EntityRecord): String {
         val due = dueOf(record)
-        return if (due == null) typeLabel(record) else "${typeLabel(record)} · due $due"
+        return if (due == null) typeLabel(record) else t("%s · due %s", typeLabel(record), due)
     }
 }

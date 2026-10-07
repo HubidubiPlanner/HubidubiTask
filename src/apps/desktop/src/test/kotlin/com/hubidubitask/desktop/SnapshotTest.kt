@@ -3,6 +3,7 @@ package com.hubidubitask.desktop
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.nowUtc
 import com.hubidubitask.desktop.ui.HubidubiTaskViewModel
 import org.jetbrains.skia.EncodedImageFormat
@@ -10,7 +11,7 @@ import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
 
-/** Renders each tab to PNG (SNAPSHOT_DIR) so the UI can be looked at without a screen. */
+/** Renders each tab to PNG (SNAPSHOT_DIR), in SNAPSHOT_LANG, so the UI can be looked at without a screen. */
 class SnapshotTest {
     @Test
     fun `render every tab`() {
@@ -28,6 +29,7 @@ class SnapshotTest {
         val server = PeerServer(store, "Test Mac") {}
         val vm = HubidubiTaskViewModel(store, server)
         repeat(100) { if (vm.state.value.projects.isEmpty()) Thread.sleep(100) }
+        vm.setLanguage(Language.of(System.getenv("SNAPSHOT_LANG")) ?: Language.EN)
         for (tab in listOf("projects", "next", "feeds", "settings", "import")) {
             val scene = ImageComposeScene(1080, 780, Density(1f)) { App(vm, tab) }
             repeat(3) { scene.render(it * 16_000_000L) }

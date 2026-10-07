@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.sync.Sync
 
 /**
@@ -14,10 +15,11 @@ import com.hubidubitask.mobile.sync.Sync
 class ShareCaptureActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.hubidubitask.mobile.ui.UiLanguage.apply(this)
         val text = intent?.getStringExtra(Intent.EXTRA_TEXT)?.trim()
         if (!text.isNullOrEmpty()) {
             Sync.open(applicationContext).capture(text)
-            Toast.makeText(this, "Captured", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, t("Captured"), Toast.LENGTH_SHORT).show()
         }
         finish()
     }

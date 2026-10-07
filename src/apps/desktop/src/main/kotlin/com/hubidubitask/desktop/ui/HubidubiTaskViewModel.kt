@@ -7,6 +7,9 @@ import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.feed.Feeds
 import com.hubidubitask.core.feed.PageFetch
+import com.hubidubitask.core.i18n.I18n
+import com.hubidubitask.core.i18n.Language
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.core.nowUtc
 import com.hubidubitask.core.peer.PeerPairing
 import com.hubidubitask.desktop.PeerServer
@@ -32,6 +35,22 @@ import java.security.MessageDigest
  * on its next sync round.
  */
 class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
+
+    /**
+     * The language the screens speak, chosen in Settings; until then this
+     * computer's own language when the app speaks it, else English. Changing it
+     * redraws the screens in place.
+     */
+    private val _language = MutableStateFlow(
+        (Language.of(store.kv("ui_language")) ?: Language.system())
+            .also { I18n.language = it })
+    val language: StateFlow<Language> = _language
+
+    fun setLanguage(l: Language) {
+        store.setKv("ui_language", l.code)
+        I18n.language = l
+        _language.value = l
+    }
 
     /** What a Harness question carries, and where its changes land. */
     private val items = com.hubidubitask.desktop.harness.Items(store) { refresh() }
@@ -72,21 +91,21 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     fun refresh() = scope.launch {
         val s = withContext(Dispatchers.IO) {
             val all = store.all()
-            fun t(type: String) = all.filter { it.type == type }
+            fun ofType(type: String) = all.filter { it.type == type }
             val peers = store.peers()
             UiState(
                 paired = peers.isNotEmpty(),
-                inbox = t("inbox_item"),
-                nextActions = t("next_action").filter { it.fields["done"] != "true" },
-                notes = t("note"),
-                projects = t("project"),
-                dated = (t("next_action") + t("inbox_item") + t("note"))
+                inbox = ofType("inbox_item"),
+                nextActions = ofType("next_action").filter { it.fields["done"] != "true" },
+                notes = ofType("note"),
+                projects = ofType("project"),
+                dated = (ofType("next_action") + ofType("inbox_item") + ofType("note"))
                     .filter { !it.fields["due"].isNullOrBlank() && it.fields["done"] != "true" }
                     .sortedBy { it.fields["due"] },
-                events = t("event"),
+                events = ofType("event"),
                 inference = _state.value.inference,
                 peers = peers,
-                feeds = t(Feeds.TYPE).sortedBy { Feeds.label(it).lowercase() },
+                feeds = ofType(Feeds.TYPE).sortedBy { Feeds.label(it).lowercase() },
             )
         }
         _state.value = s
@@ -292,7 +311,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     /** Look at one feed now. Its period still allows one task. Returns what happened. */
     suspend fun checkFeed(id: String): String {
         val msg = withContext(Dispatchers.IO) {
-            runCatching { runFeeds(only = id)[id] }.getOrElse { it.message } ?: "Nothing to look at"
+            runCatching { runFeeds(only = id)[id] }.getOrElse { it.message } ?: t("Nothing to look at")
         }
         refresh()
         return msg

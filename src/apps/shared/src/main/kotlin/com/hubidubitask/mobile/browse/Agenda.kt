@@ -1,6 +1,8 @@
 package com.hubidubitask.mobile.browse
 
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.i18n.I18n
+import com.hubidubitask.core.i18n.t
 
 /**
  * Next, grouped by when. A flat list sorted by date makes you read every row to
@@ -15,10 +17,10 @@ object Agenda {
 
     data class Section(val bucket: Bucket, val items: List<EntityRecord>) {
         val title: String get() = when (bucket) {
-            Bucket.OVERDUE -> "Overdue"
-            Bucket.TODAY -> "Today"
-            Bucket.TOMORROW -> "Tomorrow"
-            Bucket.LATER -> "Later"
+            Bucket.OVERDUE -> t("Overdue")
+            Bucket.TODAY -> t("Today")
+            Bucket.TOMORROW -> t("Tomorrow")
+            Bucket.LATER -> t("Later")
         }
     }
 
@@ -77,9 +79,6 @@ object Agenda {
     data class View(val groups: List<Group>, val laterThisWeek: Int)
 
     private val ISO = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
-    private val DAY_LABEL = java.time.format.DateTimeFormatter.ofPattern("EEE d", java.util.Locale.ENGLISH)
-    private val DAY_MONTH = java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.ENGLISH)
-    private val WEEKDAY_DAY_MONTH = java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.ENGLISH)
 
     private fun parse(iso: String) = runCatching { java.time.LocalDate.parse(iso, ISO) }.getOrNull()
 
@@ -93,12 +92,12 @@ object Agenda {
         val inRange = dated.filter { it.first >= day0 && it.first <= last }
 
         val groups = mutableListOf<Group>()
-        if (overdue.isNotEmpty()) groups += Group("Overdue", Tone.OVERDUE, overdue)
+        if (overdue.isNotEmpty()) groups += Group(t("Overdue"), Tone.OVERDUE, overdue)
         when (range) {
             Range.DAY, Range.WEEK -> inRange.groupBy { it.first }.forEach { (d, xs) ->
                 val title = if (d == day0) {
-                    if (range == Range.DAY) "Today" else "Today · ${d.format(DAY_LABEL)}"
-                } else if (d.month == day0.month) d.format(DAY_LABEL) else d.format(WEEKDAY_DAY_MONTH)
+                    if (range == Range.DAY) t("Today") else t("Today · %s", I18n.weekdayDay(d))
+                } else if (d.month == day0.month) I18n.weekdayDay(d) else I18n.dayShort(d)
                 groups += Group(title, if (d == day0) Tone.TODAY else Tone.SOON, xs.map { it.second })
             }
             Range.MONTH -> {
@@ -109,8 +108,8 @@ object Agenda {
                 }.forEach { (k, xs) ->
                     val span = weekSpan(day0.plusDays(7 * k))
                     val (title, tone) = when (k) {
-                        0L -> "This week" to Tone.TODAY
-                        1L -> "Next week · $span" to Tone.SOON
+                        0L -> t("This week") to Tone.TODAY
+                        1L -> t("Next week · %s", span) to Tone.SOON
                         else -> span to Tone.LATER
                     }
                     groups += Group(title, tone, xs.map { it.second })
@@ -126,8 +125,7 @@ object Agenda {
     /** "3–9 Oct", or "26 Sep – 2 Oct" across a month boundary. */
     fun weekSpan(start: java.time.LocalDate): String {
         val end = start.plusDays(6)
-        return if (start.month == end.month) "${start.dayOfMonth}–${end.format(DAY_MONTH)}"
-               else "${start.format(DAY_MONTH)} – ${end.format(DAY_MONTH)}"
+        return I18n.span(start, end)
     }
 
     /** The next [days] days from [today] with how many items fall on each: the Week strip. */

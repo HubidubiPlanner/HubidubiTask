@@ -20,6 +20,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.hubidubitask.mobile.ui.UiLanguage.apply(this)
         // The page colour runs under the status bar instead of stopping at a
         // grey system strip; Scaffold pads the content back out of it.
         enableEdgeToEdge()

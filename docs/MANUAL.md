@@ -21,15 +21,24 @@ and the phone also hourly in the background.
 
 ## Everyday use
 
-- **Next**, the first tab and where the app opens: today, this week or this
+- **Incoming**, the first tab and where the app opens: today, this week or this
   month. A long press marks a task done.
-- **+** on Next and on Projects, in the same place: a project, a task, a note,
+- **+** on Incoming and on Projects, in the same place: a project, a task, a note,
   a photo, a picture from the gallery, a voice memo or a file. On the computer
   you can also drop a file on the window.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, **Claude**
   or **Agent**, and a project (or none, for the inbox). The first look only
   remembers the page; after that, once per period, a change becomes one task.
 - **Review:** long-press any item, then **Review with AI**.
+
+## Language
+
+**Settings → Language:** English, Polski, Deutsch, Français or Español. The
+screens change at once, and the choice is kept on that device: the phone and
+the computer each have their own. Until you choose, the app speaks the
+system's language if it is one of these, and English otherwise. Reviews with
+AI answer in the chosen language; a feed's task is written in the language of
+its page.
 
 ## AI
 

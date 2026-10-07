@@ -61,6 +61,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +82,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.i18n.I18n
+import com.hubidubitask.core.i18n.Language
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.browse.Agenda
 import com.hubidubitask.mobile.browse.ItemDetail
 import com.hubidubitask.mobile.browse.ReviewBrowse
@@ -93,10 +97,10 @@ import kotlinx.coroutines.launch
 private fun KindGlyph(record: EntityRecord) {
     val c = HubidubiTaskTheme.colors
     if (record.type == "note")
-        Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = "Note",
+        Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = t("Note"),
             tint = c.muted, modifier = Modifier.size(16.dp))
     else
-        Icon(Icons.Outlined.CheckBoxOutlineBlank, contentDescription = "Task",
+        Icon(Icons.Outlined.CheckBoxOutlineBlank, contentDescription = t("Task"),
             tint = c.glyph, modifier = Modifier.size(16.dp))
 }
 
@@ -105,9 +109,9 @@ private fun KindGlyph(record: EntityRecord) {
 private fun AttachmentTag(record: EntityRecord) {
     if (record.fields["media_sha256"].isNullOrBlank()) return
     val label = when (record.fields["kind"]) {
-        "image" -> "Photo"
-        "audio" -> "Voice memo"
-        "document" -> "Document"
+        "image" -> t("Photo")
+        "audio" -> t("Voice memo")
+        "document" -> t("Document")
         else -> return
     }
     val c = HubidubiTaskTheme.colors
@@ -131,7 +135,7 @@ private fun SubtaskTag(count: Int) {
         horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null, tint = c.muted,
             modifier = Modifier.size(14.dp))
-        Text(if (count == 1) "1 note" else "$count notes",
+        Text(I18n.count(count, "note"),
             style = MaterialTheme.typography.labelMedium, color = c.muted)
     }
 }
@@ -144,15 +148,15 @@ private fun AddNoteSheet(task: EntityRecord?, vm: HubidubiTaskViewModel, onDismi
     var title by remember(task.id) { mutableStateOf("") }
     var body by remember(task.id) { mutableStateOf("") }
     AppSheet(onDismiss) {
-        SheetTitle("Add a note", overline = ReviewBrowse.labelOf(task))
+        SheetTitle(t("Add a note"), overline = ReviewBrowse.labelOf(task))
         OutlinedTextField(value = title, onValueChange = { title = it },
-            label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+            label = { Text(t("Note")) }, singleLine = true, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = body, onValueChange = { body = it },
-            label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+            label = { Text(t("More (optional)"), color = c.muted) }, minLines = 3,
             colors = appFieldColors(), shape = RectangleShape,
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
-        PrimaryButton("Save", { vm.addNote(task.id, title, body); onDismiss() },
+        PrimaryButton(t("Save"), { vm.addNote(task.id, title, body); onDismiss() },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }
@@ -186,17 +190,17 @@ private fun AddTaskSheet(
                         due = fmt.format(java.util.Date(ms))
                     }
                     picking = false
-                }) { Text("Set") }
+                }) { Text(t("Set")) }
             },
             dismissButton = {
-                TextButton(onClick = { due = null; picking = false }) { Text("No date") }
+                TextButton(onClick = { due = null; picking = false }) { Text(t("No date")) }
             },
         ) { DatePicker(state = dateState) }
     }
     AppSheet(onDismiss) {
-        SheetTitle("Add a task", overline = project?.let { ReviewBrowse.labelOf(it) } ?: "No project")
+        SheetTitle(t("Add a task"), overline = project?.let { ReviewBrowse.labelOf(it) } ?: t("No project"))
         OutlinedTextField(value = text, onValueChange = { text = it },
-            label = { Text("Task") }, singleLine = true, colors = appFieldColors(),
+            label = { Text(t("Task")) }, singleLine = true, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth())
         Row(
             Modifier.padding(top = 12.dp).fillMaxWidth()
@@ -209,13 +213,13 @@ private fun AddTaskSheet(
         ) {
             Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
                 modifier = Modifier.size(20.dp))
-            Text(due?.let { "Due ${shortDate(it)}" } ?: "Add a date",
+            Text(due?.let { t("Due %s", shortDate(it)) } ?: t("Add a date"),
                 style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
                 color = c.accent, modifier = Modifier.weight(1f))
             if (due == null)
-                Text("optional", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                Text(t("optional"), style = MaterialTheme.typography.bodySmall, color = c.muted)
         }
-        PrimaryButton("Add", {
+        PrimaryButton(t("Add"), {
             if (project != null) { vm.addTask(project, text, due); onAdded(project) }
             else vm.capture(text.trim(), due)
             onDismiss()
@@ -242,22 +246,22 @@ private fun RenameProjectDialog(project: EntityRecord?, vm: HubidubiTaskViewMode
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = c.paper,
-        title = { Text("Rename project", style = MaterialTheme.typography.headlineSmall) },
+        title = { Text(t("Rename project"), style = MaterialTheme.typography.headlineSmall) },
         text = {
             OutlinedTextField(
                 value = field, onValueChange = { field = it },
-                label = { Text("Project name") }, singleLine = true,
+                label = { Text(t("Project name")) }, singleLine = true,
                 colors = appFieldColors(), shape = RectangleShape,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
         },
         confirmButton = {
-            PrimaryButton("Rename", { vm.renameProject(project.id, title); onDismiss() },
+            PrimaryButton(t("Rename"), { vm.renameProject(project.id, title); onDismiss() },
                 enabled = title.isNotBlank() && title.trim() != current)
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = c.ink, style = MaterialTheme.typography.labelLarge)
+                Text(t("Cancel"), color = c.ink, style = MaterialTheme.typography.labelLarge)
             }
         },
     )
@@ -281,13 +285,13 @@ private fun ConfirmDelete(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = c.paper,
-        title = { Text("Delete?", style = MaterialTheme.typography.headlineSmall) },
+        title = { Text(t("Delete?"), style = MaterialTheme.typography.headlineSmall) },
         text = {
             Column {
                 Text(label, style = MaterialTheme.typography.bodyMedium, color = c.ink)
                 if (hasMedia) {
                     Text(
-                        "Its attachment is deleted too.",
+                        t("Its attachment is deleted too."),
                         style = MaterialTheme.typography.bodySmall,
                         color = c.muted,
                         modifier = Modifier.padding(top = 6.dp),
@@ -297,12 +301,12 @@ private fun ConfirmDelete(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(record.id); onDismiss() }) {
-                Text("Delete", color = c.danger, style = MaterialTheme.typography.labelLarge)
+                Text(t("Delete"), color = c.danger, style = MaterialTheme.typography.labelLarge)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = c.ink, style = MaterialTheme.typography.labelLarge)
+                Text(t("Cancel"), color = c.ink, style = MaterialTheme.typography.labelLarge)
             }
         },
     )
@@ -342,29 +346,29 @@ private fun ItemActionsMenu(
         SheetTitle(ReviewBrowse.labelOf(record), overline = ItemDetail.typeLabel(record))
         if (record.type == "project") {
             if (onAddTask != null)
-                ActionRow(Icons.Filled.Add, "Add a task") { onDismiss(); onAddTask(record) }
+                ActionRow(Icons.Filled.Add, t("Add a task")) { onDismiss(); onAddTask(record) }
             if (onRename != null)
-                ActionRow(Icons.Outlined.Edit, "Rename") { onDismiss(); onRename(record) }
+                ActionRow(Icons.Outlined.Edit, t("Rename")) { onDismiss(); onRename(record) }
         }
         if (canMove) {
-            ActionRow(Icons.AutoMirrored.Outlined.DriveFileMove, "Move to a project") {
+            ActionRow(Icons.AutoMirrored.Outlined.DriveFileMove, t("Move to a project")) {
                 onDismiss(); onMove(record)
             }
         }
         if (isTask(record)) {
-            ActionRow(Icons.Outlined.Check, "Mark done") { onDismiss(); vm.complete(record) }
+            ActionRow(Icons.Outlined.Check, t("Mark done")) { onDismiss(); vm.complete(record) }
             if (onAddNote != null)
-                ActionRow(Icons.AutoMirrored.Filled.Notes, "Add a note") { onDismiss(); onAddNote(record) }
+                ActionRow(Icons.AutoMirrored.Filled.Notes, t("Add a note")) { onDismiss(); onAddNote(record) }
         }
-        ActionRow(Icons.Outlined.CalendarToday, if (due.isBlank()) "Set a date" else "Date",
+        ActionRow(Icons.Outlined.CalendarToday, if (due.isBlank()) t("Set a date") else t("Date"),
             meta = due.takeIf { it.isNotBlank() }?.let(::shortDate)) { picking = true }
-        ActionRow(Icons.Outlined.RateReview, "Review with AI") {
+        ActionRow(Icons.Outlined.RateReview, t("Review with AI")) {
             onDismiss(); onReview(record)
         }
-        ActionRow(Icons.Outlined.DeleteOutline, "Delete", color = c.danger, last = true) {
+        ActionRow(Icons.Outlined.DeleteOutline, t("Delete"), color = c.danger, last = true) {
             onDismiss(); onDelete(record)
         }
-        SecondaryButton("Cancel", onDismiss, Modifier.fillMaxWidth().padding(top = 16.dp))
+        SecondaryButton(t("Cancel"), onDismiss, Modifier.fillMaxWidth().padding(top = 16.dp))
     }
 }
 
@@ -388,16 +392,16 @@ private fun DatePickerFor(
                     vm.setDue(record.id, fmt.format(java.util.Date(ms)))
                 }
                 onDone()
-            }) { Text("Set") }
+            }) { Text(t("Set")) }
         },
         dismissButton = {
             Row {
                 if (!record.fields["due"].isNullOrBlank()) {
                     TextButton(onClick = { vm.setDue(record.id, null); onDone() }) {
-                        Text("Clear")
+                        Text(t("Clear"))
                     }
                 }
-                TextButton(onClick = onDone) { Text("Cancel") }
+                TextButton(onClick = onDone) { Text(t("Cancel")) }
             }
         },
     ) { DatePicker(state = state) }
@@ -455,7 +459,7 @@ private fun DetailSheet(
             Overline(ItemDetail.typeLabel(record), c.accent)
             if (editing) {
                 OutlinedTextField(value = title, onValueChange = { title = it },
-                    label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+                    label = { Text(t("Note")) }, singleLine = true, colors = appFieldColors(),
                     shape = RectangleShape,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)
                         .focusRequester(focus))
@@ -463,7 +467,7 @@ private fun DetailSheet(
             } else {
                 Text(ReviewBrowse.labelOf(record), style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        .clickable(enabled = editable, onClickLabel = "Edit") { startEditing() })
+                        .clickable(enabled = editable, onClickLabel = t("Edit")) { startEditing() })
             }
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically) {
@@ -473,17 +477,17 @@ private fun DetailSheet(
                         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = tint,
                             modifier = Modifier.size(14.dp))
-                        Text("Due ${shortDate(it)}", style = MaterialTheme.typography.bodySmall,
+                        Text(t("Due %s", shortDate(it)), style = MaterialTheme.typography.bodySmall,
                             color = tint)
                     }
                 }
                 ItemDetail.capturedAt(record)?.let {
-                    Text("Captured $it", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    Text(t("Captured %s", it), style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
             if (editing) {
                 OutlinedTextField(value = body, onValueChange = { body = it },
-                    label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+                    label = { Text(t("More (optional)"), color = c.muted) }, minLines = 3,
                     colors = appFieldColors(), shape = RectangleShape,
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
             } else {
@@ -491,17 +495,17 @@ private fun DetailSheet(
                 if (shown != null) {
                     Text(shown, style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(top = 16.dp)
-                            .clickable(enabled = editable, onClickLabel = "Edit") { startEditing() })
+                            .clickable(enabled = editable, onClickLabel = t("Edit")) { startEditing() })
                 } else if (editable) {
                     // Nothing written yet: name the place, so the tap has a target.
-                    Text("Add more…", style = MaterialTheme.typography.bodyLarge, color = c.muted,
+                    Text(t("Add more…"), style = MaterialTheme.typography.bodyLarge, color = c.muted,
                         modifier = Modifier.padding(top = 16.dp).clickable { startEditing() })
                 }
             }
             // A task's notes show here and only here: the lists stay one line
             // per thing to do, and what you need to know is one tap away.
             if (subtasks.isNotEmpty()) {
-                Overline("Notes · ${subtasks.size}", c.accent,
+                Overline(t("Notes · %d", subtasks.size), c.accent,
                     modifier = Modifier.padding(top = 20.dp, bottom = 6.dp))
                 Column(Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line)) {
                     subtasks.forEachIndexed { i, sub ->
@@ -521,9 +525,9 @@ private fun DetailSheet(
                     .background(c.raised).border(1.dp, c.line)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
-                Overline("Review", c.frame, Icons.Outlined.RateReview)
+                Overline(t("Review"), c.frame, Icons.Outlined.RateReview)
                 Text(
-                    review ?: "Nothing yet.",
+                    review ?: t("Nothing yet."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (review == null) c.muted else c.ink,
                     modifier = Modifier.padding(top = 6.dp),
@@ -534,15 +538,15 @@ private fun DetailSheet(
         // filled button. No Close: the sheet goes with a swipe down or Back.
         Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (editing) {
-                PrimaryButton("Save", { save() }, Modifier.weight(1f), icon = Icons.Outlined.Check,
+                PrimaryButton(t("Save"), { save() }, Modifier.weight(1f), icon = Icons.Outlined.Check,
                     enabled = title.isNotBlank())
-                SecondaryButton("Cancel", { cancel() }, Modifier.weight(1f))
+                SecondaryButton(t("Cancel"), { cancel() }, Modifier.weight(1f))
             } else {
                 if (onDone != null && isTask(record)) {
-                    PrimaryButton("Mark done", { val r = record; onDismiss(); onDone(r) },
+                    PrimaryButton(t("Mark done"), { val r = record; onDismiss(); onDone(r) },
                         Modifier.weight(1f), icon = Icons.Outlined.Check)
                 }
-                SecondaryButton(if (review == null) "Review" else "Review again",
+                SecondaryButton(if (review == null) t("Review") else t("Review again"),
                     { val r = record; onDismiss(); onReview(r) },
                     Modifier.weight(1f), icon = Icons.Outlined.RateReview)
             }
@@ -581,21 +585,21 @@ private fun AnalysisSheet(
     }
 
     AppSheet(onDismiss) {
-        SheetTitle(ReviewBrowse.labelOf(record), overline = "Review")
+        SheetTitle(ReviewBrowse.labelOf(record), overline = t("Review"))
         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             when {
                 !connected -> Text(
-                    "AI not connected. Set it up in Settings.",
+                    t("AI not connected. Set it up in Settings."),
                     style = MaterialTheme.typography.bodyMedium, color = c.muted)
-                busy -> Text("Thinking… a cold model can take a minute.",
+                busy -> Text(t("Thinking… a cold model can take a minute."),
                     style = MaterialTheme.typography.bodyMedium, color = c.muted)
                 else -> Text(text.orEmpty(), style = MaterialTheme.typography.bodyLarge)
             }
         }
         Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SecondaryButton("Close", onDismiss, Modifier.weight(1f))
+            SecondaryButton(t("Close"), onDismiss, Modifier.weight(1f))
             if (connected && !busy && text != null) {
-                PrimaryButton("Again", {
+                PrimaryButton(t("Again"), {
                     text = null   // re-triggers the LaunchedEffect guard below
                     busy = true
                 }, Modifier.weight(1f), icon = Icons.Outlined.RateReview)
@@ -673,36 +677,28 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
             .fileDrop(onHover = { dragging = it }, onFiles = capture.drop)
             .border(2.dp, if (dragging) c.accent else Color.Transparent)
     ) {
-        // No title: the tab says where you are. The day, or the stretch the
-        // range covers, is the first line; the + sits exactly where Projects
-        // has it, so anything new is one tap from where the app opens.
-        // The row is as tall as Projects' title line and the + sits on its
-        // bottom, as there, so switching tabs leaves it in the same spot.
-        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.Bottom) {
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                Text("", style = MaterialTheme.typography.headlineLarge)
-                Text(remember(range) {
-                        when (range) {
-                            Agenda.Range.DAY -> todayLong()
-                            else -> rangeSpan(today, range.days)
-                        }
-                    }, style = MaterialTheme.typography.bodySmall, color = c.muted)
+        // Its title, the day (or the dates the range covers) under it, and the
+        // + exactly where Projects has it: the same header, so it cannot drift.
+        ScreenHeader(t("Incoming"), remember(range) {
+            when (range) {
+                Agenda.Range.DAY -> todayLong()
+                else -> rangeSpan(today, range.days)
             }
-            PlusButton("New project or task") { adding = true }
+        }) {
+            PlusButton(t("New project or task")) { adding = true }
         }
-        Segmented(Agenda.Range.entries.map { it to it.label }, range, { range = it },
+        Segmented(Agenda.Range.entries.map { it to t(it.label) }, range, { range = it },
             Modifier.padding(horizontal = 20.dp))
         LazyColumn(Modifier.fillMaxSize()) {
             if (range == Agenda.Range.WEEK) item(key = "strip") { WeekStrip(strip) }
             if (view.groups.isEmpty()) item(key = "empty") {
                 Text(
                     if (state.dated.isEmpty())
-                        "Nothing dated. Add a date when you capture, or long-press an item."
+                        t("Nothing dated. Add a date when you capture, or long-press an item.")
                     else when (range) {
-                        Agenda.Range.DAY -> "Nothing due today."
-                        Agenda.Range.WEEK -> "Nothing due in the next seven days."
-                        Agenda.Range.MONTH -> "Nothing due in the next thirty days."
+                        Agenda.Range.DAY -> t("Nothing due today.")
+                        Agenda.Range.WEEK -> t("Nothing due in the next seven days.")
+                        Agenda.Range.MONTH -> t("Nothing due in the next thirty days.")
                     },
                     style = MaterialTheme.typography.bodyMedium, color = c.muted,
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp),
@@ -739,7 +735,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f))
                                 if (event) {
-                                    val time = rec.fields["time"] ?: "All day"
+                                    val time = rec.fields["time"] ?: t("All day")
                                     Text(if (showDate) "${shortDate(rec.fields["due"].orEmpty())} $time" else time,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = c.accent)
@@ -773,7 +769,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
                 ) {
                     Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
                         modifier = Modifier.size(18.dp))
-                    Text("${view.laterThisWeek} more this week",
+                    Text(t("%d more this week", view.laterThisWeek),
                         style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
                         color = c.accent, modifier = Modifier.weight(1f))
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
@@ -789,7 +785,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
 @Composable
 private fun WeekStrip(days: List<Pair<java.time.LocalDate, Int>>) {
     val c = HubidubiTaskTheme.colors
-    val dayName = remember { java.time.format.DateTimeFormatter.ofPattern("EEE", java.util.Locale.ENGLISH) }
+
     Row(
         Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp).fillMaxWidth()
             .background(c.raised).border(1.dp, c.line).padding(4.dp),
@@ -801,13 +797,13 @@ private fun WeekStrip(days: List<Pair<java.time.LocalDate, Int>>) {
                 Modifier.weight(1f).height(64.dp)
                     .background(if (today) c.button else Color.Transparent)
                     .semantics(mergeDescendants = true) {
-                        contentDescription = "${date.format(dayName)} ${date.dayOfMonth}, " +
-                            if (count == 1) "1 item" else "$count items"
+                        contentDescription = "${I18n.weekdayShort(date)} ${date.dayOfMonth}, " +
+                            I18n.count(count, "item")
                     },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
             ) {
-                Text(date.format(dayName).uppercase(), style = MaterialTheme.typography.labelSmall,
+                Text(I18n.weekdayShort(date).uppercase(), style = MaterialTheme.typography.labelSmall,
                     fontSize = 11.sp, color = if (today) c.onButtonMuted else c.muted)
                 Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium,
                     color = if (today) c.onButton else c.ink)
@@ -843,8 +839,7 @@ private fun eventsAsDated(events: List<EntityRecord>, today: String): List<Entit
 /** "26 Sep – 2 Oct": the stretch a range covers, under the title. */
 private fun rangeSpan(today: String, days: Int): String {
     val start = java.time.LocalDate.parse(today)
-    val fmt = java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.ENGLISH)
-    return "${start.format(fmt)} – ${start.plusDays(days - 1L).format(fmt)}"
+    return I18n.span(start, start.plusDays(days - 1L))
 }
 
 /** The project an item is filed under, by name, or null when it is loose. */
@@ -939,55 +934,57 @@ fun SettingsScreen(
     var harnessPort by remember { mutableStateOf(savedPort) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    // Whether the last check found the AI answering; the message says it in words.
+    var connected by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
-        ScreenHeader("Settings")
-        SectionLabel("Phones", modifier = Modifier.padding(top = 0.dp))
+        ScreenHeader(t("Settings"))
+        SectionLabel(t("Phones"), modifier = Modifier.padding(top = 0.dp))
         CardGroup {
-            if (state.peers.isEmpty()) StatusRow("No phone paired yet", "", good = false, last = true)
+            if (state.peers.isEmpty()) StatusRow(t("No phone paired yet"), "", good = false, last = true)
             state.peers.forEachIndexed { i, p ->
-                StatusRow(p.name, p.lastSync?.let { "synced ${it.take(16).replace('T', ' ')} UTC" }
-                    ?: "paired, not synced yet", p.lastSync != null, last = i == state.peers.lastIndex)
+                StatusRow(p.name, p.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) }
+                    ?: t("paired, not synced yet"), p.lastSync != null, last = i == state.peers.lastIndex)
             }
         }
         Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp)) {
-            PrimaryButton("Pair a phone", { pairing = true }, Modifier.weight(1f),
+            PrimaryButton(t("Pair a phone"), { pairing = true }, Modifier.weight(1f),
                 icon = Icons.Outlined.Link)
         }
 
-        SectionLabel("AI", modifier = Modifier.padding(top = 10.dp))
+        SectionLabel(t("AI"), modifier = Modifier.padding(top = 10.dp))
 
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Segmented(
-                com.hubidubitask.core.agent.AgentConfig.PROTOCOLS,
+                com.hubidubitask.core.agent.AgentConfig.PROTOCOLS.map { (id, label) -> id to t(label) },
                 protocol, { protocol = it; message = null },
             )
 
             if (claude)
-                LabeledField("Claude API key", claudeKey, { claudeKey = it; message = null },
+                LabeledField(t("Claude API key"), claudeKey, { claudeKey = it; message = null },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
             else if (harness)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     LabeledField("IP", harnessIp, { harnessIp = it; message = null },
                         helper = "", enabled = true, placeholder = "192.168.1.50",
                         modifier = Modifier.weight(2f))
-                    LabeledField("Port", harnessPort, { harnessPort = it.filter(Char::isDigit); message = null },
+                    LabeledField(t("Port"), harnessPort, { harnessPort = it.filter(Char::isDigit); message = null },
                         helper = "", enabled = true, placeholder = com.hubidubitask.core.agent.HarnessLink.DEFAULT_PORT,
                         modifier = Modifier.weight(1f))
                 }
             else
-                LabeledField("Server address", endpoint, { endpoint = it; message = null },
+                LabeledField(t("Server address"), endpoint, { endpoint = it; message = null },
                     helper = "",
                     enabled = true, placeholder = "https://192.168.1.50:8443")
 
             // The harness's computer decides its model.
             if (!harness)
-                LabeledField("Model", model, { model = it; message = null },
+                LabeledField(t("Model"), model, { model = it; message = null },
                     helper = "",
                     enabled = true, placeholder = defaultModel)
 
             PrimaryButton(
-                if (saving) "Saving…" else "Save",
+                if (saving) t("Saving…") else t("Save"),
                 {
                     saving = true; message = null
                     val address = if (harness)
@@ -1000,13 +997,13 @@ fun SettingsScreen(
                         // Saving is not the same as working. An address nothing
                         // answers on looks identical to a good one until a question
                         // fails, so probe it now and say plainly which happened.
-                        message = "Saved — checking…"
+                        message = t("Saved — checking…")
                         val h = vm.checkInference()
-                        message = if (h.connected) "Connected to ${h.server ?: endpoint}"
-                            else if (claude) "Saved, but Claude did not answer: ${h.error ?: "no reply"}"
-                            else if (harness) "Saved, but the agent at $address did not answer: ${h.error ?: "no reply"}"
-                            else "Saved, but nothing answered at $endpoint — check the " +
-                                "address and that the server is running there."
+                        message = if (h.connected) t("Connected to %s", h.server ?: endpoint)
+                            else if (claude) t("Saved, but Claude did not answer: %s", h.error ?: t("no reply"))
+                            else if (harness) t("Saved, but the agent at %s did not answer: %s", address, h.error ?: t("no reply"))
+                            else t("Saved, but nothing answered at %s — check the address and that the server is running there.", endpoint)
+                        connected = h.connected
                         saving = false
                     }
                 },
@@ -1021,14 +1018,21 @@ fun SettingsScreen(
             message?.let {
                 Row(verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (it.startsWith("Connected")) c.ok else c.muted)
+                    Dot(if (connected) c.ok else c.muted)
                     Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
         }
+        // The app's own language, each named in itself.
+        SectionLabel(t("Language"), modifier = Modifier.padding(top = 22.dp))
+        val language by vm.language.collectAsState()
+        Box(Modifier.padding(horizontal = 20.dp)) {
+            Segmented(Language.entries.map { it to it.label }, language,
+                { vm.setLanguage(it) })
+        }
         // Kept quiet at the very end: something done once, when moving in,
         // not a setting anyone looks for day to day.
-        SecondaryButton("Import from another app", onImport,
+        SecondaryButton(t("Import from another app"), onImport,
             Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 28.dp),
             icon = Icons.Outlined.FileDownload)
         Spacer(Modifier.height(16.dp))
@@ -1066,37 +1070,37 @@ internal fun NewMenu(
 
     if (open) {
         AppSheet(onDismiss = onClose) {
-            SheetTitle("New")
+            SheetTitle(t("New"))
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-            ActionRow(Icons.Outlined.Folder, "A project", color = c.accent) {
+            ActionRow(Icons.Outlined.Folder, t("A project"), color = c.accent) {
                 onClose(); creating = true
             }
-            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, "A task", color = c.accent) {
+            ActionRow(Icons.Outlined.CheckBoxOutlineBlank, t("A task"), color = c.accent) {
                 onClose(); pickingProjectForTask = true
             }
-            ActionRow(Icons.AutoMirrored.Filled.Notes, "A note", color = c.accent) {
+            ActionRow(Icons.AutoMirrored.Filled.Notes, t("A note"), color = c.accent) {
                 onClose(); writingNote = true
             }
-            ActionRow(Icons.Outlined.Image, "A picture", color = c.accent) {
+            ActionRow(Icons.Outlined.Image, t("A picture"), color = c.accent) {
                 onClose(); capture.picture()
             }
-            ActionRow(Icons.Outlined.Mic, "A voice memo", color = c.accent) {
+            ActionRow(Icons.Outlined.Mic, t("A voice memo"), color = c.accent) {
                 onClose(); capture.voice()
             }
-            ActionRow(Icons.Outlined.Description, "A file", color = c.accent, last = true) {
+            ActionRow(Icons.Outlined.Description, t("A file"), color = c.accent, last = true) {
                 onClose(); capture.file()
             }
             }
-            SecondaryButton("Cancel", onClose,
+            SecondaryButton(t("Cancel"), onClose,
                 Modifier.fillMaxWidth().padding(top = 16.dp))
         }
     }
 
     if (pickingProjectForTask) {
         AppSheet(onDismiss = { pickingProjectForTask = false }) {
-            SheetTitle("Which project?")
+            SheetTitle(t("Which project?"))
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                ActionRow(Icons.Outlined.Inbox, "No project", color = c.accent,
+                ActionRow(Icons.Outlined.Inbox, t("No project"), color = c.accent,
                     last = projects.isEmpty()) {
                     pickingProjectForTask = false; addingLooseTask = true
                 }
@@ -1107,7 +1111,7 @@ internal fun NewMenu(
                     }
                 }
             }
-            SecondaryButton("Cancel", { pickingProjectForTask = false },
+            SecondaryButton(t("Cancel"), { pickingProjectForTask = false },
                 Modifier.fillMaxWidth().padding(top = 16.dp))
         }
     }
@@ -1116,23 +1120,23 @@ internal fun NewMenu(
         AlertDialog(
             onDismissRequest = { creating = false; newTitle = "" },
             containerColor = c.paper,
-            title = { Text("New project", style = MaterialTheme.typography.headlineSmall) },
+            title = { Text(t("New project"), style = MaterialTheme.typography.headlineSmall) },
             text = {
                 OutlinedTextField(
                     value = newTitle, onValueChange = { newTitle = it },
-                    label = { Text("Project name") }, singleLine = true,
+                    label = { Text(t("Project name")) }, singleLine = true,
                     colors = appFieldColors(), shape = RectangleShape,
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
             confirmButton = {
-                PrimaryButton("Create",
+                PrimaryButton(t("Create"),
                     { vm.createProject(newTitle); creating = false; newTitle = "" },
                     enabled = newTitle.isNotBlank())
             },
             dismissButton = {
                 TextButton(onClick = { creating = false; newTitle = "" }) {
-                    Text("Cancel", color = c.ink, style = MaterialTheme.typography.labelLarge)
+                    Text(t("Cancel"), color = c.ink, style = MaterialTheme.typography.labelLarge)
                 }
             },
         )
@@ -1249,18 +1253,18 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
     moving?.let { node ->
         val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
         AppSheet(onDismiss = { moving = null }) {
-            SheetTitle(node.title, overline = "Move to")
+            SheetTitle(node.title, overline = t("Move to"))
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 val current = node.record.fields["parent"]
                 targets.forEachIndexed { i, (id, label) ->
                     val here = id == current || (id == null && current.isNullOrBlank())
-                    ActionRow(Icons.Outlined.Folder, label, meta = if (here) "here" else null,
+                    ActionRow(Icons.Outlined.Folder, label, meta = if (here) t("here") else null,
                         color = c.accent, enabled = !here, last = i == targets.lastIndex) {
                         vm.move(node.id, id); moving = null
                     }
                 }
             }
-            SecondaryButton("Cancel", { moving = null }, Modifier.fillMaxWidth().padding(top = 16.dp))
+            SecondaryButton(t("Cancel"), { moving = null }, Modifier.fillMaxWidth().padding(top = 16.dp))
         }
     }
 
@@ -1271,11 +1275,11 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
             .fileDrop(onHover = { dragging = it }, onFiles = capture.drop)
             .border(2.dp, if (dragging) c.accent else Color.Transparent)
     ) {
-        ScreenHeader("Projects") {
-            PlusButton("New project or task") { adding = true }
+        ScreenHeader(t("Projects")) {
+            PlusButton(t("New project or task")) { adding = true }
         }
         if (nodes.isEmpty()) {
-            Text("No projects yet. Tap + to start one, then file notes and tasks into it.",
+            Text(t("No projects yet. Tap + to start one, then file notes and tasks into it."),
                 style = MaterialTheme.typography.bodyMedium, color = c.muted,
                 modifier = Modifier.padding(horizontal = 20.dp))
             return@Column
@@ -1318,7 +1322,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
                 // The loose items are their own group, named, so the first one
                 // doesn't read as the last project's.
                 item(key = "free") {
-                    SectionLabel("Not in a project", count = free.size,
+                    SectionLabel(t("Not in a project"), count = free.size,
                         modifier = Modifier.padding(top = 0.dp))
                     CardGroup {
                         free.forEachIndexed { i, node ->
@@ -1359,7 +1363,7 @@ private fun ProjectHeader(
         Row(
             Modifier.fillMaxWidth()
                 .combinedClickable(onClick = onToggle, onLongClick = onLongClick,
-                    onClickLabel = if (expanded) "Collapse" else "Expand")
+                    onClickLabel = if (expanded) t("Collapse") else t("Expand"))
                 .defaultMinSize(minHeight = 52.dp)
                 .padding(start = 12.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,

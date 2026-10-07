@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hubidubitask.core.i18n.t
 import java.awt.FileDialog
 import java.awt.Frame
 import java.awt.datatransfer.DataFlavor
@@ -176,7 +177,7 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
     fun stopRecording() {
         val bytes = recorder.value?.stop(); recorder.value = null; recording = false
         if (bytes != null && bytes.isNotEmpty())
-            pending = PendingCapture("audio", "Voice memo", bytes, "audio/wav")
+            pending = PendingCapture("audio", t("Voice memo"), bytes, "audio/wav")
     }
 
     // A date is offered with the question: the one fact still in mind at
@@ -196,22 +197,22 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
                         captureDue = fmt.format(java.util.Date(ms))
                     }
                     pickingDate = false
-                }) { Text("Set") }
+                }) { Text(t("Set")) }
             },
             dismissButton = {
-                TextButton(onClick = { captureDue = null; pickingDate = false }) { Text("No date") }
+                TextButton(onClick = { captureDue = null; pickingDate = false }) { Text(t("No date")) }
             },
         ) { DatePicker(state = dateState) }
     }
 
     if (recording) {
         AppSheet(onDismiss = { stopRecording() }) {
-            SheetTitle("Recording…")
+            SheetTitle(t("Recording…"))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("Discard", {
+                SecondaryButton(t("Discard"), {
                     recorder.value?.stop(); recorder.value = null; recording = false
                 }, Modifier.weight(1f))
-                PrimaryButton("Stop", { stopRecording() }, Modifier.weight(1f),
+                PrimaryButton(t("Stop"), { stopRecording() }, Modifier.weight(1f),
                     icon = Icons.Outlined.Stop)
             }
         }
@@ -219,7 +220,7 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
 
     pending?.let { p ->
         AppSheet(onDismiss = { pending = null }) {
-            SheetTitle("Task or note?")
+            SheetTitle(t("Task or note?"))
             // What is being filed, so the choice is made looking at it.
             Row(
                 Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line).padding(12.dp),
@@ -254,21 +255,21 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
             ) {
                 Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
                     modifier = Modifier.size(20.dp))
-                Text(captureDue?.let { "Due ${shortDate(it)}" } ?: "Add a date",
+                Text(captureDue?.let { t("Due %s", shortDate(it)) } ?: t("Add a date"),
                     style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
                     color = c.accent, modifier = Modifier.weight(1f))
                 if (captureDue == null)
-                    Text("optional", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    Text(t("optional"), style = MaterialTheme.typography.bodySmall, color = c.muted)
             }
             Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("Note", {
+                SecondaryButton(t("Note"), {
                     when (p.kind) {
                         "text" -> vm.noteText(p.text, captureDue, p.body)
                         else -> vm.noteMedia(p.kind, p.bytes!!, p.mime, p.text, captureDue)
                     }
                     pending = null; captureDue = null
                 }, Modifier.weight(1f), icon = Icons.AutoMirrored.Filled.Notes)
-                PrimaryButton("Task", {
+                PrimaryButton(t("Task"), {
                     when (p.kind) {
                         // A task is one line. A short file fits; a long one is named.
                         "text" -> vm.capture(
@@ -284,9 +285,9 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
     }
 
     return CaptureActions(
-        picture = { chooseFile("Choose a picture")?.let { pending = pendingFrom(it) } },
+        picture = { chooseFile(t("Choose a picture"))?.let { pending = pendingFrom(it) } },
         voice = { startRecording() },
-        file = { chooseFile("Attach a file")?.let { pending = pendingFrom(it) } },
+        file = { chooseFile(t("Attach a file"))?.let { pending = pendingFrom(it) } },
         drop = { files ->
             files.firstNotNullOfOrNull { pendingFrom(it) }?.let { pending = it; true } ?: false
         },
@@ -318,15 +319,15 @@ internal fun NewNoteSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: (
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
     AppSheet(onDismiss) {
-        SheetTitle("A note")
+        SheetTitle(t("A note"))
         OutlinedTextField(value = title, onValueChange = { title = it },
-            label = { Text("Note") }, singleLine = true, colors = appFieldColors(),
+            label = { Text(t("Note")) }, singleLine = true, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = body, onValueChange = { body = it },
-            label = { Text("More (optional)", color = c.muted) }, minLines = 3,
+            label = { Text(t("More (optional)"), color = c.muted) }, minLines = 3,
             colors = appFieldColors(), shape = RectangleShape,
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
-        PrimaryButton("Save", { vm.noteText(title.trim(), body = body.trim()); onDismiss() },
+        PrimaryButton(t("Save"), { vm.noteText(title.trim(), body = body.trim()); onDismiss() },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }

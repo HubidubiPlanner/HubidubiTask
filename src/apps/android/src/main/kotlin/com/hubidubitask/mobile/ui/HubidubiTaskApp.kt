@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -33,6 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.hubidubitask.core.i18n.t
 
 private data class Dest(val route: String, val label: String, val icon: ImageVector)
 
@@ -42,9 +44,12 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
         val c = HubidubiTaskTheme.colors
         Surface(color = c.paper) {
             val nav = rememberNavController()
+            // A new language redraws each screen and the tab labels, and keeps
+            // the place: the navigation lives outside what is redrawn.
+            val language by vm.language.collectAsStateWithLifecycle()
             val dests = listOf(
-                // Next first, and where the app opens: what to do comes before where it is filed.
-                Dest("next", "Next", Icons.Outlined.CheckCircle),
+                // Incoming first, and where the app opens: what to do comes before where it is filed.
+                Dest("next", "Incoming", Icons.Outlined.CheckCircle),
                 Dest("projects", "Projects", Icons.Outlined.Folder),
                 Dest("feeds", "Feeds", Icons.Outlined.RssFeed),
                 Dest("settings", "Settings", Icons.Outlined.Tune),
@@ -54,7 +59,7 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                 bottomBar = {
                     Column {
                         HorizontalDivider(color = c.line, thickness = 1.dp)
-                        NavigationBar(containerColor = c.nav, tonalElevation = 0.dp) {
+                        key(language) { NavigationBar(containerColor = c.nav, tonalElevation = 0.dp) {
                             val current by nav.currentBackStackEntryAsState()
                             val route = current?.destination?.route
                             dests.forEach { d ->
@@ -70,7 +75,7 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                                     },
                                     icon = { Icon(d.icon, contentDescription = null) },
                                     label = {
-                                        Text(d.label, style = MaterialTheme.typography.labelMedium,
+                                        Text(t(d.label), style = MaterialTheme.typography.labelMedium,
                                             fontWeight = if (selected) FontWeight.SemiBold
                                                          else FontWeight.Medium)
                                     },
@@ -91,7 +96,7 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                                     ),
                                 )
                             }
-                        }
+                        } }
                     }
                 }
             ) { pad ->
@@ -100,13 +105,13 @@ fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
                 // part of the keyboard that rises above the bottom bar.
                 NavHost(nav, startDestination = "next",
                     modifier = Modifier.padding(pad).consumeWindowInsets(pad)) {
-                    composable("projects") { ProjectsScreen(state, vm) }
-                    composable("next") { NextScreen(state, vm) }
-                    composable("feeds") { FeedsScreen(state, vm) }
+                    composable("projects") { key(language) { ProjectsScreen(state, vm) } }
+                    composable("next") { key(language) { NextScreen(state, vm) } }
+                    composable("feeds") { key(language) { FeedsScreen(state, vm) } }
                     composable("settings") {
-                        SettingsScreen(state, vm, onImport = { nav.navigate("import") })
+                        key(language) { SettingsScreen(state, vm, onImport = { nav.navigate("import") }) }
                     }
-                    composable("import") { ImportScreen(vm, onBack = { nav.popBackStack() }) }
+                    composable("import") { key(language) { ImportScreen(vm, onBack = { nav.popBackStack() }) } }
                 }
             }
         }

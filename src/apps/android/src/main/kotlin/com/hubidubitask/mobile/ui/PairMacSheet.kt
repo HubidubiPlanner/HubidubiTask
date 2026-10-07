@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.core.peer.PeerPairing
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -44,7 +45,7 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
     var code by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var job by remember { mutableStateOf<Job?>(null) }
-    var result by remember { mutableStateOf<String?>(null) }
+    var result by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
 
     fun close() { job?.cancel(); onDismiss() }
     fun start(c: String, here: Boolean) {
@@ -57,28 +58,27 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
     AppSheet(::close) {
         when {
             result != null -> {
-                SheetTitle(if (result!!.startsWith("Paired")) "Paired" else "Not paired", overline = "Computer")
-                Text(result!!, style = MaterialTheme.typography.bodyMedium)
-                PrimaryButton("Done", ::close, Modifier.fillMaxWidth().padding(top = 18.dp))
+                SheetTitle(if (result!!.first) t("Paired") else t("Not paired"), overline = t("Computer"))
+                Text(result!!.second, style = MaterialTheme.typography.bodyMedium)
+                PrimaryButton(t("Done"), ::close, Modifier.fillMaxWidth().padding(top = 18.dp))
             }
             mode == null -> {
-                SheetTitle("Pair with a computer")
-                Text("Open HubidubiTask on the computer, same Wi-Fi. The device you start on shows a " +
-                    "code; type it on the other.", style = MaterialTheme.typography.bodyMedium,
+                SheetTitle(t("Pair with a computer"))
+                Text(t("Open HubidubiTask on the computer, same Wi-Fi. The device you start on shows a code; type it on the other."), style = MaterialTheme.typography.bodyMedium,
                     color = c.muted, modifier = Modifier.padding(bottom = 12.dp))
-                ActionRow(Icons.Outlined.Pin, "Show a code here", meta = "type it on the computer") {
+                ActionRow(Icons.Outlined.Pin, t("Show a code here"), meta = t("type it on the computer")) {
                     shown = PeerPairing.newCode(); mode = "show"; start(shown, here = true)
                 }
-                ActionRow(Icons.Outlined.Keyboard, "Enter the computer's code", last = true) { mode = "enter" }
+                ActionRow(Icons.Outlined.Keyboard, t("Enter the computer's code"), last = true) { mode = "enter" }
             }
             else -> {
                 if (mode == "show") {
-                    SheetTitle("Type this on the computer", overline = "Settings → Pair a phone → Enter the phone's code")
+                    SheetTitle(t("Type this on the computer"), overline = t("Settings → Pair a phone → Enter the phone's code"))
                     Text(shown, fontSize = 34.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line)
                             .padding(vertical = 18.dp, horizontal = 16.dp))
                 } else {
-                    SheetTitle("Enter the computer's code", overline = "Shown on the computer")
+                    SheetTitle(t("Enter the computer's code"), overline = t("Shown on the computer"))
                     OutlinedTextField(value = code, onValueChange = { code = it.uppercase() },
                         singleLine = true, enabled = job == null, placeholder = { Text("ABCD-EFGH") },
                         textStyle = MaterialTheme.typography.titleMedium,
@@ -86,18 +86,18 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
                 }
                 OutlinedTextField(value = address, onValueChange = { address = it },
                     singleLine = true, enabled = job == null || mode == "show",
-                    label = { Text("Computer's address (only if it isn't found)") },
+                    label = { Text(t("Computer's address (only if it isn't found)")) },
                     placeholder = { Text("192.168.1.62:5244") },
                     colors = appFieldColors(), shape = RectangleShape,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
                 if (mode == "enter" && job == null) {
-                    PrimaryButton("Pair", { start(code, here = false) },
+                    PrimaryButton(t("Pair"), { start(code, here = false) },
                         Modifier.fillMaxWidth().padding(top = 14.dp),
                         enabled = code.filter { it.isLetterOrDigit() }.length == 8)
                 } else {
                     Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Dot(c.accent)
-                        Text("Looking for the computer… (the code works for 10 minutes)",
+                        Text(t("Looking for the computer… (the code works for 10 minutes)"),
                             style = MaterialTheme.typography.bodySmall, color = c.muted)
                     }
                 }

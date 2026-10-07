@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Five languages.** Settings → Language: English, Polski, Deutsch, Français
+  and Español, on the phone and the computer, including dates, counts and the
+  home-screen widget. The screens change at once. Until one is chosen the app
+  follows the system's language, or English. Reviews with AI answer in the
+  chosen language.
+- **Next is Incoming**, with its title at the top again (Nadchodzące, Anstehend,
+  À venir, Próximos), the day or the range's dates under it, and the + in the
+  same place as on Projects.
+
 ## 1.8.0 — 7 October 2026
 
 HubidubiOS is now HubidubiTask, with the Agent on any computer at home, Next

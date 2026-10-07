@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hubidubitask.core.i18n.t
 
 /**
  * Pair a phone. Whichever device you start on shows the code; you type it on
@@ -50,36 +51,35 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiTaskViewModel, state: HubidubiTask
     AppSheet(::close) {
         when {
             newcomer != null -> {
-                SheetTitle("Paired", overline = "Phone")
-                Text("${newcomer.name} and this computer now keep each other up to date — every " +
-                    "minute while the app is open on the phone, on the same Wi-Fi.",
+                SheetTitle(t("Paired"), overline = t("Phone"))
+                Text(t("%s and this computer now keep each other up to date — every minute while the app is open on the phone, on the same Wi-Fi.", newcomer.name),
                     style = MaterialTheme.typography.bodyMedium)
-                PrimaryButton("Done", ::close, Modifier.fillMaxWidth().padding(top = 18.dp))
+                PrimaryButton(t("Done"), ::close, Modifier.fillMaxWidth().padding(top = 18.dp))
             }
             mode == null -> {
-                SheetTitle("Pair a phone")
-                Text("The device you start on shows a code; type it on the other.",
+                SheetTitle(t("Pair a phone"))
+                Text(t("The device you start on shows a code; type it on the other."),
                     style = MaterialTheme.typography.bodyMedium, color = c.muted,
                     modifier = Modifier.padding(bottom = 12.dp))
-                ActionRow(Icons.Outlined.Pin, "Show a code here", meta = "type it on the phone") {
+                ActionRow(Icons.Outlined.Pin, t("Show a code here"), meta = t("type it on the phone")) {
                     shown = vm.startPairing(); mode = "show"; waiting = true
                 }
-                ActionRow(Icons.Outlined.Keyboard, "Enter the phone's code", last = true) { mode = "enter" }
+                ActionRow(Icons.Outlined.Keyboard, t("Enter the phone's code"), last = true) { mode = "enter" }
             }
             mode == "show" -> {
-                SheetTitle("Type this on the phone", overline = "Settings → Pair with a computer")
+                SheetTitle(t("Type this on the phone"), overline = t("Settings → Pair with a computer"))
                 Text(shown.orEmpty(), fontSize = 40.sp, fontWeight = FontWeight.Medium,
                     color = c.ink, modifier = Modifier.fillMaxWidth().background(c.raised)
                         .border(1.dp, c.line).padding(vertical = 22.dp, horizontal = 20.dp))
                 Waiting(vm)
             }
             else -> {
-                SheetTitle("Enter the phone's code", overline = "Shown on the phone")
+                SheetTitle(t("Enter the phone's code"), overline = t("Shown on the phone"))
                 OutlinedTextField(value = code, onValueChange = { code = it.uppercase() },
                     singleLine = true, enabled = !waiting, placeholder = { Text("ABCD-EFGH") },
                     textStyle = MaterialTheme.typography.titleMedium,
                     colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-                if (!waiting) PrimaryButton("Pair", { vm.acceptCode(code); waiting = true },
+                if (!waiting) PrimaryButton(t("Pair"), { vm.acceptCode(code); waiting = true },
                     Modifier.fillMaxWidth().padding(top = 14.dp),
                     enabled = code.filter { it.isLetterOrDigit() }.length == 8)
                 else Waiting(vm)
@@ -94,12 +94,12 @@ private fun Waiting(vm: HubidubiTaskViewModel) {
     Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Dot(c.accent)
-            Text("Waiting for the phone… (valid 10 minutes)", style = MaterialTheme.typography.bodySmall,
+            Text(t("Waiting for the phone… (valid 10 minutes)"), style = MaterialTheme.typography.bodySmall,
                 color = c.muted)
         }
         val addrs = vm.server.addresses()
         if (addrs.isNotEmpty())
-            Text("If the phone doesn't find this computer, type its address there: " + addrs.joinToString(", "),
+            Text(t("If the phone doesn't find this computer, type its address there: %s", addrs.joinToString(", ")),
                 style = MaterialTheme.typography.bodySmall, color = c.muted)
     }
 }

@@ -20,6 +20,8 @@ class SyncWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
+        // Feeds write their messages in the app's language.
+        com.hubidubitask.mobile.ui.UiLanguage.apply(applicationContext)
         runCatching { Sync.syncMac(applicationContext) }
         // Feeds whose day, week or month has turned; the tasks they make go
         // out with the next sync.

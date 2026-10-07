@@ -3,6 +3,7 @@ package com.hubidubitask.core.feed
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Message
 import com.hubidubitask.core.agent.Text
+import com.hubidubitask.core.i18n.t
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.temporal.IsoFields
@@ -91,8 +92,8 @@ object Feeds {
             fields = (f + mapOf("last_checked" to now) + changes.toMap()).filterValues { it != null })
 
         val html = try { fetch(url) } catch (e: Exception) {
-            return Outcome(save("last_error" to "Could not open the page: ${e.message ?: e.javaClass.simpleName}"),
-                null, "Could not open the page")
+            return Outcome(save("last_error" to t("Could not open the page: %s", e.message ?: e.javaClass.simpleName)),
+                null, t("Could not open the page"))
         }
         val text = PageText.extract(html).take(SNAPSHOT_LIMIT)
         val title = f["title"]?.takeIf { it.isNotBlank() } ?: PageText.title(html)
@@ -101,28 +102,32 @@ object Feeds {
 
         if (previous == null) return Outcome(
             save("snapshot" to text, "hash" to sum, "last_period" to key, "title" to title, "last_error" to null),
-            null, "Watching from now on")
+            null, t("Watching from now on"))
         if (sum == f["hash"]) return Outcome(
-            save("last_period" to key, "title" to title, "last_error" to null), null, "No change")
+            save("last_period" to key, "title" to title, "last_error" to null), null, t("No change"))
 
         val id = taskId(feed.id, key)
         if (taskExists(id)) return Outcome(
             save("last_period" to key, "last_error" to null), null,
-            "Changed again; this ${f["period"] ?: "day"}'s task is already made")
+            when (f["period"]) {
+                "week" -> t("Changed again; this week's task is already made")
+                "month" -> t("Changed again; this month's task is already made")
+                else -> t("Changed again; this day's task is already made")
+            })
 
         val changes = LineChanges.between(previous, text)
         val reply = try { ask(prompt(title ?: url, url, changes)) } catch (e: Exception) {
-            return Outcome(save("last_error" to (e.message ?: "The model did not answer")), null,
-                "The model did not answer")
+            return Outcome(save("last_error" to (e.message ?: t("The model did not answer"))), null,
+                t("The model did not answer"))
         }
         val line = firstLine(reply)
         val changed = save("snapshot" to text, "hash" to sum, "last_period" to key, "title" to title,
             "last_changed" to today.toString(), "last_error" to null)
-        if (line == null) return Outcome(changed, null, "Changed, nothing to do")
+        if (line == null) return Outcome(changed, null, t("Changed, nothing to do"))
         return Outcome(changed + ("last_task" to id),
             NewTask(id, line, f["project"]?.takeIf { it.isNotBlank() }, today.toString(),
-                "From the feed ${title ?: url}: $url"),
-            "Made a task")
+                t("From the feed %s: %s", title ?: url, url)),
+            t("Made a task"))
     }
 
     private operator fun EntityRecord.plus(field: Pair<String, String?>) =
