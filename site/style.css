@@ -66,14 +66,9 @@ ul, ol { margin: 0; padding: 0; }
 .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 .icon { width: 22px; height: 22px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
-/* Header and footer */
-.site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 76px; flex-wrap: wrap; }
+/* No bar at the top: each page starts with its content. The footer links the pages. */
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 19px; }
 .brand img { width: 28px; height: 28px; }
-.site-nav { display: flex; gap: 24px; }
-.site-nav a { color: var(--muted); text-decoration: none; font-size: 16px; font-weight: 500; padding-block: 12px; }
-.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--ink); }
-.site-nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
 .site-footer { border-top: 1px solid var(--line); margin-top: 96px; padding-block: 36px 48px; color: var(--muted); font-size: 15px; }
 .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: center; justify-content: space-between; }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
@@ -108,8 +103,8 @@ main { display: block; }
 .phone img { width: 100%; aspect-ratio: 1 / 2; object-fit: cover; }
 
 /* Home: hero */
-.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: center; padding-block: 40px 24px; }
-.hero h1 { font-size: clamp(42px, 6.2vw, 72px); line-height: 1.02; letter-spacing: -0.025em; margin-top: 16px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: center; padding-block: 72px 24px; }
+.hero h1 { font-size: clamp(42px, 6.2vw, 72px); line-height: 1.02; letter-spacing: -0.025em; }
 .hero .lede { font-size: 21px; color: var(--muted); margin-top: 22px; max-width: 34em; }
 .hero .actions { margin-top: 32px; }
 .hero .assure { margin-top: 18px; font-size: 15px; color: var(--muted); }
@@ -151,7 +146,7 @@ main { display: block; }
 .get + .site-footer { margin-top: 0; }
 
 /* Download */
-.page-head { padding-block: 40px 8px; display: grid; gap: 16px; }
+.page-head { padding-block: 80px 8px; display: grid; gap: 16px; }
 .page-head h1 { font-size: clamp(38px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; }
 .page-head .lede { font-size: 20px; color: var(--muted); max-width: 36em; }
 .platform { gap: 14px; }
@@ -185,7 +180,7 @@ main { display: block; }
 .ticks .no { color: var(--muted); }
 
 /* Privacy policy and other long text */
-.doc { max-width: var(--measure); }
+.doc { max-width: var(--measure); padding-top: 80px; }
 .doc h1 { font-size: clamp(36px, 5vw, 52px); line-height: 1.05; letter-spacing: -0.02em; }
 .doc .meta { color: var(--muted); font-size: 15px; margin: 14px 0 32px; }
 .doc h2 { font-size: 24px; margin: 48px 0 12px; }
@@ -201,7 +196,7 @@ main { display: block; }
 
 /* The policy, with its contents beside it on a wide screen */
 .doc-layout { display: grid; grid-template-columns: minmax(0, var(--measure)) 220px; gap: 72px; justify-content: space-between; }
-.toc nav { position: sticky; top: 24px; padding-top: 48px; display: grid; gap: 12px; }
+.toc nav { position: sticky; top: 24px; padding-top: 88px; display: grid; gap: 12px; }
 .toc ul { list-style: none; display: grid; gap: 8px; border-left: 1px solid var(--line); padding-left: 16px; }
 .toc a { color: var(--muted); text-decoration: none; font-size: 15px; }
 .toc a:hover { color: var(--ink); }
@@ -212,7 +207,7 @@ main { display: block; }
   .cards-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 860px) {
-  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 24px; }
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 48px; }
   .hero .phone { max-width: 280px; }
   .cards-3 { grid-template-columns: minmax(0, 1fr); }
   .split { grid-template-columns: minmax(0, 1fr); gap: 40px; }
@@ -223,11 +218,8 @@ main { display: block; }
 @media (max-width: 640px) {
   body, .page { font-size: 17px; }
   .wrap { padding-inline: 16px; }
-  /* The brand and the links take two rows on a phone. */
-  .site-header .wrap { min-height: 0; padding-block: 16px 4px; row-gap: 2px; }
-  .site-nav { gap: 22px; width: 100%; }
-  .site-nav a { font-size: 15px; padding-block: 8px; }
   .hero .lede { font-size: 19px; }
+  .page-head, .doc { padding-top: 48px; }
   .section { padding-top: 56px; }
   /* The steps scroll sideways on a phone, one screen at a time. */
   .steps { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 74%; overflow-x: auto;

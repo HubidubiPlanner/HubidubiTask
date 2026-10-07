@@ -46,8 +46,8 @@ for page in glob.glob(os.path.join(public, "*.html")):
         if ref and not os.path.exists(os.path.join(public, ref)):
             problems.append("%s links to %s, which is not there" % (name, ref))
     if name == "download.html":
-        if "Version %s" % version not in s:
-            problems.append("download.html does not say Version %s" % version)
+        if s.count("<dt>Version</dt><dd>%s</dd>" % version) != 2:
+            problems.append("download.html should give version %s for the Mac and Linux apps" % version)
         for f in ("HubidubiTask.dmg", "hubidubitask-x86_64.pkg.tar.zst"):
             mb = round(os.path.getsize(os.path.join(downloads, f)) / 1e6)
             if "%s, %d MB" % (f, mb) not in s:
