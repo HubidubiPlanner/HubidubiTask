@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-- **New names in Settings.** The section is **AI**, and its choices are Claude,
-  SelfHostedAI, **OpenAPI** (was Model) and **Agent** (was Harness). Reviews are
-  **Review with AI**. Saved settings carry over unchanged.
+- **New names and order in Settings.** The section is **AI**, and its choices
+  are, in this order, **OpenAI** (was Model), Claude, SelfHostedAI and **Agent** (was
+  Harness). Reviews are **Review with AI**. Saved settings carry over unchanged.
 - **Next comes first.** It is the first tab and where the apps open, and it has
   no title: the day, or the range's dates, then the tasks.
 - **No Agent tab.** General questions to an agent are not what the app is for, so the

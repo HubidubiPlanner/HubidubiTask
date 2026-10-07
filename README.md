@@ -26,9 +26,9 @@ Settings, under AI, offers four choices, the same on every system:
 
 | Choice | What it is |
 |---|---|
+| OpenAI | Any server that speaks OpenAI's API, with a model you run yourself |
 | Claude | Anthropic's Claude, with your API key |
 | SelfHostedAI | A SelfHostedAI server, over its encrypted connection |
-| OpenAPI | Any server that speaks OpenAI's API, with a model you run yourself |
 | Agent | The Harness: Claude Code on any computer at home, at the IP and port you type. Install it there with `sh deploy/harness/install.sh`. |
 
 ## Everyday commands

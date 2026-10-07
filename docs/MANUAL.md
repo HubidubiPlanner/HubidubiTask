@@ -37,9 +37,9 @@ and the phone also hourly in the background.
 
 | Choice | What to enter |
 |---|---|
+| OpenAI | The address of a server that speaks OpenAI's API, and the model's name |
 | Claude | An API key from the Anthropic Console (kept in the system's keychain) |
 | SelfHostedAI | The server's address |
-| OpenAPI | The address of a server that speaks OpenAI's API, and the model's name |
 | Agent | The IP and port of the computer running the Harness (port 8765 unless you chose another) |
 
 **Agent** is the Harness: Claude Code on a computer in your home network, any Linux or

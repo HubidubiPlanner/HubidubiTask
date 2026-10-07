@@ -76,8 +76,9 @@ class ClaudeClientTest {
         assertEquals("no API key", none.error)
     }
 
-    @Test fun `Claude is the first agent offered`() {
-        assertEquals("claude", AgentConfig.PROTOCOLS.first().first)
+    @Test fun `Settings offers OpenAI, Claude, SelfHostedAI and Agent, in that order`() {
+        assertEquals(listOf("openai" to "OpenAI", "claude" to "Claude", "selfhostedai" to "SelfHostedAI",
+            "harness" to "Agent"), AgentConfig.PROTOCOLS)
         assertTrue(Agent.clientFor(AgentConfig(endpoint = "", protocol = "claude")) is ClaudeClient)
     }
 
