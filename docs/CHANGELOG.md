@@ -1,9 +1,14 @@
 # Changelog
 
-## 1.9.0 — unreleased
+## 1.0.0 — 9 October 2026
 
-Android packages built 9 October 2026; not yet tagged or published.
+HubidubiTask starts on Google Play as a new app, so the version starts again
+at 1.0.0 (the one before it was 1.8.0); versionCode carries on at 4.
 
+- **The Play package is `com.saferendering.hubidubitask`**, after the app's
+  name (was `com.saferendering.hubidubios.projects`). On Android, 1.0.0 is
+  therefore a new app beside 1.8.0, not an upgrade of it: pair it with the
+  computer and the items come over; then 1.8.0 can be removed.
 - **Five languages.** Settings → Language: English, Polski, Deutsch, Français
   and Español, on the phone and the computer, including dates, counts and the
   home-screen widget. The screens change at once. Until one is chosen the app

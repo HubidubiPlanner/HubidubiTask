@@ -20,7 +20,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
-APP = "com.saferendering.hubidubios.projects"
+APP = "com.saferendering.hubidubitask"
 MAIN = APP + "/com.hubidubitask.mobile.MainActivity"
 SEEDER = APP + "/com.hubidubitask.mobile.demo.DemoSeed"
 

@@ -22,7 +22,7 @@ native library. The file to upload lands in `out/` (not committed):
 
 ## Rules that do not change
 
-- The package name `com.saferendering.hubidubios.projects` is permanent once
+- The package name `com.saferendering.hubidubitask` is permanent once
   uploaded.
 - Every upload needs a higher `hubidubitask.versionCode` in
   `src/apps/gradle.properties`, and release notes under

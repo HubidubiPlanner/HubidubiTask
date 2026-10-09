@@ -1,3 +1,7 @@
-• The first tab is Incoming, with its title, today's date, and the + in the same place as on Projects.
-• Five languages: English, Polish, German, French and Spanish. Choose one in Settings › Language; until then the app follows your phone's language.
-• Reviews with AI answer in the language you chose.
+First release of HubidubiTask.
+• Opens on Incoming: today, the week or the month, overdue first.
+• One + for a project, task, note, photo, voice memo or file.
+• Watch web pages: a change becomes one task.
+• Review any item with AI: SelfHostedAI, OpenAI, Claude or your own Agent.
+• Pairs with the Mac or Linux app over your own Wi-Fi. No account, no cloud.
+• English, Polish, German, French and Spanish.

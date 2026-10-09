@@ -22,7 +22,7 @@ android {
         // so a dogfood install passes -Phubidubitask.appId=com.hubidubios.mobile
         // to upgrade that one in place, data and pairing kept.
         applicationId = (project.findProperty("hubidubitask.appId") as String?)
-            ?: "com.saferendering.hubidubios.projects"
+            ?: "com.saferendering.hubidubitask"
         minSdk = 26
         targetSdk = 36
         versionCode = (project.property("hubidubitask.versionCode") as String).toInt()

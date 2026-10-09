@@ -1,3 +1,7 @@
-• Pierwsza karta to Nadchodzące, z tytułem, dzisiejszą datą i + w tym samym miejscu co na karcie Projekty.
-• Pięć języków: polski, angielski, niemiecki, francuski i hiszpański. Wybierz w Ustawieniach › Język; do tego czasu aplikacja mówi językiem telefonu.
-• Przeglądy z AI odpowiadają w wybranym języku.
+Pierwsze wydanie HubidubiTask.
+• Otwiera się na karcie Nadchodzące: dziś, tydzień lub miesiąc, zaległe na górze.
+• Jeden + dla projektu, zadania, notatki, zdjęcia, notatki głosowej lub pliku.
+• Obserwuj strony: zmiana staje się jednym zadaniem.
+• Przegląd dowolnej rzeczy z AI: SelfHostedAI, OpenAI, Claude albo własny Agent.
+• Paruje się z aplikacją na Maca lub Linuksa przez Twoje Wi-Fi. Bez konta, bez chmury.
+• Po polsku, angielsku, niemiecku, francusku i hiszpańsku.
