@@ -9,7 +9,7 @@ No, the app contains no ads.
 **All functionality is available without special access**, with this note so
 the reviewer does not report sync or AI review as broken:
 
-> There is no account or login. Next, Projects, the + menu, Feeds and Mark
+> There is no account or login. Incoming, Projects, the + menu, Feeds and Mark
 > done work entirely on the device. Two optional features need the user's
 > own equipment and cannot be reached by a reviewer: (1) sync with the
 > user's HubidubiTask app on their Mac or Linux computer, paired by a typed
