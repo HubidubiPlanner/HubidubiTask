@@ -1,0 +1,3 @@
+• Pierwsza karta to Nadchodzące, z tytułem, dzisiejszą datą i + w tym samym miejscu co na karcie Projekty.
+• Pięć języków: polski, angielski, niemiecki, francuski i hiszpański. Wybierz w Ustawieniach › Język; do tego czasu aplikacja mówi językiem telefonu.
+• Przeglądy z AI odpowiadają w wybranym języku.

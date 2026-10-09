@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.9.0 — unreleased
+
+Android packages built 9 October 2026; not yet tagged or published.
 
 - **Five languages.** Settings → Language: English, Polski, Deutsch, Français
   and Español, on the phone and the computer, including dates, counts and the

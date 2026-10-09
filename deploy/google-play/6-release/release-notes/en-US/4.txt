@@ -1,0 +1,3 @@
+• The first tab is Incoming, with its title, today's date, and the + in the same place as on Projects.
+• Five languages: English, Polish, German, French and Spanish. Choose one in Settings › Language; until then the app follows your phone's language.
+• Reviews with AI answer in the language you chose.
