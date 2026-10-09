@@ -16,6 +16,11 @@ sh deploy/website/2-site/assemble.sh
 sh deploy/website/3-publish/publish.sh
 ```
 
+The screenshots in `site/assets/screens/` are the real apps with made-up data:
+the phone ones from `deploy/google-play/3-graphics/shoot.py`, the computer
+ones from `sh deploy/website/2-site/desktop-shots.sh`. Make them again when a
+screen changes.
+
 Before the first publish, set `SITE_URL` and `CONTACT_EMAIL` in
 [`2-site/site.env`](2-site/site.env). The Google Play listing uses the same
 two, and its privacy policy is this site's `privacy.html`.

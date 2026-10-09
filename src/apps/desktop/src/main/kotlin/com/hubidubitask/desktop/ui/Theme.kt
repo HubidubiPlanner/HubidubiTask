@@ -173,9 +173,9 @@ object HubidubiTaskTheme {
         @Composable get() = LocalAppColors.current
 }
 
+/** Follows the system's light or dark mode unless [dark] says which (screenshots). */
 @Composable
-fun HubidubiTaskTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+fun HubidubiTaskTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val colors = if (dark) Mech else Piasek
     CompositionLocalProvider(LocalAppColors provides colors) {
         MaterialTheme(

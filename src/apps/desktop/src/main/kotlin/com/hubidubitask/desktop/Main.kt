@@ -1,5 +1,6 @@
 package com.hubidubitask.desktop
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -69,8 +70,8 @@ fun main() {
 
 
 @Composable
-fun App(vm: HubidubiTaskViewModel, start: String = "next") {
-    HubidubiTaskTheme {
+fun App(vm: HubidubiTaskViewModel, start: String = "next", dark: Boolean? = null) {
+    HubidubiTaskTheme(dark ?: isSystemInDarkTheme()) {
         val c = HubidubiTaskTheme.colors
         val state by vm.state.collectAsState()
         var route by remember { mutableStateOf(start) }

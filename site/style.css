@@ -102,6 +102,14 @@ main { display: block; }
 }
 .phone img { width: 100%; aspect-ratio: 1 / 2; object-fit: cover; }
 
+/* Window frame around a real screenshot of the computer app */
+.desktop {
+  margin: 0 0 32px; border: 8px solid var(--frame); border-radius: 14px; overflow: hidden;
+  background: var(--frame); box-shadow: 0 40px 70px -40px var(--shadow);
+}
+.desktop img { width: 100%; height: auto; aspect-ratio: 3 / 2; }
+.desktop-below { margin: 40px 0 0; }
+
 /* Home: hero */
 .hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: center; padding-block: 72px 24px; }
 .hero h1 { font-size: clamp(42px, 6.2vw, 72px); line-height: 1.02; letter-spacing: -0.025em; }
