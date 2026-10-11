@@ -1,7 +1,7 @@
-package com.hubidubitask.desktop.harness
+package com.hubidubitask.desktop.agent
 
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.agent.HarnessAction
+import com.hubidubitask.core.agent.AgentAction
 import com.hubidubitask.desktop.Store
 import java.nio.file.Files
 import kotlin.test.Test
@@ -28,12 +28,12 @@ class ItemsTest {
 
     @Test fun `added, captured and done`() {
         items.apply(listOf(
-            HarnessAction("add_task", text = "Compare prices", project = "p_web", due = "2026-10-09"),
-            HarnessAction("add_task", text = "Loose one", project = "p_gone"),
-            HarnessAction("capture", text = "call mum"),
-            HarnessAction("mark_done", id = "t_host"),
-            HarnessAction("mark_done", id = "i_milk"),
-            HarnessAction("add_task"), HarnessAction("unknown", text = "x")))
+            AgentAction("add_task", text = "Compare prices", project = "p_web", due = "2026-10-09"),
+            AgentAction("add_task", text = "Loose one", project = "p_gone"),
+            AgentAction("capture", text = "call mum"),
+            AgentAction("mark_done", id = "t_host"),
+            AgentAction("mark_done", id = "i_milk"),
+            AgentAction("add_task"), AgentAction("unknown", text = "x")))
         val all = store.all()
         val added = all.single { it.fields["text"] == "Compare prices" }
         assertEquals(mapOf("text" to "Compare prices", "project" to "website", "parent" to "p_web",

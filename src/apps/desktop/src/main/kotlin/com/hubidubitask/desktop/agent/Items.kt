@@ -1,8 +1,8 @@
-package com.hubidubitask.desktop.harness
+package com.hubidubitask.desktop.agent
 
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.agent.HarnessAction
-import com.hubidubitask.core.agent.HarnessItems
+import com.hubidubitask.core.agent.AgentAction
+import com.hubidubitask.core.agent.AgentItems
 import com.hubidubitask.core.feed.Feeds
 import com.hubidubitask.core.nowUtc
 import com.hubidubitask.core.peer.PeerPairing
@@ -14,11 +14,11 @@ import com.hubidubitask.mobile.tree.ProjectTree
  * changes its item tools made land: written as if typed here, so they reach
  * the phone on its next sync. The Harness itself runs elsewhere (src/harness).
  */
-class Items(private val store: Store, private val onChange: () -> Unit = {}) : HarnessItems {
+class Items(private val store: Store, private val onChange: () -> Unit = {}) : AgentItems {
 
     override fun records(): List<EntityRecord> = store.all().filter { it.type != Feeds.TYPE }
 
-    override fun apply(actions: List<HarnessAction>) {
+    override fun apply(actions: List<AgentAction>) {
         for (a in actions) when (a.op) {
             "add_task" -> addTask(a.text ?: continue,
                 a.project?.let(store::get)?.takeIf { it.type == "project" && !it.deleted }, a.due)

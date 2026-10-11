@@ -5,8 +5,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentConfig
-import com.hubidubitask.core.agent.HarnessAction
-import com.hubidubitask.core.agent.HarnessItems
+import com.hubidubitask.core.agent.AgentAction
+import com.hubidubitask.core.agent.AgentItems
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -32,14 +32,14 @@ class LiveHarnessTest {
         assertTrue(health.error ?: "", health.connected)
         assertNotNull("a TLS certificate to pin", health.fingerprint)
 
-        val applied = mutableListOf<HarnessAction>()
-        val items = object : HarnessItems {
+        val applied = mutableListOf<AgentAction>()
+        val items = object : AgentItems {
             override fun records() = listOf(
                 EntityRecord("p_web", "project", "2026-10-06T00:00:00Z", mapOf("title" to "Website")),
                 EntityRecord("t_host", "next_action", "2026-10-06T00:00:00Z",
                     mapOf("text" to "Pick a hosting provider", "parent" to "p_web",
                         "due" to java.time.LocalDate.now().toString())))
-            override fun apply(actions: List<HarnessAction>) { applied += actions }
+            override fun apply(actions: List<AgentAction>) { applied += actions }
         }
         val cfg = AgentConfig(endpoint, protocol = "harness", tlsFingerprint = health.fingerprint)
         val answer = Agent.ask(Agent.clientFor(cfg, items), cfg,

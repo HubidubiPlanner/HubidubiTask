@@ -8,10 +8,10 @@ import org.json.JSONObject
  * The Harness is Claude Code on a computer in the home network, served by
  * src/harness and reached at the IP and port the user types. Neither app runs
  * it. When a question may use tools, the app sends its items along; the
- * changes the Harness's item tools make come back as [HarnessAction]s for the
+ * changes the Harness's item tools make come back as [AgentAction]s for the
  * app to apply to its own data.
  */
-object HarnessLink {
+object AgentLink {
     const val DEFAULT_PORT = "8765"
 
     /** "https://ip:port" from what was typed; blank without an IP. "ip:port" in the IP box works too. */
@@ -42,11 +42,11 @@ object HarnessLink {
         }
     }
 
-    fun actionsOf(answer: JSONObject): List<HarnessAction> {
+    fun actionsOf(answer: JSONObject): List<AgentAction> {
         val arr = answer.optJSONArray("hubidubitask_actions") ?: return emptyList()
         fun JSONObject.s(k: String) = if (isNull(k)) null else optString(k).takeIf { it.isNotBlank() }
         return (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.mapNotNull { a ->
-            HarnessAction(a.s("op") ?: return@mapNotNull null, text = a.s("text"),
+            AgentAction(a.s("op") ?: return@mapNotNull null, text = a.s("text"),
                 project = a.s("project"), due = a.s("due"), id = a.s("id"))
         }
     }
@@ -56,11 +56,11 @@ object HarnessLink {
  * One change the Harness made with its item tools: "add_task" (text, project
  * id or none, due), "capture" (text) or "mark_done" (id).
  */
-data class HarnessAction(val op: String, val text: String? = null, val project: String? = null,
+data class AgentAction(val op: String, val text: String? = null, val project: String? = null,
                          val due: String? = null, val id: String? = null)
 
 /** An app's items, as a Harness question carries them and its changes land. */
-interface HarnessItems {
+interface AgentItems {
     fun records(): List<EntityRecord>
-    fun apply(actions: List<HarnessAction>)
+    fun apply(actions: List<AgentAction>)
 }

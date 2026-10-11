@@ -5,8 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Agent
-import com.hubidubitask.core.agent.HarnessAction
-import com.hubidubitask.core.agent.HarnessItems
+import com.hubidubitask.core.agent.AgentAction
+import com.hubidubitask.core.agent.AgentItems
 import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
@@ -210,11 +210,11 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
      * The phone's items as a Harness question carries them, and where the
      * changes its item tools made land: as if typed here, so they sync out.
      */
-    private val harnessItems = object : HarnessItems {
+    private val harnessItems = object : AgentItems {
         override fun records(): List<EntityRecord> = sync().let { s ->
             listOf("project", "next_action", "inbox_item", "note", "event").flatMap(s::byType) }
 
-        override fun apply(actions: List<HarnessAction>) {
+        override fun apply(actions: List<AgentAction>) {
             val s = sync()
             for (a in actions) when (a.op) {
                 "add_task" -> {

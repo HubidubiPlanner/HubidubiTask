@@ -15,7 +15,7 @@ import javax.net.ssl.X509TrustManager
  * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually
  * :8443); "openai" is any OpenAI-compatible server; "harness" is Claude Code
  * on a computer in the home network (src/harness), at the IP and port the
- * user typed, in the OpenAI shape (see [HarnessLink]). [tlsFingerprint], when
+ * user typed, in the OpenAI shape (see [AgentLink]). [tlsFingerprint], when
  * set, pins a self-signed certificate (sha256 hex of the DER).
  */
 data class AgentConfig(
@@ -79,7 +79,7 @@ interface ModelClient {
 object Agent {
 
     /** [items] is what a Harness question may carry and where its changes land. */
-    fun clientFor(config: AgentConfig, items: HarnessItems? = null): ModelClient = when (config.protocol) {
+    fun clientFor(config: AgentConfig, items: AgentItems? = null): ModelClient = when (config.protocol) {
         "claude" -> ClaudeClient(config)
         "openai" -> OpenAiClient(config)
         // The harness speaks the OpenAI shape, with the items alongside.

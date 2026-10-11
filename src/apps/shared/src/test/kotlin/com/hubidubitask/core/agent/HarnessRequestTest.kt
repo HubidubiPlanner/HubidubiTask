@@ -27,14 +27,14 @@ class HarnessRequestTest {
     }
     private val base = "http://127.0.0.1:${server.address.port}"
 
-    private val applied = mutableListOf<HarnessAction>()
-    private val items = object : HarnessItems {
+    private val applied = mutableListOf<AgentAction>()
+    private val items = object : AgentItems {
         override fun records() = listOf(
             EntityRecord("p_web", "project", "2026-10-06T00:00:00Z", mapOf("title" to "Website")),
             EntityRecord("t_host", "next_action", "2026-10-06T00:00:00Z", mapOf("text" to "Pick a host", "due" to null)),
             EntityRecord("f_1", "feed", "2026-10-06T00:00:00Z", mapOf("url" to "https://example.com")),
             EntityRecord("t_gone", "next_action", "2026-10-06T00:00:00Z", deleted = true))
-        override fun apply(actions: List<HarnessAction>) { applied += actions }
+        override fun apply(actions: List<AgentAction>) { applied += actions }
     }
 
     @AfterTest fun stop() = server.stop(0)
@@ -48,8 +48,8 @@ class HarnessRequestTest {
         assertFalse(sent.getJSONObject(1).getJSONObject("fields").has("due"), "no nulls on the wire")
         val system = body!!.getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system.contains("with your tools"))
-        assertEquals(listOf(HarnessAction("add_task", text = "Compare prices", project = "p_web"),
-            HarnessAction("mark_done", id = "t_host")), applied)
+        assertEquals(listOf(AgentAction("add_task", text = "Compare prices", project = "p_web"),
+            AgentAction("mark_done", id = "t_host")), applied)
     }
 
     @Test fun `a feed's request asks for no tools and carries no items`() {
@@ -75,13 +75,13 @@ class HarnessRequestTest {
     }
 
     @Test fun `an IP and a port make the address, and come back out of it`() {
-        assertEquals("https://192.168.1.50:8765", HarnessLink.endpoint(" 192.168.1.50 ", "8765"))
-        assertEquals("https://192.168.1.50:9000", HarnessLink.endpoint("192.168.1.50:9000", "8765"))
-        assertEquals("https://agent.local:8765", HarnessLink.endpoint("https://agent.local/", ""))
-        assertEquals("https://[fd00::5]:8765", HarnessLink.endpoint("fd00::5", "8765"))
-        assertEquals("", HarnessLink.endpoint("  ", "8765"))
-        assertEquals("192.168.1.50" to "9000", HarnessLink.split("https://192.168.1.50:9000"))
-        assertEquals("fd00::5" to "8765", HarnessLink.split("https://[fd00::5]:8765"))
-        assertEquals("" to "8765", HarnessLink.split(null))
+        assertEquals("https://192.168.1.50:8765", AgentLink.endpoint(" 192.168.1.50 ", "8765"))
+        assertEquals("https://192.168.1.50:9000", AgentLink.endpoint("192.168.1.50:9000", "8765"))
+        assertEquals("https://agent.local:8765", AgentLink.endpoint("https://agent.local/", ""))
+        assertEquals("https://[fd00::5]:8765", AgentLink.endpoint("fd00::5", "8765"))
+        assertEquals("", AgentLink.endpoint("  ", "8765"))
+        assertEquals("192.168.1.50" to "9000", AgentLink.split("https://192.168.1.50:9000"))
+        assertEquals("fd00::5" to "8765", AgentLink.split("https://[fd00::5]:8765"))
+        assertEquals("" to "8765", AgentLink.split(null))
     }
 }

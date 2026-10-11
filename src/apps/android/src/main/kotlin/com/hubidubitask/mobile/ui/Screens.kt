@@ -1149,7 +1149,7 @@ fun SettingsScreen(
     val claude = protocol == "claude"
     // The harness is Claude Code on a computer in the home network: its IP and port.
     val harness = protocol == "harness"
-    val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.HarnessLink.split(vm.harnessEndpoint()) }
+    val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.AgentLink.split(vm.harnessEndpoint()) }
     var harnessIp by remember { mutableStateOf(savedIp) }
     var harnessPort by remember { mutableStateOf(savedPort) }
     var saving by remember { mutableStateOf(false) }
@@ -1205,7 +1205,7 @@ fun SettingsScreen(
                         helper = "", enabled = true, placeholder = "192.168.1.50",
                         modifier = Modifier.weight(2f))
                     LabeledField(t("Port"), harnessPort, { harnessPort = it.filter(Char::isDigit); message = null },
-                        helper = "", enabled = true, placeholder = com.hubidubitask.core.agent.HarnessLink.DEFAULT_PORT,
+                        helper = "", enabled = true, placeholder = com.hubidubitask.core.agent.AgentLink.DEFAULT_PORT,
                         modifier = Modifier.weight(1f))
                 }
             else
@@ -1224,7 +1224,7 @@ fun SettingsScreen(
                 {
                     saving = true; message = null
                     val address = if (harness)
-                        com.hubidubitask.core.agent.HarnessLink.endpoint(harnessIp, harnessPort) else endpoint.trim()
+                        com.hubidubitask.core.agent.AgentLink.endpoint(harnessIp, harnessPort) else endpoint.trim()
                     vm.setAgentConfig(saved.copy(
                         endpoint = address, protocol = protocol,
                         model = if (harness) defaultModel else model.ifBlank { defaultModel },

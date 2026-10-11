@@ -17,20 +17,20 @@ class LiveHarnessTest {
         assertTrue(health.connected, "not connected: ${health.error}")
         assertNotNull(health.fingerprint, "a certificate to pin")
 
-        val applied = mutableListOf<HarnessAction>()
-        val items = object : HarnessItems {
+        val applied = mutableListOf<AgentAction>()
+        val items = object : AgentItems {
             override fun records() = listOf(
                 EntityRecord("p_home", "project", "2026-10-06T00:00:00Z", mapOf("title" to "Dom")),
                 EntityRecord("t_fence", "next_action", "2026-10-06T00:00:00Z",
                     mapOf("text" to "Paint the fence", "parent" to "p_home")))
-            override fun apply(actions: List<HarnessAction>) { applied += actions }
+            override fun apply(actions: List<AgentAction>) { applied += actions }
         }
         val cfg = AgentConfig(endpoint, protocol = "harness", tlsFingerprint = health.fingerprint)
         val answer = Agent.ask(Agent.clientFor(cfg, items), cfg,
             "I painted the fence. Mark that task done, then tell me what is left in Dom.")
         println("answer: $answer\nactions: $applied")
         assertFalse(answer.startsWith("error:"), answer)
-        assertTrue(applied.contains(HarnessAction("mark_done", id = "t_fence")), applied.toString())
+        assertTrue(applied.contains(AgentAction("mark_done", id = "t_fence")), applied.toString())
 
         // A feed: no tools, no items, plain text back.
         val feed = AgentConfig(endpoint, protocol = "harness", tlsFingerprint = health.fingerprint, tools = false)

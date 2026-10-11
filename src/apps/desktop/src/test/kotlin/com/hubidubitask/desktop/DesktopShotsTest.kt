@@ -82,6 +82,19 @@ class DesktopShotsTest {
         }
     }
 
+    /**
+     * A data folder holding the same made-up data, for real screenshots of the
+     * Mac app: start a copy of the app with -Duser.home=DEMO_HOME and capture
+     * its window. Runs only with DEMO_HOME set.
+     */
+    @Test
+    fun `fill a demo data folder`() {
+        val home = System.getenv("DEMO_HOME")?.let(::File) ?: return
+        val store = Store(File(home, "Library/Application Support/HubidubiTask").apply { mkdirs() })
+        seed(store)
+        store.setKv("ui_language", Language.EN.code)
+    }
+
     /** DemoSeed's data, written the way the desktop app writes it. */
     private fun seed(store: Store) {
         val today = LocalDate.now()

@@ -53,7 +53,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     }
 
     /** What a Harness question carries, and where its changes land. */
-    private val items = com.hubidubitask.desktop.harness.Items(store) { refresh() }
+    private val items = com.hubidubitask.desktop.agent.Items(store) { refresh() }
 
     data class UiState(
         /** A phone is paired with this Mac. */
