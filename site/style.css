@@ -137,7 +137,8 @@ main { display: block; }
 .steps p { color: var(--muted); font-size: 16px; margin-top: 6px; }
 
 /* Home: taps */
-.taps-box { max-width: var(--measure); width: 100%; }
+/* Two tables side by side, one list on narrower screens. */
+.taps-box { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px; align-items: start; }
 .taps { width: 100%; border-collapse: collapse; }
 .taps th { text-align: left; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 0 10px; border-bottom: 1.5px solid var(--ink); }
 .taps td { padding: 13px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
@@ -229,6 +230,8 @@ main { display: block; }
   .hero .phone { max-width: 280px; }
   .cards-3 { grid-template-columns: minmax(0, 1fr); }
   .split { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .taps-box { grid-template-columns: minmax(0, 1fr); }
+  .taps + .taps thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .doc-layout { grid-template-columns: minmax(0, 1fr); }
   .toc { display: none; }
   .get .wrap { grid-template-columns: minmax(0, 1fr); }
