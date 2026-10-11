@@ -31,5 +31,5 @@ The Google Play listing uses the same two, and its privacy policy is this
 site's `privacy.html`.
 
 The Mac app is free and not signed with an Apple developer certificate, so
-macOS asks once before opening it; the Download page walks people through
-that. Signing and notarizing it would need an Apple Developer ID.
+macOS asks once before opening it. The Download page has no install steps;
+signing and notarizing the app would need an Apple Developer ID.

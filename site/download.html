@@ -61,49 +61,6 @@
     </figure>
   </section>
 
-  <section class="section split" aria-labelledby="mac-h">
-    <div class="section-head">
-      <h2 id="mac-h">Opening the Mac app the first time</h2>
-      <p>HubidubiTask is free and not signed with an Apple developer certificate, so macOS asks you once to confirm that you want to open it. After that it opens like any other app.</p>
-    </div>
-    <ol class="numbered">
-      <li>
-        <h3>Move it to Applications</h3>
-        <p>Open HubidubiTask.dmg and drag HubidubiTask into the Applications folder.</p>
-      </li>
-      <li>
-        <h3>Open it once</h3>
-        <p>macOS says it could not verify the app. Click Done.</p>
-      </li>
-      <li>
-        <h3>Allow it in System Settings</h3>
-        <p>Open System Settings, then Privacy &amp; Security. Under Security, click Open Anyway next to “HubidubiTask was blocked”, and confirm with your password or Touch ID.</p>
-      </li>
-      <li>
-        <h3>Or, in Terminal</h3>
-        <p>One line does the same:</p>
-        <code class="cmd">xattr -dr com.apple.quarantine /Applications/HubidubiTask.app</code>
-      </li>
-    </ol>
-  </section>
-
-  <section class="section split" aria-labelledby="linux-h">
-    <div class="section-head">
-      <h2 id="linux-h">Installing on Linux</h2>
-      <p>One package with everything it needs. On upgrade it replaces the older hubidubios package, and your items move with it.</p>
-    </div>
-    <ol class="numbered">
-      <li>
-        <h3>Install the package</h3>
-        <code class="cmd">sudo pacman -U hubidubitask-x86_64.pkg.tar.zst</code>
-      </li>
-      <li>
-        <h3>Start it</h3>
-        <p>From the app launcher, or with <strong>hubidubitask</strong> in a terminal. The package opens the sync port to your home network if ufw is on.</p>
-      </li>
-    </ol>
-  </section>
-
   <section class="section split" aria-labelledby="pair-h">
     <div class="section-head">
       <h2 id="pair-h">Pair your phone and your computer</h2>
