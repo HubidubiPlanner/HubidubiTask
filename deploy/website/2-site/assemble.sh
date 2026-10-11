@@ -20,7 +20,7 @@ public="$here/out/public"
 offers=0
 grep -q 'href="downloads/' "$repo"/site/*.html && offers=1
 if [ $offers = 1 ]; then
-  for f in HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst hubidubitask-agent.tar.gz SHA256SUMS; do
+  for f in HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst SHA256SUMS; do
     [ -f "$downloads/$f" ] || { echo "missing $downloads/$f: run ../1-downloads/build.sh first" >&2; exit 1; }
   done
 fi
@@ -57,10 +57,6 @@ for page in glob.glob(os.path.join(public, "*.html")):
             mb = round(os.path.getsize(os.path.join(downloads, f)) / 1e6)
             if "%s, %d MB" % (f, mb) not in s:
                 problems.append("download.html should say %s, %d MB" % (f, mb))
-    if offers == "1" and name == "agent.html":
-        kb = round(os.path.getsize(os.path.join(downloads, "hubidubitask-agent.tar.gz")) / 1e3)
-        if "hubidubitask-agent.tar.gz, %d KB" % kb not in s:
-            problems.append("agent.html should say hubidubitask-agent.tar.gz, %d KB" % kb)
 for p in problems:
     print("!! " + p, file=sys.stderr)
 sys.exit(1 if problems else 0)

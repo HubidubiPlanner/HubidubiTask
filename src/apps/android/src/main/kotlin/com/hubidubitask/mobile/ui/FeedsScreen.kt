@@ -136,7 +136,6 @@ private fun NewWebFeedSheet(state: HubidubiTaskViewModel.UiState, vm: HubidubiTa
     var url by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var period by remember { mutableStateOf("week") }
-    var model by remember { mutableStateOf("claude") }
     var project by remember { mutableStateOf<EntityRecord?>(null) }
     var picking by remember { mutableStateOf(false) }
 
@@ -167,14 +166,13 @@ private fun NewWebFeedSheet(state: HubidubiTaskViewModel.UiState, vm: HubidubiTa
                 label = { Text(t("Name (optional)"), color = c.muted) }, singleLine = true,
                 colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
             Segmented(Feeds.PERIODS.map { (id, label) -> id to t(label) }, period, { period = it })
-            Segmented(AgentConfig.FEED_MODELS.map { (id, label) -> id to t(label) }, model, { model = it })
             ActionRow(Icons.Outlined.Folder, project?.fields?.get("title") ?: t("No project"),
                 color = c.accent, last = true) { picking = true }
         }
         val ok = url.trim().let { it.startsWith("http://") || it.startsWith("https://") } &&
             url.trim().length > 10
         PrimaryButton(t("Watch"), {
-            vm.addFeed(url, title, period, model, project?.id); onDismiss()
+            vm.addFeed(url, title, period, "claude", project?.id); onDismiss()
         }, Modifier.fillMaxWidth().padding(top = 18.dp), enabled = ok)
     }
 }

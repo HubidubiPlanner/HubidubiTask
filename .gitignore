@@ -18,6 +18,6 @@ deploy/omarchy/omarchy-pkgs/
 distribution/arch/out/
 *.pkg.tar.zst
 
-# Python caches (src/harness tests)
+# Python caches
 __pycache__/
 *.pyc

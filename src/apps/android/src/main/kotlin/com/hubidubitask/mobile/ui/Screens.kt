@@ -1147,11 +1147,12 @@ fun SettingsScreen(
     // system's secret store.
     var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
     val claude = protocol == "claude"
-    // The harness is Claude Code on a computer in the home network: its IP and port.
+    // The user's own agent on a computer at home: its IP, port and token.
     val harness = protocol == "harness"
     val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.AgentLink.split(vm.harnessEndpoint()) }
     var harnessIp by remember { mutableStateOf(savedIp) }
     var harnessPort by remember { mutableStateOf(savedPort) }
+    var harnessToken by remember { mutableStateOf(vm.harnessToken().orEmpty()) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     // Whether the last check found the AI answering; the message says it in words.
@@ -1199,21 +1200,24 @@ fun SettingsScreen(
             if (claude)
                 LabeledField(t("Claude API key"), claudeKey, { claudeKey = it; message = null },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
-            else if (harness)
+            else if (harness) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     LabeledField("IP", harnessIp, { harnessIp = it; message = null },
                         helper = "", enabled = true, placeholder = "192.168.1.50",
                         modifier = Modifier.weight(2f))
                     LabeledField(t("Port"), harnessPort, { harnessPort = it.filter(Char::isDigit); message = null },
-                        helper = "", enabled = true, placeholder = com.hubidubitask.core.agent.AgentLink.DEFAULT_PORT,
+                        helper = "", enabled = true, placeholder = "",
                         modifier = Modifier.weight(1f))
                 }
+                LabeledField(t("Token or password"), harnessToken, { harnessToken = it; message = null },
+                    helper = "", enabled = true, placeholder = "", secret = true)
+            }
             else
                 LabeledField(t("Server address"), endpoint, { endpoint = it; message = null },
                     helper = "",
                     enabled = true, placeholder = "https://192.168.1.50:8443")
 
-            // The harness's computer decides its model.
+            // The user's agent decides its own model.
             if (!harness)
                 LabeledField(t("Model"), model, { model = it; message = null },
                     helper = "",
@@ -1223,11 +1227,30 @@ fun SettingsScreen(
                 if (saving) t("Saving…") else t("Save"),
                 {
                     saving = true; message = null
-                    val address = if (harness)
-                        com.hubidubitask.core.agent.AgentLink.endpoint(harnessIp, harnessPort) else endpoint.trim()
+                    if (harness) scope.launch {
+                        // Which agent listens there is found, not asked: the address is enough.
+                        message = t("Saved — checking…")
+                        val found = vm.plugAgent(harnessIp, harnessPort, harnessToken)
+                        val h = vm.checkInference()
+                        message = when (found) {
+                            is com.hubidubitask.core.agent.AgentProbe.Result.Found -> {
+                                harnessPort = com.hubidubitask.core.agent.AgentLink.split(found.endpoint).second
+                                if (h.connected) t("Connected to %s", found.label)
+                                else t("Saved, but the agent at %s did not answer: %s", found.label,
+                                    h.error ?: t("no reply"))
+                            }
+                            is com.hubidubitask.core.agent.AgentProbe.Result.NeedsToken ->
+                                if (found.refused) t("%s refused the token", found.label)
+                                else t("%s needs its token", found.label)
+                            com.hubidubitask.core.agent.AgentProbe.Result.NotFound ->
+                                t("Saved, but the agent at %s did not answer: %s", harnessIp.trim(), t("no reply"))
+                        }
+                        connected = found is com.hubidubitask.core.agent.AgentProbe.Result.Found && h.connected
+                        saving = false
+                    } else {
                     vm.setAgentConfig(saved.copy(
-                        endpoint = address, protocol = protocol,
-                        model = if (harness) defaultModel else model.ifBlank { defaultModel },
+                        endpoint = endpoint.trim(), protocol = protocol,
+                        model = model.ifBlank { defaultModel },
                         apiKey = if (claude) claudeKey.trim() else null))
                     scope.launch {
                         // Saving is not the same as working. An address nothing
@@ -1237,10 +1260,10 @@ fun SettingsScreen(
                         val h = vm.checkInference()
                         message = if (h.connected) t("Connected to %s", h.server ?: endpoint)
                             else if (claude) t("Saved, but Claude did not answer: %s", h.error ?: t("no reply"))
-                            else if (harness) t("Saved, but the agent at %s did not answer: %s", address, h.error ?: t("no reply"))
                             else t("Saved, but nothing answered at %s — check the address and that the server is running there.", endpoint)
                         connected = h.connected
                         saving = false
+                    }
                     }
                 },
                 Modifier.fillMaxWidth(),

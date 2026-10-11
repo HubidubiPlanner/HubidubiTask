@@ -2,6 +2,7 @@ package com.hubidubitask.core.agent
 
 import okhttp3.OkHttpClient
 import java.security.MessageDigest
+import java.time.LocalDate
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
@@ -13,10 +14,12 @@ import javax.net.ssl.X509TrustManager
  *
  * [protocol] "claude" is Anthropic's Claude API, reached with an API key and
  * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually
- * :8443); "openai" is any OpenAI-compatible server; "harness" is Claude Code
- * on a computer in the home network (src/harness), at the IP and port the
- * user typed, in the OpenAI shape (see [AgentLink]). [tlsFingerprint], when
- * set, pins a self-signed certificate (sha256 hex of the DER).
+ * :8443); "openai" is any OpenAI-compatible server; "harness" (labelled
+ * "Agent"; the id stays because settings store it) is an agent the user
+ * already runs on a computer at home, at the IP and port they typed, of the
+ * [kind] found there (see [AgentKind], [AgentProbe]); [apiKey] is its token.
+ * [tlsFingerprint], when set, pins a self-signed certificate (sha256 hex of
+ * the DER).
  */
 data class AgentConfig(
     val endpoint: String,
@@ -26,34 +29,30 @@ data class AgentConfig(
     val tlsFingerprint: String? = null,
     /** "auto" answers in the material's language; "en" / "pl" force one. */
     val language: String = "auto",
-    /**
-     * Whether the harness may use its tools (the items' Markdown copy and
-     * item tools, web pages, subagents, its computer's MCP servers) for this
-     * agent. Off for feeds: their text comes from strangers' web pages. Only
-     * the harness has tools; others ignore this.
-     */
-    val tools: Boolean = true,
+    /** For the user's own agent: which one listens there ([AgentKind] id). */
+    val kind: String? = null,
 ) {
     companion object {
         const val DEFAULT_ENDPOINT = "https://192.168.1.50:8443"
         const val CLAUDE_MODEL = "claude-opus-5-5"
 
         /** Every agent the apps can use, in the order Settings offers them. */
-        /** Labels only: the ids are what settings store, so they never change. "Agent" is the Harness. */
+        /** Labels only: the ids are what settings store, so they never change. "Agent" is the user's own. */
         val PROTOCOLS = listOf("selfhostedai" to "SelfHostedAI", "openai" to "OpenAI",
             "claude" to "Claude", "harness" to "Agent")
 
         /** What a fresh install uses: the first choice in Settings. */
         const val DEFAULT_PROTOCOL = "selfhostedai"
 
-        /** The agents a feed may use: the two that write good one-line tasks. */
-        val FEED_MODELS = listOf("claude" to "Claude", "harness" to "Agent")
-
-        const val HARNESS_MODEL = "claude-code"
+        /**
+         * What a feed writes its task with. Never the user's own agent: a feed's
+         * text is a stranger's web page, and that agent can run commands.
+         */
+        val FEED_MODELS = listOf("claude" to "Claude")
 
         fun defaultModel(protocol: String) = when (protocol) {
             "claude" -> CLAUDE_MODEL
-            "harness" -> HARNESS_MODEL
+            "harness" -> ""
             "selfhostedai" -> "fast"
             else -> "local"
         }
@@ -78,12 +77,10 @@ interface ModelClient {
 
 object Agent {
 
-    /** [items] is what a Harness question may carry and where its changes land. */
-    fun clientFor(config: AgentConfig, items: AgentItems? = null): ModelClient = when (config.protocol) {
+    fun clientFor(config: AgentConfig): ModelClient = when (config.protocol) {
         "claude" -> ClaudeClient(config)
         "openai" -> OpenAiClient(config)
-        // The harness speaks the OpenAI shape, with the items alongside.
-        "harness" -> OpenAiClient(config, items)
+        "harness" -> HomeAgent.clientFor(config)
         else -> SelfhostedaiClient(config)
     }
 
@@ -101,24 +98,24 @@ object Agent {
     fun languageInstruction(language: String?): String =
         LANGUAGE[(language ?: "auto").lowercase().take(2)] ?: LANGUAGE.getValue("au")
 
-    fun plainSystem(language: String?, tools: Boolean = false): String =
-        if (tools) "You are the user's assistant. Look up what you need in their items " +
-            "with your tools before answering. Answer in plain prose. Be concise and concrete. " +
-            "Do not use JSON or markdown fences. " + languageInstruction(language)
-        else "You are the user's assistant. Answer in plain prose. Be concise and concrete. " +
+    fun plainSystem(language: String?): String =
+        "You are the user's assistant. Answer in plain prose. Be concise and concrete. " +
             "Do not use JSON, markdown fences, or tool calls. " + languageInstruction(language)
-
-    /** Only the harness has real tools; for the others "tool calls" are text to avoid. */
-    fun usesTools(config: AgentConfig) = config.protocol == "harness" && config.tools
 
     /**
      * Ask for prose. One retry: a cold generation can spend its whole budget
      * reasoning and stop before answering, and asking again straight away
      * answered every time it was tried. Failures come back prefixed "error: "
      * so a caller can tell an explanation from an answer.
+     *
+     * The user's own agent also gets [items] to look at, and the changes it
+     * asks for are checked and applied to them, once: a reply that changed
+     * something is never asked for again.
      */
-    fun ask(client: ModelClient, config: AgentConfig, question: String): String {
-        val messages = listOf(Message("system", plainSystem(config.language, usesTools(config))),
+    fun ask(client: ModelClient, config: AgentConfig, question: String,
+            items: AgentItems? = null, today: LocalDate = LocalDate.now()): String {
+        if (client is HomeAgentClient) return askHome(client, config, question, items, today)
+        val messages = listOf(Message("system", plainSystem(config.language)),
             Message("user", question))
         var raw = ""
         repeat(2) {
@@ -134,11 +131,33 @@ object Agent {
             "twice (${raw.length} characters of it). Try again."
     }
 
+    private fun askHome(client: HomeAgentClient, config: AgentConfig, question: String,
+                        items: AgentItems?, today: LocalDate): String {
+        val records = items?.records().orEmpty()
+        val prompt = AgentPrompt(AgentActions.instructions(config.language, client.kind.structured),
+            ItemsContext.render(records, today), question)
+        var raw = ""
+        repeat(2) {
+            val reply = try { client.turn(prompt) } catch (e: Exception) {
+                return "error: ${e.message ?: "the agent could not be reached"}"
+            }
+            val changes = AgentActions.validate(reply.actions, records)
+            if (changes.isNotEmpty()) items?.apply(changes)
+            val answer = Text.stripReasoning(reply.text).trim()
+            if (answer.isNotEmpty()) return answer
+            if (reply.actions.isNotEmpty()) return AgentActions.summary(changes, records)
+                .ifEmpty { "error: none of the agent's changes fit an item here" }
+            raw = reply.text
+        }
+        return "error: the agent spent its whole reply reasoning and never answered, " +
+            "twice (${raw.length} characters of it). Try again."
+    }
+
     /** An HTTP client for a LAN server with a self-signed certificate: any
      *  certificate is accepted unless [fingerprint] pins one. [seen] hears the
      *  sha256 of each certificate the server shows (OkHttp's own handshake
      *  record drops a self-signed one it cannot chain to a known root). */
-    internal fun http(fingerprint: String?, readTimeoutSeconds: Long,
+    internal fun http(fingerprint: String?, readTimeoutSeconds: Long, connectTimeoutSeconds: Long = 10,
                       seen: (String) -> Unit = {}): OkHttpClient {
         val pin = fingerprint?.removePrefix("sha256:")?.lowercase()?.replace(":", "")
             ?.takeIf { it.isNotBlank() }
@@ -157,7 +176,7 @@ object Agent {
         return OkHttpClient.Builder()
             .sslSocketFactory(ssl.socketFactory, trust)
             .hostnameVerifier { _, _ -> true }   // a LAN IP has no name to verify
-            .connectTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .build()
     }

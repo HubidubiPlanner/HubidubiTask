@@ -26,7 +26,7 @@ object FeedWork {
         for (feed in sync.feeds()) {
             if (only != null && feed.id != only) continue
             if (only == null && !Feeds.isDue(feed, today)) continue
-            val client = Agent.clientFor(AgentSettings.configFor(context, feed.fields["model"] ?: "claude"))
+            val client = Agent.clientFor(AgentSettings.feedConfig(context))
             val result = try {
                 Feeds.check(feed, today, com.hubidubitask.core.nowUtc(), PageFetch::get,
                     { client.complete(it) }, sync::exists)

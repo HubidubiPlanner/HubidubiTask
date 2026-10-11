@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain HTTP is allowed, because the user's own agent at home often serves
+     nothing else (Hermes, opencode). The app itself keeps it to the home
+     network: it only ever builds an http:// address for a private one
+     (AgentLink.isPrivate), fixed when Settings finds the agent. Everything
+     else is HTTPS, trusting the system's certificate authorities. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

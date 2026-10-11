@@ -1,66 +1,52 @@
 package com.hubidubitask.core.agent
 
-import com.hubidubitask.core.EntityRecord
-import org.json.JSONArray
-import org.json.JSONObject
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
 
 /**
- * The Harness is Claude Code on a computer in the home network, served by
- * src/harness and reached at the IP and port the user types. Neither app runs
- * it. When a question may use tools, the app sends its items along; the
- * changes the Harness's item tools make come back as [AgentAction]s for the
- * app to apply to its own data.
+ * Where the user's own agent listens, as typed in Settings: an IP (or a name)
+ * and a port. Neither app runs it; it is whatever the user already runs at
+ * home (see [AgentKind]).
  */
 object AgentLink {
-    const val DEFAULT_PORT = "8765"
 
-    /** "https://ip:port" from what was typed; blank without an IP. "ip:port" in the IP box works too. */
-    fun endpoint(host: String, port: String): String {
+    /** The host and the port from what was typed; "ip:port" in the IP box works too. Null without a host. */
+    fun parse(host: String, port: String): Pair<String, Int?>? {
         var h = host.trim().substringAfter("://").substringBefore('/').trim()
         var p = port.trim()
         Regex("^([^:\\[\\]]+):(\\d+)$").matchEntire(h)?.let { h = it.groupValues[1]; p = it.groupValues[2] }
-        if (h.isBlank()) return ""
-        if (h.count { it == ':' } > 1 && !h.startsWith("[")) h = "[$h]"   // IPv6
-        return "https://$h:${p.ifBlank { DEFAULT_PORT }}"
+        Regex("^\\[(.+)]:(\\d+)$").matchEntire(h)?.let { h = it.groupValues[1]; p = it.groupValues[2] }
+        h = h.removePrefix("[").removeSuffix("]")
+        if (h.isBlank()) return null
+        return h to p.toIntOrNull()?.takeIf { it in 1..65535 }
     }
 
-    /** The IP and port of a saved endpoint, for the settings form. */
+    /** "scheme://host:port", IPv6 in brackets; without a port, just "scheme://host". */
+    fun endpoint(scheme: String, host: String, port: Int?): String {
+        val h = if (':' in host) "[$host]" else host
+        return if (port == null) "$scheme://$h" else "$scheme://$h:$port"
+    }
+
+    /** The host and the port of a saved endpoint, for the settings form; "" for what it lacks. */
     fun split(endpoint: String?): Pair<String, String> {
         val hp = endpoint.orEmpty().trim().substringAfter("://").substringBefore('/')
-        if (hp.isBlank()) return "" to DEFAULT_PORT
-        if (hp.startsWith("[")) return hp.substringAfter('[').substringBefore(']') to
-            hp.substringAfter("]:", DEFAULT_PORT)
-        return if (':' in hp) hp.substringBeforeLast(':') to hp.substringAfterLast(':')
-               else hp to DEFAULT_PORT
+        if (hp.isBlank()) return "" to ""
+        if (hp.startsWith("[")) return hp.substringAfter('[').substringBefore(']') to hp.substringAfter("]:", "")
+        return if (hp.count { it == ':' } == 1) hp.substringBefore(':') to hp.substringAfter(':') else hp to ""
     }
 
-    fun itemsJson(records: List<EntityRecord>): JSONArray = JSONArray().apply {
-        records.filter { !it.deleted && it.type != "feed" }.forEach { r ->
-            put(JSONObject().put("id", r.id).put("type", r.type).put("fields", JSONObject().apply {
-                r.fields.forEach { (k, v) -> if (v != null) put(k, v) }
-            }))
+    /**
+     * Whether [host] is in a home network: a private, link-local or loopback
+     * address, Tailscale's 100.64/10, or a unique-local IPv6 one. A name is
+     * resolved, so call this off the main thread. Only such hosts are ever
+     * spoken to without TLS.
+     */
+    fun isPrivate(host: String): Boolean = runCatching {
+        InetAddress.getAllByName(host).all { a ->
+            a.isSiteLocalAddress || a.isLinkLocalAddress || a.isLoopbackAddress ||
+                (a is Inet4Address && a.address[0].toInt() and 0xff == 100 && a.address[1].toInt() and 0xc0 == 64) ||
+                (a is Inet6Address && a.address[0].toInt() and 0xfe == 0xfc)
         }
-    }
-
-    fun actionsOf(answer: JSONObject): List<AgentAction> {
-        val arr = answer.optJSONArray("hubidubitask_actions") ?: return emptyList()
-        fun JSONObject.s(k: String) = if (isNull(k)) null else optString(k).takeIf { it.isNotBlank() }
-        return (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.mapNotNull { a ->
-            AgentAction(a.s("op") ?: return@mapNotNull null, text = a.s("text"),
-                project = a.s("project"), due = a.s("due"), id = a.s("id"))
-        }
-    }
-}
-
-/**
- * One change the Harness made with its item tools: "add_task" (text, project
- * id or none, due), "capture" (text) or "mark_done" (id).
- */
-data class AgentAction(val op: String, val text: String? = null, val project: String? = null,
-                         val due: String? = null, val id: String? = null)
-
-/** An app's items, as a Harness question carries them and its changes land. */
-interface AgentItems {
-    fun records(): List<EntityRecord>
-    fun apply(actions: List<AgentAction>)
+    }.getOrDefault(false)
 }

@@ -8,6 +8,8 @@ import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentAction
 import com.hubidubitask.core.agent.AgentItems
 import com.hubidubitask.core.agent.AgentConfig
+import com.hubidubitask.core.agent.AgentLink
+import com.hubidubitask.core.agent.AgentProbe
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.i18n.Language
@@ -203,14 +205,14 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         if (cur != null && cfg == agentConfig) return cfg to cur
         cur?.close()
         agentConfig = cfg
-        Agent.clientFor(cfg, harnessItems).also { agent = it }.let { cfg to it }
+        Agent.clientFor(cfg).also { agent = it }.let { cfg to it }
     }
 
     /**
-     * The phone's items as a Harness question carries them, and where the
-     * changes its item tools made land: as if typed here, so they sync out.
+     * The phone's items as a question to the user's agent carries them, and
+     * where the changes it asked for land: as if typed here, so they sync out.
      */
-    private val harnessItems = object : AgentItems {
+    private val agentItems = object : AgentItems {
         override fun records(): List<EntityRecord> = sync().let { s ->
             listOf("project", "next_action", "inbox_item", "note", "event").flatMap(s::byType) }
 
@@ -241,8 +243,8 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         val (cfg, client) = agent()
         return client.health().also { h ->
             lastHealth = now to h
-            // The harness's certificate is its own, made on first start: the
-            // first one answering after Save is trusted, and only it after that.
+            // The agent's certificate is its own: the first one answering after
+            // Save is trusted, and only it after that.
             if (cfg.protocol == "harness" && h.connected && cfg.tlsFingerprint == null)
                 h.fingerprint?.let { AgentSettings.pinHarness(getApplication(), it) }
         }
@@ -253,6 +255,30 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     fun claudeKey(): String? = AgentSettings.claudeKey(getApplication())
     fun harnessEndpoint(): String = AgentSettings.harnessEndpoint(getApplication())
+    fun harnessToken(): String? = AgentSettings.harnessToken(getApplication())
+
+    /**
+     * Find the user's agent at [host] and [port] (blank: each kind's usual
+     * one), and make it the Agent if it answers. What was typed is kept either
+     * way, so the form shows it again.
+     */
+    suspend fun plugAgent(host: String, port: String, token: String): AgentProbe.Result =
+        withContext(Dispatchers.IO) {
+            val typed = AgentLink.parse(host, port) ?: return@withContext AgentProbe.Result.NotFound
+            val found = AgentProbe.detect(typed.first, typed.second, token.trim().ifBlank { null })
+            val app = getApplication<Application>()
+            when (found) {
+                is AgentProbe.Result.Found ->
+                    AgentSettings.saveHarness(app, found.endpoint, found.kind.id, found.model, found.fingerprint, token)
+                is AgentProbe.Result.NeedsToken ->
+                    AgentSettings.saveHarness(app, found.endpoint, found.kind.id, "", null, token)
+                AgentProbe.Result.NotFound ->
+                    AgentSettings.saveHarness(app, AgentLink.endpoint("https", typed.first, typed.second), null, "", null, token)
+            }
+            AgentSettings.save(app, AgentSettings.load(app).copy(protocol = "harness"))
+            lastHealth = null
+            found
+        }
 
     /** Re-probe the agent and report what came back. */
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(force = true) }
@@ -394,13 +420,13 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     fun syncNow() = syncMacNow()
 
     /**
-     * A review of one item by the agent chosen in Settings. The item goes
-     * alone; the Harness also gets the phone's items to look things up in.
+     * A review of one item by the AI chosen in Settings. The item goes alone;
+     * the user's own agent also gets the phone's items to look things up in.
      */
     suspend fun review(prompt: String): String =
         withContext(Dispatchers.IO) {
             val (cfg, client) = agent()
-            Agent.ask(client, cfg, prompt)
+            Agent.ask(client, cfg, prompt, agentItems)
         }
 
     // --- one-time import. Nothing here is kept: the token and the calendar

@@ -1,13 +1,12 @@
 #!/bin/sh
-# Step 1: the three files the website offers, built from this repository.
+# Step 1: the two files the website offers, built from this repository.
 #
 #   sh deploy/website/1-downloads/build.sh            build what is missing or old
 #   sh deploy/website/1-downloads/build.sh --rebuild  build everything again
 #
 # out/HubidubiTask.dmg                   the Mac app (Apple silicon), :desktop:packageDmg
 # out/hubidubitask-x86_64.pkg.tar.zst    the Linux package, distribution/arch/build.sh (needs Docker)
-# out/hubidubitask-agent.tar.gz          the Agent: src/harness + its installer
-# out/SHA256SUMS                         checksums of the three
+# out/SHA256SUMS                         checksums of the two
 #
 # The Mac app must be built on a Mac with Apple silicon.
 set -eu
@@ -33,15 +32,7 @@ if $rebuild || [ ! -f "$pkg" ]; then
 fi
 cp "$pkg" "$out/hubidubitask-x86_64.pkg.tar.zst"
 
-echo "==> Agent"
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-mkdir "$tmp/hubidubitask-agent"
-cp "$repo/src/harness/hubidubitask_harness.py" "$repo/deploy/harness/install.sh" "$tmp/hubidubitask-agent/"
-cp "$here/agent-README.txt" "$tmp/hubidubitask-agent/README.txt"
-chmod 755 "$tmp/hubidubitask-agent/install.sh" "$tmp/hubidubitask-agent/hubidubitask_harness.py"
-COPYFILE_DISABLE=1 tar -czf "$out/hubidubitask-agent.tar.gz" -C "$tmp" hubidubitask-agent
-
-(cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst hubidubitask-agent.tar.gz > SHA256SUMS)
+rm -f "$out/hubidubitask-agent.tar.gz"
+(cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst > SHA256SUMS)
 echo "==> $out"
 ls -l "$out" | awk 'NR>1 {printf "    %-36s %s bytes\n", $9, $5}'

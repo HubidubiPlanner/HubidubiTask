@@ -3,6 +3,8 @@ package com.hubidubitask.desktop.ui
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentConfig
+import com.hubidubitask.core.agent.AgentLink
+import com.hubidubitask.core.agent.AgentProbe
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.feed.Feeds
@@ -52,7 +54,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         _language.value = l
     }
 
-    /** What a Harness question carries, and where its changes land. */
+    /** What a question to the user's agent carries, and where its changes land. */
     private val items = com.hubidubitask.desktop.agent.Items(store) { refresh() }
 
     data class UiState(
@@ -225,20 +227,19 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
             endpoint = if (harness) harnessEndpoint()
                        else store.kv("agent_endpoint") ?: AgentConfig.DEFAULT_ENDPOINT,
             protocol = p,
-            model = if (harness) AgentConfig.HARNESS_MODEL else store.kv("agent_model") ?: AgentConfig.defaultModel(p),
-            apiKey = if (p == "claude") claudeKey() else null,
+            model = if (harness) store.kv(HARNESS_MODEL).orEmpty() else store.kv("agent_model") ?: AgentConfig.defaultModel(p),
+            apiKey = when (p) { "claude" -> claudeKey(); "harness" -> harnessToken(); else -> null },
             tlsFingerprint = if (harness) store.kv(HARNESS_FP) else store.kv("agent_fp"),
+            kind = if (harness) store.kv(HARNESS_KIND) else null,
         )
     }
 
     fun setAgentConfig(c: AgentConfig) {
-        // Claude and the harness keep their own address and secret, so a feed
-        // can use either whichever agent reviews use.
+        // Claude and the user's agent keep their own address and secret (see
+        // plugAgent), so switching back and forth loses neither.
         when (c.protocol) {
             "claude" -> c.apiKey?.let { Secrets.put(CLAUDE_KEY, it) }
-            // Saving the harness trusts the certificate found there now: the
-            // next answer from it is pinned (see health).
-            "harness" -> { store.setKv(HARNESS_ENDPOINT, c.endpoint); store.setKv(HARNESS_FP, null) }
+            "harness" -> {}
             else -> { store.setKv("agent_endpoint", c.endpoint); store.setKv("agent_fp", c.tlsFingerprint) }
         }
         store.setKv("agent_protocol", c.protocol)
@@ -248,20 +249,48 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     /** Claude's key, from the system's secret store rather than the app's database. */
     fun claudeKey(): String? = Secrets.get(CLAUDE_KEY)
-    /** Claude Code on a computer in the home network, "https://ip:port"; blank until typed. */
+    /** The user's own agent on a computer at home, "scheme://ip:port"; blank until found. */
     fun harnessEndpoint(): String = store.kv(HARNESS_ENDPOINT).orEmpty()
+    /** Its token or password, from the system's secret store. */
+    fun harnessToken(): String? = Secrets.get(HARNESS_TOKEN)?.takeIf { it.isNotBlank() }
 
-    /** The agent a feed writes its task with: "claude" or "harness". Never with
-     *  tools: a feed's text comes from a stranger's web page. */
-    private fun feedConfig(model: String) = if (model == "harness")
-        AgentConfig(endpoint = harnessEndpoint(), protocol = "harness", tlsFingerprint = store.kv(HARNESS_FP),
-            tools = false)
-    else AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey())
+    /**
+     * Find the user's agent at [host] and [port] (blank: each kind's usual
+     * one), and make it the Agent if it answers. What was typed is kept either
+     * way, so the form shows it again. Its certificate is pinned from now on.
+     */
+    suspend fun plugAgent(host: String, port: String, token: String): AgentProbe.Result =
+        withContext(Dispatchers.IO) {
+            val typed = AgentLink.parse(host, port) ?: return@withContext AgentProbe.Result.NotFound
+            val found = AgentProbe.detect(typed.first, typed.second, token.trim().ifBlank { null })
+            fun save(endpoint: String, kind: String?, model: String, fp: String?) {
+                store.setKv(HARNESS_ENDPOINT, endpoint); store.setKv(HARNESS_KIND, kind)
+                store.setKv(HARNESS_MODEL, model); store.setKv(HARNESS_FP, fp)
+                Secrets.put(HARNESS_TOKEN, token.trim())
+            }
+            when (found) {
+                is AgentProbe.Result.Found -> save(found.endpoint, found.kind.id, found.model, found.fingerprint)
+                is AgentProbe.Result.NeedsToken -> save(found.endpoint, found.kind.id, "", null)
+                AgentProbe.Result.NotFound -> save(AgentLink.endpoint("https", typed.first, typed.second), null, "", null)
+            }
+            store.setKv("agent_protocol", "harness")
+            lastHealth = null
+            found
+        }
+
+    /**
+     * What a feed writes its task with: Claude. Never the user's own agent: a
+     * feed's text is a stranger's web page, and that agent can run commands.
+     */
+    private fun feedConfig() = AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey())
 
     private companion object {
         const val CLAUDE_KEY = "claude-api-key"
         const val HARNESS_ENDPOINT = "harness_endpoint"
         const val HARNESS_FP = "harness_fp"
+        const val HARNESS_KIND = "harness_kind"
+        const val HARNESS_MODEL = "harness_model"
+        const val HARNESS_TOKEN = "harness-token"
     }
 
     // ---- feeds: watched pages, each turned into at most one task per period
@@ -274,9 +303,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         for (feed in store.byType(Feeds.TYPE)) {
             if (only != null && feed.id != only) continue
             if (only == null && !Feeds.isDue(feed, today)) continue
-            val model = feed.fields["model"] ?: "claude"
-            // A feed never gets the harness's tools, nor the items.
-            val client = Agent.clientFor(feedConfig(model))
+            val client = Agent.clientFor(feedConfig())
             val result = try {
                 Feeds.check(feed, today, nowUtc(), PageFetch::get, { client.complete(it) },
                     { store.get(it) != null })
@@ -322,7 +349,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         val cfg = agentConfig()
         agent?.let { if (cfg == agentCfg) return cfg to it; it.close() }
         agentCfg = cfg
-        return cfg to Agent.clientFor(cfg, items).also { agent = it }
+        return cfg to Agent.clientFor(cfg).also { agent = it }
     }
 
     private fun health(force: Boolean = false): Health {
@@ -331,8 +358,8 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         val (cfg, client) = agent()
         return client.health().also { h ->
             lastHealth = now to h
-            // The harness's certificate is its own, made on first start: the
-            // first one answering after Save is trusted, and only it after that.
+            // The agent's certificate is its own: the first one answering after
+            // Save is trusted, and only it after that.
             if (cfg.protocol == "harness" && h.connected && cfg.tlsFingerprint == null)
                 h.fingerprint?.let { store.setKv(HARNESS_FP, it) }
         }
@@ -341,10 +368,10 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(true) }
         .also { h -> _state.value = _state.value.copy(inference = h) }
 
-    /** A review of one item by the agent chosen in Settings; the Harness also gets the items. */
+    /** A review of one item by the AI chosen in Settings; the user's own agent also gets the items. */
     suspend fun review(prompt: String): String = withContext(Dispatchers.IO) {
         val (cfg, client) = agent()
-        Agent.ask(client, cfg, prompt)
+        Agent.ask(client, cfg, prompt, items)
     }
 
     // ---- one-time import, the same logic as the phone's
