@@ -58,16 +58,16 @@ linux-package:
     - echo "Run distribution/arch/build.sh on a host with Docker."
 
 # The website on GitLab Pages, https://hubidubitask.github.io/HubidubiTask/:
-# the release's downloads from the package registry, then site/ put together
-# and checked by deploy/website/2-site/assemble.sh.
+# site/ put together and checked by deploy/website/2-site/assemble.sh. It
+# hosts no downloads for now (the pages say "Coming soon"). To offer them
+# again, link them from the pages and run
+# deploy/website/1-downloads/fetch-release.sh first (it needs curl).
 pages:
   stage: deploy
   image: python:3.13-alpine
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
-    - apk add --no-cache curl
-    - sh deploy/website/1-downloads/fetch-release.sh
     - sh deploy/website/2-site/assemble.sh
     - mv deploy/website/2-site/out/public public
   artifacts:

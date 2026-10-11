@@ -85,6 +85,7 @@ ul, ol { margin: 0; padding: 0; }
 .btn:hover { color: var(--on-button); filter: brightness(1.07); }
 .btn-quiet { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn-quiet:hover { color: var(--ink); border-color: var(--accent); filter: none; }
+.btn-soon, .btn-soon:hover { background: transparent; color: var(--muted); border: 1.5px dashed var(--line); filter: none; cursor: default; }
 .btn .icon { width: 20px; height: 20px; }
 .btn small { font-weight: 500; opacity: 0.8; font-size: 14px; }
 

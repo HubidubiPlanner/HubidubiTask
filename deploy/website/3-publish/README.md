@@ -9,15 +9,16 @@ all of it the Mac and Linux downloads (about 150 MB each).
 The site is at <https://hubidubitask.github.io/HubidubiTask/>, published by the
 `pages` job in [`.gitlab-ci.yml`](../../../.gitlab-ci.yml). It runs on every
 push to main that changes `site/`, `deploy/website/`, the version or the CI
-file, and by hand from Build › Pipelines › New pipeline. It does steps 1 and 2
-by itself: the downloads come from the release of the current version in the
-package registry ([`../1-downloads/fetch-release.sh`](../1-downloads/fetch-release.sh)),
-then `assemble.sh` checks the pages against them.
+file, and by hand from Build › Pipelines › New pipeline. The project stays
+private; the site is public because Settings › General › Visibility › Pages
+is set to Everyone, with "Use unique domain" off (Deploy › Pages).
 
-So after a version bump, the job fails until that release's files are
-uploaded; upload them, then retry the job. The project stays private; the
-site is public because Settings › General › Visibility › Pages is set to
-Everyone, with "Use unique domain" off (Deploy › Pages).
+It hosts no downloads for now: the Mac, Linux and Agent buttons say "Coming
+soon", so `assemble.sh` takes no files. To offer them again, link them from
+the pages (`downloads/…`, as before) and add
+[`../1-downloads/fetch-release.sh`](../1-downloads/fetch-release.sh) to the
+job before `assemble.sh`; it takes the current release's files from the
+package registry, so after a version bump the job waits for that release.
 
 ## Other hosts
 

@@ -6,7 +6,8 @@
 # Copies site/ and the downloads from step 1, puts in the address and contact
 # from site.env, and refuses to finish when the pages and the files disagree:
 # the version on the download page, the file sizes it states, links to files
-# that are not there.
+# that are not there. While no page links to downloads/ (the Mac, Linux and
+# Agent buttons say "Coming soon"), it takes no downloads and checks none.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
@@ -16,23 +17,27 @@ version=$(sed -n 's/^hubidubitask.version=//p' "$repo/src/apps/gradle.properties
 downloads="$here/../1-downloads/out"
 public="$here/out/public"
 
-for f in HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst hubidubitask-agent.tar.gz SHA256SUMS; do
-  [ -f "$downloads/$f" ] || { echo "missing $downloads/$f: run ../1-downloads/build.sh first" >&2; exit 1; }
-done
+offers=0
+grep -q 'href="downloads/' "$repo"/site/*.html && offers=1
+if [ $offers = 1 ]; then
+  for f in HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst hubidubitask-agent.tar.gz SHA256SUMS; do
+    [ -f "$downloads/$f" ] || { echo "missing $downloads/$f: run ../1-downloads/build.sh first" >&2; exit 1; }
+  done
+fi
 
 rm -rf "$here/out"
 mkdir -p "$public"
 cp -R "$repo/site/." "$public/"
 rm -f "$public/README.md"
 rm -rf "$public"/_render_* "$public"/_view_*
-if [ -z "$DOWNLOADS_URL" ]; then
+if [ $offers = 1 ] && [ -z "$DOWNLOADS_URL" ]; then
   mkdir -p "$public/downloads"
   cp "$downloads"/* "$public/downloads/"
 fi
 
-python3 - "$public" "$site_url" "$CONTACT_EMAIL" "${DOWNLOADS_URL%/}" "$version" "$downloads" <<'PY'
+python3 - "$public" "$site_url" "$CONTACT_EMAIL" "${DOWNLOADS_URL%/}" "$version" "$downloads" "$offers" <<'PY'
 import glob, os, re, sys
-public, site_url, email, dl_url, version, downloads = sys.argv[1:]
+public, site_url, email, dl_url, version, downloads, offers = sys.argv[1:]
 problems = []
 for page in glob.glob(os.path.join(public, "*.html")):
     s = open(page, encoding="utf-8").read()
@@ -45,14 +50,14 @@ for page in glob.glob(os.path.join(public, "*.html")):
     for ref in re.findall(r'(?:href|src|srcset)="([^"#:]+)(?:#[^"]*)?"', s):
         if ref and not os.path.exists(os.path.join(public, ref)):
             problems.append("%s links to %s, which is not there" % (name, ref))
-    if name == "download.html":
+    if offers == "1" and name == "download.html":
         if s.count("<dt>Version</dt><dd>%s</dd>" % version) != 2:
             problems.append("download.html should give version %s for the Mac and Linux apps" % version)
         for f in ("HubidubiTask.dmg", "hubidubitask-x86_64.pkg.tar.zst"):
             mb = round(os.path.getsize(os.path.join(downloads, f)) / 1e6)
             if "%s, %d MB" % (f, mb) not in s:
                 problems.append("download.html should say %s, %d MB" % (f, mb))
-    if name == "agent.html":
+    if offers == "1" and name == "agent.html":
         kb = round(os.path.getsize(os.path.join(downloads, "hubidubitask-agent.tar.gz")) / 1e3)
         if "hubidubitask-agent.tar.gz, %d KB" % kb not in s:
             problems.append("agent.html should say hubidubitask-agent.tar.gz, %d KB" % kb)

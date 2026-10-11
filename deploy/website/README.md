@@ -17,9 +17,9 @@ sh deploy/website/3-publish/publish.sh
 ```
 
 The site is live at <https://hubidubitask.github.io/HubidubiTask/>: GitLab Pages
-publishes it from main by itself, with the downloads of the current release
-(see [`3-publish/`](3-publish)). The three commands are for checking it
-locally or publishing somewhere else.
+publishes it from main by itself, for now without downloads (the buttons say
+"Coming soon"; see [`3-publish/`](3-publish)). The three commands are for
+checking it locally or publishing somewhere else.
 
 The screenshots in `site/assets/screens/` are the real apps with made-up data:
 the phone ones from `deploy/google-play/3-graphics/shoot.py`, the computer
