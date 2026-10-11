@@ -19,8 +19,9 @@ What it says, so you can check it against the app content answers in step 5:
 - Every way data leaves a device, each started by the user: sync between the
   user's own devices; a review by Claude (the item, to Anthropic with the
   user's key), by SelfHostedAI or an OpenAI-compatible server (the item, to the
-  user's server), or by the Agent (the item and a copy of the items, to the
-  user's own computer); feeds; one-time imports from Todoist and iCal.
+  user's server), or by the user's own agent at home (the item and a text
+  copy of the items, to the agent at the address they entered); feeds (the
+  page, then Claude); one-time imports from Todoist and iCal.
 - Permissions: microphone for voice memos; network, Wi-Fi state and
   multicast for finding and syncing with paired devices. Photos are taken by
   the phone's camera app, so the app asks for no camera permission.

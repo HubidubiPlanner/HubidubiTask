@@ -20,11 +20,11 @@ ZROBIONE ZNACZY ZROBIONE
 • Projekty to proste pojemniki na zadania i notatki. Dodaj notatkę pod zadaniem, żeby szczegóły były tam, gdzie praca.
 
 OBSERWUJ STRONĘ
-• Dodaj stronę internetową jako kanał. Raz dziennie, tygodniowo lub miesięcznie jest sprawdzana, a gdy coś się zmieni, AI zamienia zmianę w jedno zadanie w wybranym projekcie.
+• Dodaj stronę internetową jako kanał. Raz dziennie, tygodniowo lub miesięcznie jest sprawdzana, a gdy coś się zmieni, Claude zamienia zmianę w jedno zadanie w wybranym projekcie.
 
 PRZEGLĄD Z AI (OPCJONALNIE)
 • Przytrzymaj dowolne zadanie, notatkę lub projekt i wybierz Przegląd z AI. Dowiesz się, co jest niejasne, czego brakuje albo jaki jest następny krok.
-• Wybierz AI w ustawieniach: swój serwer SelfHostedAI, dowolny model zgodny z OpenAI, który uruchamiasz, Claude od Anthropic z własnym kluczem API albo własnego Agenta: Claude Code na komputerze w Twoim domu, który przegląda wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go o to poprosisz.
+• Wybierz AI w ustawieniach: swój serwer SelfHostedAI, dowolny model zgodny z OpenAI, który uruchamiasz, Claude od Anthropic z własnym kluczem API albo agenta AI, którego już uruchamiasz w domu (OpenClaw, Hermes, opencode lub Kilo); przegląda on wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go o to poprosisz.
 • Przeglądy idą prosto z telefonu do wybranego AI. Nic nie przechodzi przez nas. Bez AI cała reszta działa tak samo.
 
 SYNCHRONIZACJA BEZ CHMURY

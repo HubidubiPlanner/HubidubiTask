@@ -10,9 +10,9 @@ import com.hubidubitask.desktop.Store
 import com.hubidubitask.mobile.tree.ProjectTree
 
 /**
- * This computer's items as a Harness question carries them, and where the
- * changes its item tools made land: written as if typed here, so they reach
- * the phone on its next sync. The Harness itself runs elsewhere (src/harness).
+ * This computer's items as a question to the user's own agent carries them,
+ * and where the changes it asked for land: written as if typed here, so they
+ * reach the phone on its next sync.
  */
 class Items(private val store: Store, private val onChange: () -> Unit = {}) : AgentItems {
 

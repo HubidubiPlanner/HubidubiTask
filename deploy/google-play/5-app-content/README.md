@@ -15,7 +15,7 @@ the reviewer does not report sync or AI review as broken:
 > user's HubidubiTask app on their Mac or Linux computer, paired by a typed
 > code over the same Wi-Fi; (2) AI review, which calls an AI the user
 > configures in Settings (their own SelfHostedAI or OpenAI-compatible server, their
-> own Claude API key, or their own Agent at home). Without them the app shows
+> own Claude API key, or the AI agent they already run at home). Without them the app shows
 > their status and every other feature works.
 
 ## Content rating (IARC questionnaire)

@@ -20,11 +20,11 @@ DONE MEANS DONE
 • Projects are plain containers of tasks and notes. Put a note under a task to keep the details where the work is.
 
 WATCH A PAGE
-• Add a web page as a feed. Once a day, week or month it is checked, and when something changed, AI turns the change into one task in the project you chose.
+• Add a web page as a feed. Once a day, week or month it is checked, and when something changed, Claude turns the change into one task in the project you chose.
 
 REVIEW WITH AI (OPTIONAL)
 • Long-press any task, note or project and choose Review with AI. It tells you what is unclear, missing, or the next step.
-• Pick the AI in Settings: your SelfHostedAI server, any OpenAI-compatible model you run, Anthropic's Claude with your own API key, or your own Agent: Claude Code on a computer in your home, which can look across all your items and add or finish tasks when you ask.
+• Pick the AI in Settings: your SelfHostedAI server, any OpenAI-compatible model you run, Anthropic's Claude with your own API key, or the AI agent you already run at home (OpenClaw, Hermes, opencode or Kilo), which can look across all your items and add or finish tasks when you ask.
 • Reviews go straight from your phone to the AI you chose. Nothing passes through us. Without an AI, everything else works the same.
 
 SYNC WITHOUT A CLOUD

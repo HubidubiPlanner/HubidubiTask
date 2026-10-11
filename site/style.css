@@ -150,6 +150,8 @@ main { display: block; }
 .cards { display: grid; gap: 16px; }
 .cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.card .cmd { margin-block: 4px; }
 .card { background: var(--raised); border: 1px solid var(--line); padding: 24px; display: grid; gap: 10px; align-content: start; }
 .card h3 { font-size: 20px; display: flex; gap: 10px; align-items: center; }
 .card h3 .icon { color: var(--accent); }
@@ -228,7 +230,7 @@ main { display: block; }
 @media (max-width: 860px) {
   .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 48px; }
   .hero .phone { max-width: 280px; }
-  .cards-3 { grid-template-columns: minmax(0, 1fr); }
+  .cards-3, .cards-2 { grid-template-columns: minmax(0, 1fr); }
   .split { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .taps-box { grid-template-columns: minmax(0, 1fr); }
   .taps + .taps thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

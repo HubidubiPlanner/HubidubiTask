@@ -98,7 +98,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <header>
   <span class="eyebrow">How it fits together</span>
   <h1>HubidubiTask Ecosystem</h1>
-  <p class="lede">One app for tasks, notes and feeds, on Android, macOS and Linux. A phone and a computer pair once and keep each other current over your own Wi-Fi. Each has a full copy and works on its own. Four AI agents answer questions, review items and turn changed web pages into tasks.</p>
+  <p class="lede">One app for tasks, notes and feeds, on Android, macOS and Linux. A phone and a computer pair once and keep each other current over your own Wi-Fi. Each has a full copy and works on its own. Four kinds of AI review items, and Claude turns changed web pages into tasks.</p>
 </header>
 
 <section aria-labelledby="map-h">
@@ -106,7 +106,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   <div class="map">
     <svg viewBox="0 0 960 520" role="img" aria-labelledby="map-title map-desc">
       <title id="map-title">HubidubiTask devices and connections</title>
-      <desc id="map-desc">The phone and the computer sync with each other on port 5244. Both can ask Claude, a SelfHostedAI server, a model of their own, or the Harness: Claude Code on any computer at home, reached by its IP and port. Feeds fetch web pages.</desc>
+      <desc id="map-desc">The phone and the computer sync with each other on port 5244. Both can ask Claude, a SelfHostedAI server, a model of their own, or the AI agent the user already runs on a computer at home, reached by its IP and token. Feeds fetch web pages.</desc>
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
       </defs>
@@ -136,10 +136,10 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <text class="s" x="690" y="80">what feeds watch</text>
 
       <rect class="hub" x="330" y="400" width="300" height="112"/>
-      <text class="t" x="350" y="432">Agent: the Harness</text>
-      <text class="s" x="350" y="456">any computer at home · :8765, pinned TLS</text>
-      <text class="s" x="350" y="478">Claude Code, restricted, on its own</text>
-      <text class="s" x="350" y="498">login or a local model</text>
+      <text class="t" x="350" y="432">Agent: your own, at home</text>
+      <text class="s" x="350" y="456">OpenClaw · Hermes · opencode · Kilo</text>
+      <text class="s" x="350" y="478">its own model and tools; IP + token,</text>
+      <text class="s" x="350" y="498">found by its health endpoint</text>
 
       <path class="edge" d="M340 230 H560" marker-start="url(#arr)" marker-end="url(#arr)"/>
       <rect class="lblbg" x="380" y="204" width="140" height="18"/>
@@ -147,9 +147,9 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <path class="edge" d="M190 320 C190 400, 250 452, 330 452" marker-end="url(#arr)"/>
       <path class="edge" d="M740 340 C740 410, 700 452, 630 452" marker-end="url(#arr)"/>
       <rect class="lblbg" x="132" y="372" width="120" height="18"/>
-      <text class="lbl" x="192" y="386" text-anchor="middle">IP and port</text>
+      <text class="lbl" x="192" y="386" text-anchor="middle">IP and token</text>
       <rect class="lblbg" x="684" y="372" width="120" height="18"/>
-      <text class="lbl" x="744" y="386" text-anchor="middle">IP and port</text>
+      <text class="lbl" x="744" y="386" text-anchor="middle">IP and token</text>
 
       <path class="soft" d="M150 170 V100" marker-end="url(#arr)"/>
       <path class="soft" d="M260 170 C300 130, 440 140, 470 100" marker-end="url(#arr)"/>
@@ -158,7 +158,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <path class="soft" d="M860 150 V100" marker-end="url(#arr)"/>
     </svg>
   </div>
-  <p class="caption">Solid lines carry your items: to the other device, and to the Harness with a review that may use tools. Dashed lines are questions to an AI or a feed's look at a page. There is no server of ours anywhere.</p>
+  <p class="caption">Solid lines carry your items: to the other device, and as text to your own agent with a review. Dashed lines are questions to an AI or a feed's look at a page. There is no server of ours anywhere.</p>
 </section>
 
 <section aria-labelledby="dev-h">
@@ -184,12 +184,12 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       </dl>
     </article>
     <article class="machine">
-      <h3>Harness computer</h3>
-      <p class="role">Any computer at home with Claude Code, Linux or macOS. It answers the apps' Harness questions; the apps only need its IP and port.</p>
+      <h3>Your agent's computer</h3>
+      <p class="role">Any computer at home where the user already runs an AI agent with a network mode. Nothing of ours is installed there; the apps need its IP and token.</p>
       <dl>
-        <dt>Source</dt><dd><span class="path">src/harness/</span>, one Python file, nothing to install</dd>
-        <dt>Install</dt><dd><code>sh deploy/harness/install.sh</code>: a service on port 8765</dd>
-        <dt>Settings</dt><dd><span class="path">~/.config/hubidubitask-harness</span>: harness.env, mcp.json</dd>
+        <dt>Agents</dt><dd>OpenClaw (:18789), Hermes Agent (:8642), opencode (:4096), Kilo, or any OpenAI-shaped server</dd>
+        <dt>Found by</dt><dd><span class="path">core/agent/AgentProbe.kt</span>: each agent's own health endpoint</dd>
+        <dt>Set up</dt><dd>The site's agent page: network mode on, a token, the port open</dd>
       </dl>
     </article>
     <article class="machine">
@@ -209,8 +209,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <thead><tr><th>Between</th><th>How</th><th>Port</th><th>Finding each other</th><th>Trust</th></tr></thead>
       <tbody>
         <tr><td>Phone and computer</td><td>Peer sync: each sends what the other has not seen, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Self-signed certificate pinned at pairing; a token per phone</td></tr>
-        <tr><td>Apps and the Harness</td><td>Questions in the OpenAI shape over HTTPS; with tools, the app's items go along and the changes the Harness made come back</td><td>8765</td><td>IP and port in Settings</td><td>Its self-signed certificate, pinned at the first answer after Save; only home-network addresses are answered</td></tr>
-        <tr><td>Harness and Claude Code</td><td>One restricted <code>claude -p</code> per question, with the items as MCP tools and a Markdown copy</td><td>none</td><td>The same computer</td><td>A fresh folder per question, deleted after the answer</td></tr>
+        <tr><td>Apps and your own agent</td><td>OpenClaw, Hermes and others: the OpenAI chat shape, one message with the items as text; opencode and Kilo: a session per question, answered in a JSON schema, then deleted. Changes come back as add_task, capture, mark_done and are checked before the app applies them</td><td>the agent's</td><td>IP in Settings; the port, or each agent's usual one</td><td>Its token or password, in the system's secret store; HTTPS tried first and its certificate pinned; plain HTTP only to home-network addresses</td></tr>
         <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring</td></tr>
         <tr><td>Apps and SelfHostedAI or OpenAI</td><td>An encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>Encryption or a pinned TLS certificate</td></tr>
         <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
@@ -221,17 +220,17 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
 <section aria-labelledby="ai-h">
   <h2 id="ai-h">AI</h2>
-  <p>Settings offers four AI choices on every system: SelfHostedAI, the default, then OpenAI, Claude and Agent, which is the Harness. There is no chat: the AI reviews any item you long-press, and feeds use Claude or the Agent to write their task.</p>
+  <p>Settings offers four AI choices on every system: SelfHostedAI, the default, then OpenAI, Claude and Agent, which is the AI agent the user already runs at home. There is no chat: the AI reviews any item you long-press. Feeds always write their task with Claude: a page's text comes from strangers, and the user's own agent can run commands.</p>
   <div class="table">
     <table>
-      <thead><tr><th>Harness request</th><th>Claude Code may use</th><th>Works in</th></tr></thead>
+      <thead><tr><th>A review by your own agent</th><th>What goes</th><th>What comes back</th></tr></thead>
       <tbody>
-        <tr><td>Reviews</td><td>Read, Glob, Grep, WebFetch, subagents, your items as MCP tools (search, upcoming, projects, project, inbox, add_task, capture, mark_done), and the MCP servers in that computer's mcp.json</td><td>A fresh Markdown copy of the items the app sent</td></tr>
-        <tr><td>Feeds</td><td>Nothing: text only, because a page's text comes from strangers</td><td>An empty folder</td></tr>
+        <tr><td>OpenClaw, Hermes, any OpenAI-shaped server</td><td>One message: how to answer, the projects, open tasks, notes and calendar as text (at most 24,000 characters), the question</td><td>The answer, and changes in a fenced JSON block</td></tr>
+        <tr><td>opencode, Kilo</td><td>A new session with the same, and a JSON schema</td><td>The answer and the changes as schema-held JSON; the session is deleted</td></tr>
       </tbody>
     </table>
   </div>
-  <p>Always in Claude Code's restricted mode, with only the listed MCP servers and every permission prompt answered no: nothing runs commands or edits files. The item tools change nothing on the Harness computer; the app applies the changes to its own items. A <span class="path">harness.env</span> next to the Harness's settings can point Claude Code at a local model instead of its own login.</p>
+  <p>The agent answers with its own model and tools, as the user set it up. The app checks every change it asks for against the items (a known project, an open task, a real date) and makes it itself, once.</p>
 </section>
 
 <section aria-labelledby="repo-h">
@@ -241,8 +240,6 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <thead><tr><th>Folder</th><th>What is in it</th></tr></thead>
       <tbody>
         <tr><td>src/apps/</td><td>The app: android/, desktop/ (macOS and Linux), shared/</td></tr>
-        <tr><td>src/harness/</td><td>The Harness server and its tests</td></tr>
-        <tr><td>deploy/harness/</td><td>The Harness's installer, for any Linux or macOS computer</td></tr>
         <tr><td>distribution/arch/</td><td>The Linux package for Arch and Omarchy</td></tr>
         <tr><td>deploy/google-play/</td><td>Publishing on Google Play, step by step</td></tr>
         <tr><td>deploy/website/</td><td>Publishing the website and its downloads</td></tr>
@@ -258,14 +255,14 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <section aria-labelledby="status-h">
   <h2 id="status-h">Current state</h2>
   <ul class="status">
-    <li><span class="pill ok">Released</span><span>Version 1.0.0 (tag v1.0.0), the first as a new Play app, com.saferendering.hubidubitask: the Android app and its Play bundle, the Mac app, the Linux package and the Agent, with checksums.</span></li>
+    <li><span class="pill ok">Released</span><span>Version 1.0.0 (tag v1.0.0), the first as a new Play app, com.saferendering.hubidubitask: the Android app and its Play bundle, the Mac app, the Linux package and the Agent (the old Harness), with checksums.</span></li>
     <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; Incoming first, with its title and the "+" where Projects has it; Feeds; four AI choices; Review with AI; English, Polish, German, French and Spanish, chosen in Settings.</span></li>
-    <li><span class="pill ok">Works</span><span>The Harness on another computer, by IP and port: tested live against Claude Code from the phone app and from the desktop's runtime, items read and a task added.</span></li>
+    <li><span class="pill ok">Works</span><span>The Agent plugs into the user's own agent (OpenClaw, Hermes, opencode, Kilo, OpenAI-shaped), found by IP; tested against stand-ins of each, not yet live (not released).</span></li>
     <li><span class="pill ok">Works</span><span>The Arch package installs with pacman in a clean Arch system and the app starts and draws its screens.</span></li>
     <li><span class="pill warn">Open</span><span>Google Play: everything to submit is in deploy/google-play, step by step; the upload itself is done by hand in Play Console.</span></li>
     <li><span class="pill warn">Open</span><span>The website is ready to publish (deploy/website) once it has an address, a contact email and a host.</span></li>
     <li><span class="pill warn">Open</span><span>The Omarchy image has not been rebuilt since it switched to the app-only package.</span></li>
-    <li><span class="pill warn">Open</span><span>The Harness on a home server with a local GLM model, set through harness.env, is not yet tried.</span></li>
+    <li><span class="pill warn">Open</span><span>A live try with an agent on a home server running Qwen3.6-35B.</span></li>
     <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off.</span></li>
   </ul>
 </section>

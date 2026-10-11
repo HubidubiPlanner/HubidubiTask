@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** What the Harness changed lands in this computer's items as if typed here. */
+/** What the user's agent asked to change lands in this computer's items as if typed here. */
 class ItemsTest {
     private val store = Store(Files.createTempDirectory("items").toFile())
     private var changed = 0

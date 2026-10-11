@@ -1,7 +1,7 @@
 # 3. Publish
 
 The assembled site is plain files: four pages, a stylesheet, fonts, images
-and, unless `DOWNLOADS_URL` is set, the three downloads. About 290 MB, almost
+and, unless `DOWNLOADS_URL` is set, the two downloads. About 290 MB, almost
 all of it the Mac and Linux downloads (about 150 MB each).
 
 ## GitLab Pages (where it lives)
@@ -13,7 +13,7 @@ file, and by hand from Build › Pipelines › New pipeline. The project stays
 private; the site is public because Settings › General › Visibility › Pages
 is set to Everyone, with "Use unique domain" off (Deploy › Pages).
 
-It hosts no downloads for now: the Mac, Linux and Agent buttons say "Coming
+It hosts no downloads for now: the Mac and Linux buttons say "Coming
 soon", so `assemble.sh` takes no files. To offer them again, link them from
 the pages (`downloads/…`, as before) and add
 [`../1-downloads/fetch-release.sh`](../1-downloads/fetch-release.sh) to the
@@ -30,7 +30,7 @@ Any static host with HTTPS. Check its limit on a single file first:
   (Cloudflare Pages at 25 MiB, GitHub Pages at 100 MB, for example). Host the
   pages there and the downloads where large files are allowed (your server,
   an object-storage bucket, or the release assets of a public repository),
-  and set `DOWNLOADS_URL` to that place before step 2. The three files and
+  and set `DOWNLOADS_URL` to that place before step 2. The two files and
   `SHA256SUMS` from `../1-downloads/out/` go there.
 
 The repository's GitLab project is private, so its release files are not a

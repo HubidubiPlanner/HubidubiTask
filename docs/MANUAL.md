@@ -26,9 +26,9 @@ and the phone also hourly in the background.
 - **+** on Incoming and on Projects, in the same place: a project, a task, a note,
   a photo, a picture from the gallery, a voice memo or a file. On the computer
   you can also drop a file on the window.
-- **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, **Claude**
-  or **Agent**, and a project (or none, for the inbox). The first look only
-  remembers the page; after that, once per period, a change becomes one task.
+- **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
+  project (or none, for the inbox). The first look only remembers the page;
+  after that, once per period, a change becomes one task, written by Claude.
 - **Review:** long-press any item, then **Review with AI**.
 
 ## Language
@@ -49,40 +49,34 @@ its page.
 | SelfHostedAI | The server's address. Chosen until you pick another. |
 | OpenAI | The address of a server that speaks OpenAI's API, and the model's name |
 | Claude | An API key from the Anthropic Console (kept in the system's keychain) |
-| Agent | The IP and port of the computer running the Harness (port 8765 unless you chose another) |
+| Agent | The IP of the computer where your own agent runs, its token or password, and its port if it isn't the usual one |
 
-**Agent** is the Harness: Claude Code on a computer in your home network, any Linux or
-macOS machine with Claude Code installed. Set it up there once:
+**Agent** is an AI agent you already run on a computer at home. Nothing of
+ours is installed there. The app recognises, from the address alone:
 
-```sh
-sh deploy/harness/install.sh
-```
+| Agent | Turn on its network mode | Port |
+|---|---|---|
+| OpenClaw | Gateway bound to the LAN, chat completions endpoint on, a gateway token | 18789 |
+| Hermes Agent | `API_SERVER_ENABLED=true API_SERVER_HOST=0.0.0.0 API_SERVER_KEY=… hermes gateway` | 8642 |
+| opencode | `OPENCODE_SERVER_PASSWORD=… opencode serve --hostname 0.0.0.0` | 4096 |
+| Kilo | `KILO_SERVER_PASSWORD=… kilo serve --hostname 0.0.0.0 --port …` | the one you give |
 
-It runs as a service, starts with the computer, and prints the IP and port to
-type in **Settings**, under **AI**, after choosing **Agent**. Saving trusts the certificate the
-Harness shows at that moment; after that only that certificate is accepted.
-If you reinstall it on a new machine, save again.
+Any other server that speaks OpenAI's chat API works too, with the first model
+it lists. Save in **Settings** finds which agent answers and says so; with an
+empty port it tries the usual ones. HTTPS is tried first and its certificate is
+pinned; without HTTPS the app talks only to addresses in your home network.
+The token opens that computer (the agent can run commands there), so keep it
+long and keep it at home.
 
-With a review, the app sends your items along, and Claude Code, in its
-restricted mode, can read a copy of them (Read, Glob, Grep), use them as tools
-(search, upcoming, projects, inbox, add a task, capture, mark done), fetch web
-pages and use subagents. The tasks it adds or marks done come back to the app,
-which makes those changes itself. It can never run commands or edit files.
-Feeds give it no tools and no items.
+With a review, the app sends the question with a text copy of your projects,
+open tasks, notes and calendar. The agent answers with whatever model and
+tools it has. If you ask it to add a task, capture something or mark a task
+done, it says so in its answer and the app makes those changes itself, after
+checking each one fits your items. opencode and Kilo answer in a fixed JSON
+shape, and the app deletes each question's session afterwards.
 
-Its settings live on that computer in `~/.config/hubidubitask-harness/`:
-
-- `harness.env` points Claude Code at a local model instead of its own login,
-  for example:
-
-  ```
-  ANTHROPIC_BASE_URL=http://127.0.0.1:8080
-  ANTHROPIC_AUTH_TOKEN=local
-  ANTHROPIC_MODEL=glm-5.2
-  ```
-
-- `mcp.json` adds MCP servers of that computer, in Claude Code's own format
-  (`{"mcpServers": {...}}`).
+Feeds never go to your agent: a feed's text is a stranger's web page. They
+write their task with Claude.
 
 ## Where your data lives
 

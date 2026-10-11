@@ -7,7 +7,7 @@ publish it with [`deploy/website`](../deploy/website).
 ```
 index.html      Home: Next, the + and the steps, taps, the AI choices, pairing
 download.html   Android, the free Mac app, Linux; first start on a Mac; pairing
-agent.html      Running your own Agent at home, with its download
+agent.html      Plugging in the AI agent you already run at home
 privacy.html    The privacy policy (the URL Google Play asks for)
 style.css       The app's sand (light) and moss (dark), IBM Plex Sans only
 fonts/          The app's own fonts (OFL, see fonts/LICENSE.txt)
@@ -23,5 +23,5 @@ that `deploy/website/2-site/assemble.sh` replaces from its `site.env`.
 
 When the app changes: retake the screenshots with
 `deploy/google-play/3-graphics/shoot.py`, recount the taps table, and update
-the version and file sizes on the Download and Agent pages (the assemble step
+the version and file sizes on the Download page (the assemble step
 checks them against the real files).

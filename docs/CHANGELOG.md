@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- **The Agent plugs into the agent you already run at home.** Settings › AI ›
+  Agent takes the computer's IP, a token or password, and a port only if it
+  isn't the usual one. The app finds which agent answers: OpenClaw's gateway,
+  Hermes Agent's API server, opencode's or Kilo's server, or any server that
+  speaks OpenAI's chat API. Nothing of ours is installed on that computer
+  any more: the Harness, its installer and the Agent download are gone, and
+  with them the tie to Claude Code.
+- Reviews send a text copy of your projects, open tasks, notes and calendar
+  with the question; the agent uses its own model and tools. Changes it was
+  asked for (add a task, capture, mark done) come back in a fixed shape and
+  are checked against your items before the app makes them. A reply that
+  changed something is no longer asked again, which could apply its changes
+  twice.
+- HTTPS is tried first and its certificate pinned; without it, the app talks
+  only to addresses in your home network. On Android that needed plain HTTP
+  allowed, which also lets an OpenAI-compatible server or a feed on the home
+  network use it.
+- **Feeds always write their task with Claude.** A feed's text is a stranger's
+  web page, and your own agent can run commands. Feeds set to the Agent before
+  now use Claude, and need a Claude key in Settings.
+
 ## 1.0.0 — 9 October 2026
 
 HubidubiTask starts on Google Play as a new app, so the version starts again

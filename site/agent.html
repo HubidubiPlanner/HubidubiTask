@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Run your own Agent · HubidubiTask</title>
-  <meta name="description" content="The Agent is Claude Code on a computer in your home. Reviews can look across all your items and the web, and add or finish tasks when you ask.">
+  <title>Plug in your own agent · HubidubiTask</title>
+  <meta name="description" content="Already run an AI agent at home? Point HubidubiTask at it by IP and token. Reviews then see all your items, use the agent's own tools, and add or finish tasks when you ask.">
   <meta name="theme-color" content="#E9E1CF" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1C1D18" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://hubidubitask.example/agent.html">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Run your own Agent · HubidubiTask">
-  <meta property="og:description" content="Claude Code on a computer in your home, for every review.">
+  <meta property="og:title" content="Plug in your own agent · HubidubiTask">
+  <meta property="og:description" content="The AI agent you already run at home, for every review.">
   <meta property="og:image" content="https://hubidubitask.example/assets/og-image.jpg">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -21,76 +21,80 @@
 <main class="wrap">
 
   <section class="page-head">
-    <h1>Run your own Agent</h1>
-    <p class="lede">The Agent is Claude Code on a computer in your home. Choose it in Settings, type its IP and port, and every review can look across all your items and the web, and add or finish tasks when you ask.</p>
-    <div class="actions" style="margin-top: 8px">
-      <span class="btn btn-soon">Coming soon</span>
-      <span class="small muted">For Linux and macOS</span>
-    </div>
+    <h1>Plug in your own agent</h1>
+    <p class="lede">Already run an AI agent at home? Point the app at it: Settings, AI, Agent, its IP and its token. Every review can then look across all your items, use the agent's own tools, and add or finish tasks when you ask.</p>
   </section>
 
   <section class="section split" aria-labelledby="does-h">
     <div>
       <div class="section-head"><h2 id="does-h">What it can do</h2></div>
       <ul class="ticks">
-        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Read and search a copy of all your projects, tasks, notes and calendar, not just the item you asked about.</span></li>
-        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Fetch web pages, and hand parts of a question to helpers of its own.</span></li>
+        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>See all your projects, tasks, notes and calendar, not just the item you asked about. They go with the question, as text.</span></li>
+        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Use its own tools: the web, its MCP servers, whatever you gave it.</span></li>
         <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Add a task, capture a thought or mark a task done, when you ask it to. The change lands in your app and syncs as usual.</span></li>
-        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Answer with your Claude plan, or with a model you run yourself.</span></li>
+        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Answer with whatever model it runs, for example Qwen on your own machine.</span></li>
       </ul>
     </div>
     <div>
-      <div class="section-head"><h2 id="never-h">What it never does</h2></div>
+      <div class="section-head"><h2 id="never-h">What it never gets</h2></div>
       <ul class="ticks">
-        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Run commands or change files on the computer it lives on.</span></li>
-        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Answer anyone outside your home network.</span></li>
-        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Keep your items. Each question gets a fresh copy, deleted when it has answered.</span></li>
-        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Use any tools for feeds. A feed's text comes from a stranger's web page.</span></li>
+        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Your feeds. A feed's text comes from a stranger's web page, so feeds write their task with Claude.</span></li>
+        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>An unencrypted connection outside your home network. Without HTTPS, the app talks only to addresses at home.</span></li>
+        <li><svg class="icon no" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>A copy of your items to keep, where the app can see to it: with opencode and Kilo, each question's session is deleted once it has answered.</span></li>
       </ul>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="needs-h">
+  <section class="section" aria-labelledby="which-h">
     <div class="section-head">
-      <h2 id="needs-h">What you need</h2>
-      <p>A Linux or macOS computer at home that stays on, for example the one that serves your own models.</p>
+      <h2 id="which-h">The agents it finds</h2>
+      <p>Each listens on the network by itself once you turn it on, with a token or password of your choosing. The app works out which one answers.</p>
     </div>
-    <ul class="cards cards-3">
+    <ul class="cards cards-2">
       <li class="card">
-        <h3>Claude Code</h3>
-        <p>Signed in once, or pointed at a model you run. Install it from Anthropic, then run <strong>claude</strong> once.</p>
+        <h3>OpenClaw</h3>
+        <p>In its gateway settings: bind to the LAN, turn on the chat completions endpoint, and set a gateway token. Port 18789.</p>
       </li>
       <li class="card">
-        <h3>Python 3.9 or later</h3>
-        <p>The Agent is one Python file with nothing else to install. macOS and most Linux systems have it already.</p>
+        <h3>Hermes Agent</h3>
+        <code class="cmd">API_SERVER_ENABLED=true API_SERVER_HOST=0.0.0.0 \
+API_SERVER_KEY=a-long-secret hermes gateway</code>
+        <p>Port 8642.</p>
       </li>
       <li class="card">
-        <h3>openssl</h3>
-        <p>Used once, on first start, to make the Agent's own certificate. Your devices pin it when you save.</p>
+        <h3>opencode</h3>
+        <code class="cmd">OPENCODE_SERVER_PASSWORD=a-long-secret \
+opencode serve --hostname 0.0.0.0</code>
+        <p>Port 4096.</p>
+      </li>
+      <li class="card">
+        <h3>Kilo</h3>
+        <code class="cmd">KILO_SERVER_PASSWORD=a-long-secret \
+kilo serve --hostname 0.0.0.0 --port 4097</code>
+        <p>Kilo picks a random port unless you give one; type it in the app.</p>
       </li>
     </ul>
+    <p class="small muted" style="margin-top: 16px">Any other server that speaks the OpenAI chat API works too, with the first model it lists.</p>
   </section>
 
   <section class="section split" aria-labelledby="setup-h">
     <div class="section-head">
-      <h2 id="setup-h">Set it up</h2>
-      <p>On the computer that will run it. It starts with the computer from then on.</p>
+      <h2 id="setup-h">Plug it in</h2>
+      <p>The token opens that computer: anyone who has it can make the agent run commands there. Keep it long and keep it at home. Where the agent offers HTTPS, as OpenClaw does, turn it on; the app pins its certificate.</p>
     </div>
     <ol class="numbered">
       <li>
-        <h3>Unpack and install</h3>
-        <code class="cmd">tar -xzf hubidubitask-agent.tar.gz
-sh hubidubitask-agent/install.sh</code>
-        <p>At the end it prints the IP and port to type in the app. The port is 8765.</p>
+        <h3>Turn on its network mode</h3>
+        <p>As above, with a token or password of your own.</p>
       </li>
       <li>
         <h3>Open the port</h3>
-        <p>Only if a firewall is on, as it is on Omarchy:</p>
-        <code class="cmd">sudo ufw allow from 192.168.0.0/16 to any port 8765 proto tcp</code>
+        <p>Only if a firewall is on, as it is on Omarchy. For opencode:</p>
+        <code class="cmd">sudo ufw allow from 192.168.0.0/16 to any port 4096 proto tcp</code>
       </li>
       <li>
         <h3>Choose it in the app</h3>
-        <p>Settings, AI, Agent. Type the IP and the port, then Save. It says Connected when the Agent answers.</p>
+        <p>Settings, AI, Agent. Type the computer's IP and the token, then Save. The port can stay empty for OpenClaw, Hermes and opencode. It says Connected and names the agent it found.</p>
       </li>
       <li>
         <h3>Review something</h3>
@@ -99,20 +103,7 @@ sh hubidubitask-agent/install.sh</code>
     </ol>
   </section>
 
-  <section class="section split" aria-labelledby="local-h">
-    <div class="section-head">
-      <h2 id="local-h">Use a model you run</h2>
-      <p>Point Claude Code at a server on your network that speaks Anthropic's Messages API. Edit this file on the Agent's computer, then restart it.</p>
-    </div>
-    <div style="display: grid; gap: 12px">
-      <code class="cmd">~/.config/hubidubitask-harness/harness.env</code>
-      <code class="cmd">ANTHROPIC_BASE_URL=http://127.0.0.1:8080
-ANTHROPIC_AUTH_TOKEN=local
-ANTHROPIC_MODEL=glm-5.2
-CLAUDE_CODE_SUBAGENT_MODEL=glm-5.2</code>
-      <p class="small muted">Restart: <strong>systemctl --user restart hubidubitask-harness</strong> on Linux. On a Mac, run the installer again.</p>
-    </div>
-  </section>
+</main>
 
 </main>
 
