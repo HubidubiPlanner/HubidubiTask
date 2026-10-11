@@ -16,14 +16,19 @@ sh deploy/website/2-site/assemble.sh
 sh deploy/website/3-publish/publish.sh
 ```
 
+The site is live at <https://hubidubitask.github.io/HubidubiTask/>: GitLab Pages
+publishes it from main by itself, with the downloads of the current release
+(see [`3-publish/`](3-publish)). The three commands are for checking it
+locally or publishing somewhere else.
+
 The screenshots in `site/assets/screens/` are the real apps with made-up data:
 the phone ones from `deploy/google-play/3-graphics/shoot.py`, the computer
 ones from `sh deploy/website/2-site/desktop-shots.sh`. Make them again when a
 screen changes.
 
-Before the first publish, set `SITE_URL` and `CONTACT_EMAIL` in
-[`2-site/site.env`](2-site/site.env). The Google Play listing uses the same
-two, and its privacy policy is this site's `privacy.html`.
+`SITE_URL` and `CONTACT_EMAIL` are in [`2-site/site.env`](2-site/site.env).
+The Google Play listing uses the same two, and its privacy policy is this
+site's `privacy.html`.
 
 The Mac app is free and not signed with an Apple developer certificate, so
 macOS asks once before opening it; the Download page walks people through

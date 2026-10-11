@@ -1,17 +1,34 @@
-# HubidubiTask CI: the app on Android, macOS and Linux.
+# HubidubiTask CI: the website, and the app on Android, macOS and Linux.
 #
-# CI IS DISABLED FOR NOW: the workflow rule below prevents any pipeline. To
-# turn it on, delete the `workflow` block. The macOS app is built on a Mac
-# (jpackage builds only for the system it runs on), so it has no job here.
+# Pipelines run only to publish the website (the `pages` job): on main when
+# the site, its scripts, the version or this file change, or by hand from
+# Build > Pipelines > New pipeline.
+#
+# THE APP JOBS ARE OFF FOR NOW: each extends `.off`. To turn one on, delete
+# its `extends: .off` and add its branches to the workflow rules. The macOS
+# app is built on a Mac (jpackage builds only for the system it runs on), so
+# it has no job here.
 workflow:
   rules:
-    - when: never
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - site/**/*
+        - deploy/website/**/*
+        - src/apps/gradle.properties
+        - .gitlab-ci.yml
 
 stages:
   - test
   - build
+  - deploy
+
+.off:
+  rules:
+    - when: never
 
 shared-and-desktop-tests:
+  extends: .off
   stage: test
   image: eclipse-temurin:17-jdk
   script:
@@ -19,6 +36,7 @@ shared-and-desktop-tests:
     - ./gradlew --no-daemon -Phubidubitask.desktopOnly=true :shared:test :desktop:test
 
 android:
+  extends: .off
   stage: build
   image: ghcr.io/cirruslabs/android-sdk:34
   script:
@@ -30,6 +48,7 @@ android:
     expire_in: 1 week
 
 linux-package:
+  extends: .off
   stage: build
   image: archlinux:latest
   # The Arch package needs the Linux app image, which needs a Docker host;
@@ -37,3 +56,21 @@ linux-package:
   when: manual
   script:
     - echo "Run distribution/arch/build.sh on a host with Docker."
+
+# The website on GitLab Pages, https://hubidubitask.github.io/HubidubiTask/:
+# the release's downloads from the package registry, then site/ put together
+# and checked by deploy/website/2-site/assemble.sh.
+pages:
+  stage: deploy
+  image: python:3.13-alpine
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - apk add --no-cache curl
+    - sh deploy/website/1-downloads/fetch-release.sh
+    - sh deploy/website/2-site/assemble.sh
+    - mv deploy/website/2-site/out/public public
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 day

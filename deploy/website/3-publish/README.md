@@ -4,7 +4,22 @@ The assembled site is plain files: four pages, a stylesheet, fonts, images
 and, unless `DOWNLOADS_URL` is set, the three downloads. About 290 MB, almost
 all of it the Mac and Linux downloads (about 150 MB each).
 
-## Where to host it
+## GitLab Pages (where it lives)
+
+The site is at <https://hubidubitask.github.io/HubidubiTask/>, published by the
+`pages` job in [`.gitlab-ci.yml`](../../../.gitlab-ci.yml). It runs on every
+push to main that changes `site/`, `deploy/website/`, the version or the CI
+file, and by hand from Build › Pipelines › New pipeline. It does steps 1 and 2
+by itself: the downloads come from the release of the current version in the
+package registry ([`../1-downloads/fetch-release.sh`](../1-downloads/fetch-release.sh)),
+then `assemble.sh` checks the pages against them.
+
+So after a version bump, the job fails until that release's files are
+uploaded; upload them, then retry the job. The project stays private; the
+site is public because Settings › General › Visibility › Pages is set to
+Everyone, with "Use unique domain" off (Deploy › Pages).
+
+## Other hosts
 
 Any static host with HTTPS. Check its limit on a single file first:
 
