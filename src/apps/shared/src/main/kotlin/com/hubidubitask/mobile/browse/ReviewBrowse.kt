@@ -1,8 +1,6 @@
 package com.hubidubitask.mobile.browse
 
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.i18n.I18n
-import com.hubidubitask.core.i18n.Language
 
 /**
  * Finding something during a review: pick items or notes, search, and — before
@@ -46,32 +44,6 @@ object ReviewBrowse {
             labelOf(rec).lowercase().contains(q) ||
                 rec.fields["body"]?.lowercase()?.contains(q) == true
         }.sortedByDescending { it.updated }
-    }
-
-    /**
-     * The question put to the agent about one item.
-     *
-     * Reviewing a task and reviewing a note are different jobs: a task needs a
-     * judgement about whether it is still the right next step, a note needs its
-     * substance pulled out. Asking one generic question would answer neither
-     * well. The item's own text is quoted so the agent works from what is in
-     * the vault rather than from the title alone.
-     */
-    fun analysisPrompt(record: EntityRecord): String {
-        val label = labelOf(record)
-        val body = record.fields["body"].orEmpty()
-        val content = if (body.isBlank()) label else "$label\n\n$body"
-        val ask = when (record.type) {
-            "note" -> "Summarise this note in two sentences, then list any " +
-                "commitments, dates or next actions hiding in it."
-            else -> "This is an item from my GTD list. Say in one sentence what " +
-                "it is really about, then give the single next physical action " +
-                "for it, and flag it if it looks stale or already done."
-        }
-        // The answer is read in the app, so it comes in the app's language.
-        val inLanguage = I18n.language.takeIf { it != Language.EN }
-            ?.let { " Answer in ${it.locale.getDisplayLanguage(java.util.Locale.ENGLISH)}." }.orEmpty()
-        return "$ask$inLanguage\n\n$content"
     }
 
     /**

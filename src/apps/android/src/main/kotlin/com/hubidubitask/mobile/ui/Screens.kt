@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -101,6 +102,7 @@ import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.browse.Agenda
 import com.hubidubitask.mobile.browse.ItemDetail
+import com.hubidubitask.mobile.browse.ItemSummary
 import com.hubidubitask.mobile.browse.ReviewBrowse
 import com.hubidubitask.mobile.capture.AudioRecorder
 import com.hubidubitask.mobile.tree.ProjectTree
@@ -318,8 +320,10 @@ private fun ItemActionsMenu(
         DatePickerFor(record, vm) { picking = false; onDismiss() }
         return
     }
+    val state by vm.state.collectAsStateWithLifecycle()
     AppSheet(onDismiss) {
         SheetTitle(ReviewBrowse.labelOf(record), overline = ItemDetail.typeLabel(record))
+        ReviewNote(state.reviews[record.id], Modifier.padding(bottom = 12.dp))
         if (record.type == "project") {
             if (onAddTask != null)
                 ActionRow(Icons.Filled.Add, t("Add a task")) { onDismiss(); onAddTask(record) }
@@ -395,6 +399,38 @@ private fun Overline(text: String, color: Color, icon: ImageVector? = null,
 }
 
 /**
+ * What the agent made of an item, under its title: a few lines until tapped,
+ * so a long summary does not push what the sheet is for out of sight, and
+ * marked once anything it read has changed. Nothing at all, not even space,
+ * for an item never reviewed.
+ */
+@Composable
+private fun ReviewNote(status: ItemSummary.Status?, modifier: Modifier = Modifier) {
+    status ?: return
+    val c = HubidubiTaskTheme.colors
+    var open by remember(status.text) { mutableStateOf(false) }
+    Column(
+        modifier.fillMaxWidth().background(c.raised).border(1.dp, c.line)
+            .clickable(onClickLabel = t("Review")) { open = !open }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Overline(t("Review"), c.frame, Icons.Outlined.RateReview, Modifier.weight(1f))
+            if (!status.current)
+                Text(t("Not up to date"), style = MaterialTheme.typography.labelSmall, color = c.danger)
+        }
+        Text(
+            status.text, style = MaterialTheme.typography.bodyMedium,
+            color = if (status.current) c.ink else c.muted,
+            maxLines = if (open) Int.MAX_VALUE else 4, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp)
+                .then(if (open) Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())
+                      else Modifier),
+        )
+    }
+}
+
+/**
  * One item, opened with a single press: what it is, when it is due, and what
  * the agent made of it last time. Reading, mostly — the long press is still
  * where things are moved, dated and deleted. A note is the exception: its
@@ -409,10 +445,10 @@ private fun DetailSheet(
     onOpen: (EntityRecord) -> Unit = {},
     onDone: ((EntityRecord) -> Unit)? = null,
     onEdit: ((EntityRecord) -> Unit)? = null,
+    review: ItemSummary.Status? = null,
 ) {
     record ?: return
     val c = HubidubiTaskTheme.colors
-    val review = ItemDetail.reviewOf(record)
     val due = ItemDetail.dueOf(record)
     val overdue = due != null && due < todayIso()
     val editable = onEdit != null && record.type == "note"
@@ -461,6 +497,7 @@ private fun DetailSheet(
                     Text(t("Captured %s", it), style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
+            ReviewNote(review, Modifier.padding(top = 12.dp))
             if (editing) {
                 OutlinedTextField(value = body, onValueChange = { body = it },
                     label = { Text(t("More (optional)"), color = c.muted) }, minLines = 3,
@@ -495,19 +532,6 @@ private fun DetailSheet(
                         }
                     }
                 }
-            }
-            Column(
-                Modifier.padding(top = 20.dp).fillMaxWidth()
-                    .background(c.raised).border(1.dp, c.line)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-            ) {
-                Overline(t("Review"), c.frame, Icons.Outlined.RateReview)
-                Text(
-                    review ?: t("Nothing yet."),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (review == null) c.muted else c.ink,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
             }
         }
         // Finishing is what a task is opened for most often, so it is the
@@ -544,20 +568,20 @@ private fun AnalysisSheet(
 ) {
     record ?: return
     val c = HubidubiTaskTheme.colors
-    // A review already asked for is shown as it is: the answer does not improve
-    // by being bought twice, and a cold model takes a minute to say the same.
-    var text by remember(record.id) { mutableStateOf(ItemDetail.reviewOf(record)) }
+    // A summary that still describes what is there is shown as it is: it does
+    // not improve by being bought twice, and a cold model takes a minute to
+    // say the same. Once anything it read has changed, it is asked for again.
+    val state by vm.state.collectAsStateWithLifecycle()
+    val kept = remember(record.id) { state.reviews[record.id]?.takeIf { it.current }?.text }
+    var text by remember(record.id) { mutableStateOf(kept) }
     var busy by remember(record.id) { mutableStateOf(false) }
-
-    LaunchedEffect(record.id) {
-        if (connected && text == null) {
-            busy = true
-            text = vm.review(ReviewBrowse.analysisPrompt(record))
-            busy = false
-            // Only a real answer is kept. An explanation of why there is none
-            // is worth showing and not worth remembering.
-            text?.takeIf { !it.startsWith("error:") }?.let { vm.setReview(record.id, it) }
-        }
+    // One question per round: on opening when nothing current is kept, then on "Again".
+    var round by remember(record.id) { mutableStateOf(if (kept == null) 1 else 0) }
+    LaunchedEffect(record.id, round) {
+        if (round == 0 || !connected) return@LaunchedEffect
+        busy = true
+        text = vm.review(record)
+        busy = false
     }
 
     AppSheet(onDismiss) {
@@ -575,21 +599,9 @@ private fun AnalysisSheet(
         Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SecondaryButton(t("Close"), onDismiss, Modifier.weight(1f))
             if (connected && !busy && text != null) {
-                PrimaryButton(t("Again"), {
-                    text = null   // re-triggers the LaunchedEffect guard below
-                    busy = true
-                }, Modifier.weight(1f), icon = Icons.Outlined.RateReview)
+                PrimaryButton(t("Again"), { text = null; round++ },
+                    Modifier.weight(1f), icon = Icons.Outlined.RateReview)
             }
-        }
-    }
-    // "Again" clears the text; run once more when that happens.
-    LaunchedEffect(busy) {
-        if (busy && text == null && connected) {
-            text = vm.review(ReviewBrowse.analysisPrompt(record))
-            busy = false
-            // Only a real answer is kept. An explanation of why there is none
-            // is worth showing and not worth remembering.
-            text?.takeIf { !it.startsWith("error:") }?.let { vm.setReview(record.id, it) }
         }
     }
 }
@@ -823,6 +835,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
         state.nextActions + state.inbox + state.notes
     }
     DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
+        review = detailFor?.let { state.reviews[it.id] },
         onDismiss = { detailFor = null },
         subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
         onOpen = { detailFor = it },
@@ -1461,6 +1474,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
         state.nextActions + state.inbox + state.notes
     }
     DetailSheet(detailFor, onReview = { rec -> reviewing = rec },
+        review = detailFor?.let { state.reviews[it.id] },
         onDismiss = { detailFor = null },
         subtasks = detailFor?.let { ProjectTree.children(it.id, allItems) }.orEmpty(),
         onOpen = { detailFor = it },

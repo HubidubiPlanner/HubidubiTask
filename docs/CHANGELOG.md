@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **A review is a summary of what happened, kept under the title.** Review
+  with AI now asks for what happened in the item: a project's from all its
+  tasks (done ones too) and notes, a task's from its text and notes, a note's
+  from its words. The answer stands under the title in the long-press sheet
+  and in the item's sheet, four lines until tapped, and nothing is shown for an
+  item never reviewed (no more "Nothing yet."). It carries a fingerprint of what
+  it read: a task done, added, edited, moved or deleted under it marks it **Not
+  up to date**, and the next review asks again instead of showing it. Opening
+  a review no longer sends the question twice.
 - **New tasks and notes are due tomorrow, and nothing asks for a date.**
   Whatever you make (a task, a note, a photo, memo or file, a capture from
   the widget or the share menu) is due the next day, so it comes back on

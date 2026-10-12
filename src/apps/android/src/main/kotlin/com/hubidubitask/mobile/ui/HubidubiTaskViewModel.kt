@@ -15,6 +15,7 @@ import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
+import com.hubidubitask.mobile.browse.ItemSummary
 import com.hubidubitask.mobile.net.AgentSettings
 import com.hubidubitask.mobile.sync.Sync
 import com.hubidubitask.mobile.importer.Ics
@@ -77,6 +78,8 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         val mac: com.hubidubitask.mobile.net.MacLink.Mac? = null,
         /** Watched pages, each turned into at most one task per period. */
         val feeds: List<EntityRecord> = emptyList(),
+        /** Each reviewed item's summary, and whether it still describes what is there. */
+        val reviews: Map<String, ItemSummary.Status> = emptyMap(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -197,6 +200,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
                 mac = com.hubidubitask.mobile.net.MacLink.load(getApplication()),
                 inference = _state.value.inference,
                 feeds = sync.feeds().sortedBy { com.hubidubitask.core.feed.Feeds.label(it).lowercase() },
+                reviews = ItemSummary.statuses(REVIEWABLE.flatMap { sync.byType(it) }),
             )
         }
         _state.value = s
@@ -357,12 +361,6 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
-    /** Keep the agent's review on the item so opening it again is free. */
-    fun setReview(id: String, text: String?) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().setReview(id, text) }
-        refresh()
-    }
-
     /** Delete an item; its attachment goes with it. */
     fun delete(id: String) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().delete(id) }
@@ -435,14 +433,31 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     fun syncNow() = syncMacNow()
 
     /**
-     * A review of one item by the AI chosen in Settings. The item goes alone;
-     * the user's own agent also gets the phone's items to look things up in.
+     * A review of one item by the AI chosen in Settings: a summary of what
+     * happened in it, from it and everything filed under it ([ItemSummary]).
+     * A real answer is kept on the item with the fingerprint of what it read;
+     * why there is none is shown, not kept. The user's own agent also gets
+     * the phone's items to look things up in.
      */
-    suspend fun review(prompt: String): String =
-        withContext(Dispatchers.IO) {
+    suspend fun review(record: EntityRecord): String {
+        val answer = withContext(Dispatchers.IO) {
+            val sync = sync()
+            val all = REVIEWABLE.flatMap { sync.byType(it) }
+            val root = all.firstOrNull { it.id == record.id } ?: record
+            val under = ItemSummary.under(root, all)
             val (cfg, client) = agent()
-            Agent.ask(client, cfg, prompt, agentItems)
+            Agent.ask(client, cfg, ItemSummary.prompt(root, under), agentItems).also { a ->
+                if (a.isNotBlank() && !a.startsWith("error:"))
+                    sync.setReview(root.id, a, ItemSummary.fingerprint(root, under))
+            }
         }
+        refresh()
+        return answer
+    }
+
+    private companion object {
+        val REVIEWABLE = listOf("project", "next_action", "inbox_item", "note")
+    }
 
     // --- one-time import. Nothing here is kept: the token and the calendar
     // address live only as long as the call that uses them.

@@ -170,10 +170,12 @@ class Sync private constructor(
      *
      *  Stored on the item so it is there the next time the item is opened,
      *  rather than asked for — and paid for — again. Empty clears it. */
-    fun setReview(id: String, text: String?): Boolean {
+    /** Keep a review on the item, with the fingerprint of what it read ([of]). */
+    fun setReview(id: String, text: String?, of: String? = null): Boolean {
         val rec = store.get(id) ?: return false
         val fields = rec.fields.toMutableMap()
         if (text.isNullOrBlank()) fields["review"] = "" else fields["review"] = text.trim()
+        fields["review_of"] = if (text.isNullOrBlank()) "" else of.orEmpty()
         val updated = rec.copy(updated = com.hubidubitask.core.nowUtc(), fields = fields)
         store.put(updated)
         return true

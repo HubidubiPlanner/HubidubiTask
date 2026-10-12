@@ -17,6 +17,7 @@ import com.hubidubitask.core.nowUtc
 import com.hubidubitask.core.peer.PeerPairing
 import com.hubidubitask.desktop.PeerServer
 import com.hubidubitask.desktop.Store
+import com.hubidubitask.mobile.browse.ItemSummary
 import com.hubidubitask.mobile.importer.Ics
 import com.hubidubitask.mobile.importer.Todoist
 import com.hubidubitask.mobile.importer.fetchCalendarText
@@ -87,6 +88,8 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         val peers: List<Store.Peer> = emptyList(),
         /** Watched pages, each turned into at most one task per period. */
         val feeds: List<EntityRecord> = emptyList(),
+        /** Each reviewed item's summary, and whether it still describes what is there. */
+        val reviews: Map<String, ItemSummary.Status> = emptyMap(),
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -124,6 +127,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
                 inference = _state.value.inference,
                 peers = peers,
                 feeds = ofType(Feeds.TYPE).sortedBy { Feeds.label(it).lowercase() },
+                reviews = ItemSummary.statuses(all),
             )
         }
         _state.value = s
@@ -211,8 +215,6 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     fun setDue(id: String, due: String?) = io {
         edit(id) { f -> if (due == null) f - "due" else f + ("due" to due) }
     }
-
-    fun setReview(id: String, text: String?) = io { edit(id) { it + ("review" to (text ?: "")) } }
 
     fun delete(id: String) = io {
         store.get(id)?.let { store.put(it.tombstone(nowUtc())) }
@@ -384,10 +386,27 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(true) }
         .also { h -> _state.value = _state.value.copy(inference = h) }
 
-    /** A review of one item by the AI chosen in Settings; the user's own agent also gets the items. */
-    suspend fun review(prompt: String): String = withContext(Dispatchers.IO) {
-        val (cfg, client) = agent()
-        Agent.ask(client, cfg, prompt, items)
+    /**
+     * A review of one item by the AI chosen in Settings: a summary of what
+     * happened in it, from it and everything filed under it ([ItemSummary]).
+     * A real answer is kept on the item with the fingerprint of what it read;
+     * why there is none is shown, not kept. The user's own agent also gets the
+     * items to look things up in.
+     */
+    suspend fun review(record: EntityRecord): String {
+        val answer = withContext(Dispatchers.IO) {
+            val all = store.all()
+            val root = all.firstOrNull { it.id == record.id } ?: record
+            val under = ItemSummary.under(root, all)
+            val (cfg, client) = agent()
+            Agent.ask(client, cfg, ItemSummary.prompt(root, under), items).also { a ->
+                if (a.isNotBlank() && !a.startsWith("error:")) edit(root.id) {
+                    it + ("review" to a.trim()) + ("review_of" to ItemSummary.fingerprint(root, under))
+                }
+            }
+        }
+        refresh()
+        return answer
     }
 
     // ---- one-time import, the same logic as the phone's

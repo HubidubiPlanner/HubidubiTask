@@ -84,36 +84,4 @@ class ReviewBrowseTest {
 
         assertTrue("a failed search must not silently show unrelated items", out.isEmpty())
     }
-
-    @Test
-    fun `a note is analysed for substance, a task for its next action`() {
-        val note = rec("n_1", "note", "2026-09-09T00:00:00Z", title = "Roof quote",
-            body = "Gutter replacement estimate")
-        val task = rec("t_1", "next_action", "2026-09-05T00:00:00Z", text = "email Bob")
-
-        val notePrompt = ReviewBrowse.analysisPrompt(note)
-        val taskPrompt = ReviewBrowse.analysisPrompt(task)
-
-        assertTrue("a note should be summarised", notePrompt.contains("Summarise"))
-        assertTrue("a task should yield a next action", taskPrompt.contains("next physical action"))
-    }
-
-    @Test
-    fun `the prompt carries the item's own text, not just its title`() {
-        val note = rec("n_1", "note", "2026-09-09T00:00:00Z", title = "Roof quote",
-            body = "Gutter replacement estimate")
-
-        val prompt = ReviewBrowse.analysisPrompt(note)
-
-        assertTrue(prompt.contains("Roof quote"))
-        assertTrue("without the body the agent only sees the title",
-            prompt.contains("Gutter replacement estimate"))
-    }
-
-    @Test
-    fun `an item with no body still produces a usable prompt`() {
-        val task = rec("t_1", "next_action", "2026-09-05T00:00:00Z", text = "email Bob")
-
-        assertTrue(ReviewBrowse.analysisPrompt(task).contains("email Bob"))
-    }
 }

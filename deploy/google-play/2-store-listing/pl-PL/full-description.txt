@@ -24,7 +24,7 @@ OBSERWUJ STRONĘ
 • Dodaj stronę internetową jako kanał. Raz dziennie, tygodniowo lub miesięcznie jest sprawdzana, a gdy coś się zmieni, Claude zamienia zmianę w jedno zadanie w wybranym projekcie.
 
 PRZEGLĄD Z AI (OPCJONALNIE)
-• Przytrzymaj dowolne zadanie, notatkę lub projekt i wybierz Przegląd z AI. Dowiesz się, co jest niejasne, czego brakuje albo jaki jest następny krok.
+• Przytrzymaj dowolny projekt, zadanie lub notatkę i wybierz Przegląd z AI. Dostaniesz podsumowanie tego, co się w nim wydarzyło, na podstawie zadań i notatek. Podsumowanie zostaje pod tytułem i jest oznaczone jako „Nieaktualne”, gdy coś się zmieni.
 • Wybierz AI w ustawieniach: swój serwer SelfHostedAI, dowolny model zgodny z OpenAI, który uruchamiasz, Claude od Anthropic z własnym kluczem API albo agenta AI, którego już uruchamiasz w domu (OpenClaw, Hermes, opencode lub Kilo); przegląda on wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go o to poprosisz.
 • Przeglądy idą prosto z telefonu do wybranego AI. Nic nie przechodzi przez nas. Bez AI cała reszta działa tak samo.
 

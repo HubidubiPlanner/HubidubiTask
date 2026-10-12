@@ -36,7 +36,13 @@ and the phone also hourly in the background.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
   project (or none, for the inbox). The first look only remembers the page;
   after that, once per period, a change becomes one task, written by Claude.
-- **Review:** long-press any item, then **Review with AI**.
+- **Review:** long-press any item, then **Review with AI**. The AI sums up what
+  happened in it: in a project, from all its tasks (done ones too) and notes; in
+  a task, from its text and the notes under it; in a note, from its words. The
+  summary is kept under the item's title, in the long-press sheet and when you
+  open it, cut to a few lines until you tap it. Once anything it read changes,
+  it is marked **Not up to date**, and the next review asks again. An item
+  never reviewed shows nothing there.
 
 ## Language
 

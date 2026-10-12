@@ -69,9 +69,9 @@ class I18nTest {
 
     @Test fun `the AI is asked to answer in the chosen language`() {
         val task = com.hubidubitask.core.EntityRecord("t", "next_action", "2026-10-07T10:00:00Z", mapOf("text" to "Call Ana"))
-        assertTrue("Answer in" !in com.hubidubitask.mobile.browse.ReviewBrowse.analysisPrompt(task))
+        assertTrue("Answer in" !in com.hubidubitask.mobile.browse.ItemSummary.prompt(task, emptyList()))
         I18n.language = Language.PL
-        assertTrue("Answer in Polish." in com.hubidubitask.mobile.browse.ReviewBrowse.analysisPrompt(task))
+        assertTrue("Answer in Polish." in com.hubidubitask.mobile.browse.ItemSummary.prompt(task, emptyList()))
     }
 
     @Test fun `the system language is used until one is chosen, English when the apps do not speak it`() {
