@@ -1,6 +1,7 @@
 package com.hubidubitask.desktop.ui
 
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.NoteDue
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.agent.AgentLink
@@ -52,6 +53,15 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         store.setKv("ui_language", l.code)
         I18n.language = l
         _language.value = l
+    }
+
+    /** When a new note is due ([NoteDue]), chosen in Settings and kept on this computer. */
+    private val _noteDue = MutableStateFlow(NoteDue.of(store.kv("note_due")))
+    val noteDue: StateFlow<String> = _noteDue
+
+    fun setNoteDue(choice: String) {
+        store.setKv("note_due", NoteDue.of(choice))
+        _noteDue.value = NoteDue.of(choice)
     }
 
     /** What a question to the user's agent carries, and where its changes land. */
@@ -144,8 +154,10 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
             "time" to "%02d:%02d".format(now.hour, now.minute)))
     }
 
+    /** A note written here. Without a date of its own it gets the one Settings gives new notes. */
     fun noteText(title: String, due: String? = null, body: String = "") = io {
-        write("note", id("n"), mapOf("title" to title, "kind" to "text", "body" to body, "due" to due))
+        write("note", id("n"), mapOf("title" to title, "kind" to "text", "body" to body,
+            "due" to (due ?: NoteDue.due(_noteDue.value))))
     }
 
     /** A photo, recording or file kept as a note. The bytes sit in blobs/ by
@@ -153,7 +165,8 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String, due: String? = null) = io {
         val sha = store.putBlob(bytes)
         write("note", id("n"), mapOf("title" to title, "kind" to kind, "media_sha256" to sha,
-            "media_mime" to mime, "media_bytes" to bytes.size.toString(), "due" to due))
+            "media_mime" to mime, "media_bytes" to bytes.size.toString(),
+            "due" to (due ?: NoteDue.due(_noteDue.value))))
     }
 
     /** The same media as a task: the phone's "do something about this". */

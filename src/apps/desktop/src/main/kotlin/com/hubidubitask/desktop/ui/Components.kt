@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hubidubitask.core.i18n.I18n
 
@@ -103,11 +104,13 @@ fun SectionLabel(
 fun CardGroup(
     modifier: Modifier = Modifier,
     border: Color = HubidubiTaskTheme.colors.line,
+    // From the screen's edge to the card's.
+    inset: Dp = 12.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = HubidubiTaskTheme.colors
     Column(
-        modifier.fillMaxWidth().padding(horizontal = 12.dp)
+        modifier.fillMaxWidth().padding(horizontal = inset)
             .background(c.raised).border(1.dp, border),
         content = content,
     )

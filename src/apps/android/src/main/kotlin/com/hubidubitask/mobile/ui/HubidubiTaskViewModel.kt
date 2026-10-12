@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.NoteDue
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentAction
 import com.hubidubitask.core.agent.AgentItems
@@ -42,6 +43,16 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     fun setLanguage(l: Language) {
         UiLanguage.save(getApplication(), l)
         _language.value = l
+    }
+
+    /** When a new note is due ([NoteDue]), chosen in Settings and kept on this phone. */
+    private val prefs = app.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
+    private val _noteDue = MutableStateFlow(NoteDue.of(prefs.getString("note_due", null)))
+    val noteDue: StateFlow<String> = _noteDue.asStateFlow()
+
+    fun setNoteDue(choice: String) {
+        prefs.edit().putString("note_due", NoteDue.of(choice)).apply()
+        _noteDue.value = NoteDue.of(choice)
     }
 
 
@@ -295,20 +306,21 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
-    // --- media notes: text / image / audio; peer sync carries them to the computer ---
+    // --- media notes: text / image / audio; peer sync carries them to the computer.
+    // Without a date of their own they get the one Settings gives new notes. ---
 
     fun noteText(title: String, due: String? = null, body: String = "") = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteText(title, body = body, due = due) }
+        withContext(Dispatchers.IO) { sync().noteText(title, body = body, due = due ?: NoteDue.due(_noteDue.value)) }
         refresh()
     }
 
     fun noteImage(bytes: ByteArray, mime: String, title: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title, due) }
+        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title, due ?: NoteDue.due(_noteDue.value)) }
         refresh()
     }
 
     fun noteAudio(bytes: ByteArray, mime: String, title: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title, due) }
+        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title, due ?: NoteDue.due(_noteDue.value)) }
         refresh()
     }
 

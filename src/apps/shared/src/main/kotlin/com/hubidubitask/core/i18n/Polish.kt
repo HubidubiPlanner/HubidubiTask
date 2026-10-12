@@ -76,6 +76,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "Document task" to "Zadanie z dokumentem",
     "Done" to "Gotowe",
     "Due %s" to "Termin: %s",
+    "Due date for new notes" to "Termin nowych notatek",
     "Edit" to "Edytuj",
     "Enter the computer's code" to "Wpisz kod z komputera",
     "Enter the phone's code" to "Wpisz kod z telefonu",

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **New notes are due tomorrow.** A note written from the + (or a photo,
+  memo or file kept as a note) without a date of its own is due the next
+  day, so it comes back on Incoming. Settings › Due date for new notes
+  chooses Tomorrow, the default, or No date, on each device.
+- Settings lines everything up: the cards, fields, buttons and choices now
+  start and end on the same edge as the headings, on the phone and the
+  computer.
 - **Hold the + for a note.** A long press on the + (Incoming and Projects,
   phone and computer) skips the menu and opens a note with the cursor in it;
   Done, or Return on the computer, saves it. A note is now two taps, not

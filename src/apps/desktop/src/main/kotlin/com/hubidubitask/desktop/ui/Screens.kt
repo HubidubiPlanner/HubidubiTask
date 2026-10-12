@@ -83,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.NoteDue
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
@@ -941,24 +942,28 @@ fun SettingsScreen(
     // Whether the last check found the AI answering; the message says it in words.
     var connected by remember { mutableStateOf(false) }
 
+    // One edge for everything here: the cards, the fields, the buttons and the
+    // choices all start and end on the line the headings start on.
+    val edge = 20.dp
+
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader(t("Settings"))
         SectionLabel(t("Phones"), modifier = Modifier.padding(top = 0.dp))
-        CardGroup {
+        CardGroup(inset = edge) {
             if (state.peers.isEmpty()) StatusRow(t("No phone paired yet"), "", good = false, last = true)
             state.peers.forEachIndexed { i, p ->
                 StatusRow(p.name, p.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) }
                     ?: t("paired, not synced yet"), p.lastSync != null, last = i == state.peers.lastIndex)
             }
         }
-        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp)) {
+        Row(Modifier.padding(start = edge, end = edge, top = 10.dp)) {
             PrimaryButton(t("Pair a phone"), { pairing = true }, Modifier.weight(1f),
                 icon = Icons.Outlined.Link)
         }
 
         SectionLabel(t("AI"), modifier = Modifier.padding(top = 10.dp))
 
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Segmented(
                 com.hubidubitask.core.agent.AgentConfig.PROTOCOLS.map { (id, label) -> id to t(label) },
                 protocol, { protocol = it; message = null },
@@ -1049,17 +1054,25 @@ fun SettingsScreen(
                 }
             }
         }
+        // A new note's date when it is given none: tomorrow brings it back on
+        // Incoming the next day.
+        SectionLabel(t("Due date for new notes"), modifier = Modifier.padding(top = 22.dp))
+        val noteDue by vm.noteDue.collectAsState()
+        Box(Modifier.padding(horizontal = edge)) {
+            Segmented(NoteDue.OPTIONS.map { (id, label) -> id to t(label) }, noteDue,
+                { vm.setNoteDue(it) })
+        }
         // The app's own language, each named in itself.
         SectionLabel(t("Language"), modifier = Modifier.padding(top = 22.dp))
         val language by vm.language.collectAsState()
-        Box(Modifier.padding(horizontal = 20.dp)) {
+        Box(Modifier.padding(horizontal = edge)) {
             Segmented(Language.entries.map { it to it.label }, language,
                 { vm.setLanguage(it) })
         }
         // Kept quiet at the very end: something done once, when moving in,
         // not a setting anyone looks for day to day.
         SecondaryButton(t("Import from another app"), onImport,
-            Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 28.dp),
+            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 28.dp),
             icon = Icons.Outlined.FileDownload)
         Spacer(Modifier.height(16.dp))
     }

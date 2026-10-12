@@ -28,6 +28,10 @@ and the phone also hourly in the background.
   you can also drop a file on the window.
 - **Hold the +** for a note straight away: the cursor is already in it, and
   Done (Return on the computer) saves it.
+- **A new note is due tomorrow**, so it comes back on Incoming the next day.
+  **Settings → Due date for new notes** switches that to **No date**; it is
+  kept on that device. A note you give a date keeps it, and a note added
+  under a task gets none.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
   project (or none, for the inbox). The first look only remembers the page;
   after that, once per period, a change becomes one task, written by Claude.
