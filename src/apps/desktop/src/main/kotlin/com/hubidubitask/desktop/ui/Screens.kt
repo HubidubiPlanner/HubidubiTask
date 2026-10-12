@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,12 +53,12 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.focusRequester
@@ -626,8 +627,10 @@ private fun AnalysisSheet(
 @Composable
 fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
     var adding by remember { mutableStateOf(false) }
+    var noting by remember { mutableStateOf(false) }
     val capture = rememberCaptureActions(vm)
     NewMenu(adding, { adding = false }, state, vm, capture)
+    NewNoteSheet(noting, vm) { noting = false }
     // A file dropped anywhere here is a capture, as on Projects: the app opens here.
     var dragging by remember { mutableStateOf(false) }
     val c = HubidubiTaskTheme.colors
@@ -685,7 +688,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
                 else -> rangeSpan(today, range.days)
             }
         }) {
-            PlusButton(t("New project or task")) { adding = true }
+            PlusButton(t("New project or task"), onLongClick = { noting = true }) { adding = true }
         }
         Segmented(Agenda.Range.entries.map { it to t(it.label) }, range, { range = it },
             Modifier.padding(horizontal = 20.dp))
@@ -1170,18 +1173,28 @@ internal fun NewMenu(
 /**
  * The + at the top right of a tab, in the same place on each. Its 48dp tap
  * target reports only the title's line height, so it never makes a header
- * taller than the other tabs' or pushes what is beside it down.
+ * taller than the other tabs' or pushes what is beside it down. A long press
+ * skips the menu and opens a note ready to type: the fast track for a thought.
  */
 @Composable
-fun PlusButton(description: String, onClick: () -> Unit) {
+fun PlusButton(description: String, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     val c = HubidubiTaskTheme.colors
-    IconButton(
-        onClick = onClick,
+    Box(
         modifier = Modifier.layout { m, cs ->
             val p = m.measure(cs.copy(minHeight = 0))
             val h = 34.sp.roundToPx()
             layout(p.width, h) { p.place(0, (h - p.height) / 2) }
-        }.size(48.dp),
+        }.size(48.dp)
+            // The ripple an IconButton has; an IconButton takes no long press.
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = false, radius = 20.dp),
+                role = Role.Button,
+                onLongClickLabel = onLongClick?.let { t("A note") },
+                onLongClick = onLongClick,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(Icons.Filled.Add, contentDescription = description, tint = c.accent,
             modifier = Modifier.size(30.dp))
@@ -1238,11 +1251,14 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
     var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
     var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
     var renaming by remember { mutableStateOf<EntityRecord?>(null) }
-    // The + asks what is wanted first; its menu is shared with Next.
+    // The + asks what is wanted first; its menu is shared with Next. A long
+    // press skips the asking: a note, ready to type.
     var adding by remember { mutableStateOf(false) }
+    var noting by remember { mutableStateOf(false) }
     val capture = rememberCaptureActions(vm)
     // Open the project a new task went into, so it is seen landing.
     NewMenu(adding, { adding = false }, state, vm, capture, onTaskAdded = { expanded = expanded + it.id })
+    NewNoteSheet(noting, vm) { noting = false }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,
@@ -1299,7 +1315,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
             .border(2.dp, if (dragging) c.accent else Color.Transparent)
     ) {
         ScreenHeader(t("Projects")) {
-            PlusButton(t("New project or task")) { adding = true }
+            PlusButton(t("New project or task"), onLongClick = { noting = true }) { adding = true }
         }
         if (nodes.isEmpty()) {
             Text(t("No projects yet. Tap + to start one, then file notes and tasks into it."),

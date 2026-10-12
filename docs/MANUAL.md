@@ -26,6 +26,8 @@ and the phone also hourly in the background.
 - **+** on Incoming and on Projects, in the same place: a project, a task, a note,
   a photo, a picture from the gallery, a voice memo or a file. On the computer
   you can also drop a file on the window.
+- **Hold the +** for a note straight away: the cursor is already in it, and
+  Done (Return on the computer) saves it.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
   project (or none, for the inbox). The first look only remembers the page;
   after that, once per period, a change becomes one task, written by Claude.

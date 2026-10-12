@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -57,16 +60,18 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -837,16 +842,27 @@ private fun NewNoteSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: ()
     val c = HubidubiTaskTheme.colors
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
+    // The cursor is in the note at once and Done saves it, so a long-pressed
+    // + is a note in two taps.
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    fun save() {
+        if (title.isBlank()) return
+        vm.noteText(title.trim(), body = body.trim()); onDismiss()
+    }
     AppSheet(onDismiss) {
         SheetTitle(t("A note"))
         OutlinedTextField(value = title, onValueChange = { title = it },
             label = { Text(t("Note")) }, singleLine = true, colors = appFieldColors(),
-            shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { save() }),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+        LaunchedEffect(Unit) { focus.requestFocus() }
         OutlinedTextField(value = body, onValueChange = { body = it },
             label = { Text(t("More (optional)"), color = c.muted) }, minLines = 3,
             colors = appFieldColors(), shape = RectangleShape,
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
-        PrimaryButton(t("Save"), { vm.noteText(title.trim(), body = body.trim()); onDismiss() },
+        PrimaryButton(t("Save"), { save() },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }
@@ -854,7 +870,9 @@ private fun NewNoteSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: ()
 @Composable
 fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
     var adding by remember { mutableStateOf(false) }
+    var noting by remember { mutableStateOf(false) }
     NewMenu(adding, { adding = false }, state, vm)
+    NewNoteSheet(noting, vm) { noting = false }
     val c = HubidubiTaskTheme.colors
     var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
@@ -906,7 +924,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
                 else -> rangeSpan(today, range.days)
             }
         }) {
-            PlusButton(t("New project or task")) { adding = true }
+            PlusButton(t("New project or task"), onLongClick = { noting = true }) { adding = true }
         }
         Segmented(Agenda.Range.entries.map { it to t(it.label) }, range, { range = it },
             Modifier.padding(horizontal = 20.dp))
@@ -1408,18 +1426,28 @@ fun NewMenu(
 /**
  * The + at the top right of a tab, in the same place on each. Its 48dp tap
  * target reports only the title's line height, so it never makes a header
- * taller than the other tabs' or pushes what is beside it down.
+ * taller than the other tabs' or pushes what is beside it down. A long press
+ * skips the menu and opens a note ready to type: the fast track for a thought.
  */
 @Composable
-fun PlusButton(description: String, onClick: () -> Unit) {
+fun PlusButton(description: String, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     val c = HubidubiTaskTheme.colors
-    IconButton(
-        onClick = onClick,
+    Box(
         modifier = Modifier.layout { m, cs ->
             val p = m.measure(cs.copy(minHeight = 0))
             val h = 34.sp.roundToPx()
             layout(p.width, h) { p.place(0, (h - p.height) / 2) }
-        }.size(48.dp),
+        }.size(48.dp)
+            // The ripple an IconButton has; an IconButton takes no long press.
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = false, radius = 20.dp),
+                role = Role.Button,
+                onLongClickLabel = onLongClick?.let { t("A note") },
+                onLongClick = onLongClick,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(Icons.Filled.Add, contentDescription = description, tint = c.accent,
             modifier = Modifier.size(30.dp))
@@ -1476,10 +1504,13 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
     var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
     var addingTaskTo by remember { mutableStateOf<EntityRecord?>(null) }
     var renaming by remember { mutableStateOf<EntityRecord?>(null) }
-    // The + asks what is wanted first; its menu is shared with Next.
+    // The + asks what is wanted first; its menu is shared with Next. A long
+    // press skips the asking: a note, ready to type.
     var adding by remember { mutableStateOf(false) }
+    var noting by remember { mutableStateOf(false) }
     // Open the project a new task went into, so it is seen landing.
     NewMenu(adding, { adding = false }, state, vm, onTaskAdded = { expanded = expanded + it.id })
+    NewNoteSheet(noting, vm) { noting = false }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,
@@ -1530,7 +1561,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(t("Projects")) {
-            PlusButton(t("New project or task")) { adding = true }
+            PlusButton(t("New project or task"), onLongClick = { noting = true }) { adding = true }
         }
         if (nodes.isEmpty()) {
             Text(t("No projects yet. Tap + to start one, then file notes and tasks into it."),

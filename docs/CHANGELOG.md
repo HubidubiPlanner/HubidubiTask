@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Hold the + for a note.** A long press on the + (Incoming and Projects,
+  phone and computer) skips the menu and opens a note with the cursor in it;
+  Done, or Return on the computer, saves it. A note is now two taps, not
+  three. A note started from the menu has the cursor in it too.
 - **The Agent plugs into the agent you already run at home.** Settings › AI ›
   Agent takes the computer's IP, a token or password, and a port only if it
   isn't the usual one. The app finds which agent answers: OpenClaw's gateway,

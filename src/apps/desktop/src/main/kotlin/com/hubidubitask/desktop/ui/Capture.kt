@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.outlined.CalendarToday
@@ -35,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,10 +48,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -318,16 +324,27 @@ internal fun NewNoteSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: (
     val c = HubidubiTaskTheme.colors
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
+    // The cursor is in the note at once and Done saves it, so a long-pressed
+    // + is a note in two taps.
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    fun save() {
+        if (title.isBlank()) return
+        vm.noteText(title.trim(), body = body.trim()); onDismiss()
+    }
     AppSheet(onDismiss) {
         SheetTitle(t("A note"))
         OutlinedTextField(value = title, onValueChange = { title = it },
             label = { Text(t("Note")) }, singleLine = true, colors = appFieldColors(),
-            shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { save() }),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+        LaunchedEffect(Unit) { focus.requestFocus() }
         OutlinedTextField(value = body, onValueChange = { body = it },
             label = { Text(t("More (optional)"), color = c.muted) }, minLines = 3,
             colors = appFieldColors(), shape = RectangleShape,
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
-        PrimaryButton(t("Save"), { vm.noteText(title.trim(), body = body.trim()); onDismiss() },
+        PrimaryButton(t("Save"), { save() },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = title.isNotBlank())
     }
 }

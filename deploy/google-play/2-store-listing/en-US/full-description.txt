@@ -11,6 +11,7 @@ SEE WHAT IS NEXT
 ONE + FOR EVERYTHING NEW
 • A project, a task, a note, a photo, a picture from the gallery, a voice memo or a file.
 • The + is right on Incoming, where the app opens, and in the same place on Projects.
+• Hold the + for a note straight away: type it, press Done.
 • A task goes into a project or straight to the inbox. A photo, memo or file asks once: something to do, or something to keep?
 • Add a date while you still remember it, or skip it.
 • Capture text from the home-screen widget or from any app's share menu.
