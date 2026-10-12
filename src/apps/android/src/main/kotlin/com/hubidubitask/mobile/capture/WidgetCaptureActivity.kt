@@ -7,6 +7,7 @@ import android.widget.EditText
 import android.widget.Toast
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.sync.Sync
+import com.hubidubitask.mobile.ui.NewDue
 
 /**
  * Home-screen widget capture target. A single field over a translucent
@@ -26,7 +27,7 @@ class WidgetCaptureActivity : Activity() {
             .setPositiveButton(t("Save")) { _, _ ->
                 val text = input.text.toString().trim()
                 if (text.isNotEmpty()) {
-                    Sync.open(applicationContext).capture(text)
+                    Sync.open(applicationContext).capture(text, NewDue.date(applicationContext))
                     Toast.makeText(this, t("Captured"), Toast.LENGTH_SHORT).show()
                 }
                 finish()

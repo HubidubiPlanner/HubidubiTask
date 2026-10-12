@@ -1,7 +1,7 @@
 package com.hubidubitask.desktop.ui
 
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.NoteDue
+import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.agent.AgentLink
@@ -55,14 +55,20 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         _language.value = l
     }
 
-    /** When a new note is due ([NoteDue]), chosen in Settings and kept on this computer. */
-    private val _noteDue = MutableStateFlow(NoteDue.of(store.kv("note_due")))
-    val noteDue: StateFlow<String> = _noteDue
+    /**
+     * The due date every new task and note gets ([NewItemDue]), chosen in
+     * Settings and kept on this computer; nothing is asked when one is made.
+     * The key was named when it covered notes alone.
+     */
+    private val _newDue = MutableStateFlow(NewItemDue.of(store.kv("note_due")))
+    val newDue: StateFlow<String> = _newDue
 
-    fun setNoteDue(choice: String) {
-        store.setKv("note_due", NoteDue.of(choice))
-        _noteDue.value = NoteDue.of(choice)
+    fun setNewDue(choice: String) {
+        store.setKv("note_due", NewItemDue.of(choice))
+        _newDue.value = NewItemDue.of(choice)
     }
+
+    private fun due(): String? = NewItemDue.due(_newDue.value)
 
     /** What a question to the user's agent carries, and where its changes land. */
     private val items = com.hubidubitask.desktop.agent.Items(store) { refresh() }
@@ -147,33 +153,30 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     private fun io(block: () -> Unit) = scope.launch { withContext(Dispatchers.IO) { block() }; refresh() }
 
-    fun capture(text: String, due: String? = null) = io {
+    fun capture(text: String) = io {
         val now = java.time.LocalDateTime.now()
-        write("inbox_item", id("i"), mapOf("text" to text, "due" to due,
+        write("inbox_item", id("i"), mapOf("text" to text, "due" to due(),
             "date" to now.toLocalDate().toString(),
             "time" to "%02d:%02d".format(now.hour, now.minute)))
     }
 
-    /** A note written here. Without a date of its own it gets the one Settings gives new notes. */
-    fun noteText(title: String, due: String? = null, body: String = "") = io {
-        write("note", id("n"), mapOf("title" to title, "kind" to "text", "body" to body,
-            "due" to (due ?: NoteDue.due(_noteDue.value))))
+    fun noteText(title: String, body: String = "") = io {
+        write("note", id("n"), mapOf("title" to title, "kind" to "text", "body" to body, "due" to due()))
     }
 
     /** A photo, recording or file kept as a note. The bytes sit in blobs/ by
      *  their hash, the record names them, and the phone fetches them from here. */
-    fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String, due: String? = null) = io {
+    fun noteMedia(kind: String, bytes: ByteArray, mime: String, title: String) = io {
         val sha = store.putBlob(bytes)
         write("note", id("n"), mapOf("title" to title, "kind" to kind, "media_sha256" to sha,
-            "media_mime" to mime, "media_bytes" to bytes.size.toString(),
-            "due" to (due ?: NoteDue.due(_noteDue.value))))
+            "media_mime" to mime, "media_bytes" to bytes.size.toString(), "due" to due()))
     }
 
     /** The same media as a task: the phone's "do something about this". */
-    fun captureMedia(kind: String, bytes: ByteArray, mime: String, text: String, due: String? = null) = io {
+    fun captureMedia(kind: String, bytes: ByteArray, mime: String, text: String) = io {
         val sha = store.putBlob(bytes)
         val now = java.time.LocalDateTime.now()
-        write("inbox_item", id("i"), mapOf("text" to text, "due" to due,
+        write("inbox_item", id("i"), mapOf("text" to text, "due" to due(),
             "date" to now.toLocalDate().toString(),
             "time" to "%02d:%02d".format(now.hour, now.minute),
             "kind" to kind, "media_sha256" to sha, "media_mime" to mime,
@@ -182,7 +185,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     fun addNote(parentId: String, title: String, body: String = "") = io {
         write("note", id("n"), mapOf("title" to title.trim(), "kind" to "text",
-            "body" to body.trim(), "parent" to parentId))
+            "body" to body.trim(), "parent" to parentId, "due" to due()))
     }
 
     fun createProject(title: String, parentId: String? = null) = io {
@@ -190,9 +193,9 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     }
 
     /** As on the phone: a task filed straight into [project], skipping the inbox. */
-    fun addTask(project: EntityRecord, text: String, due: String? = null) = io {
+    fun addTask(project: EntityRecord, text: String) = io {
         write("next_action", id("t"), mapOf("text" to text.trim(), "parent" to project.id,
-            "project" to ProjectTree.slugOf(project.fields["title"] ?: project.id), "due" to due))
+            "project" to ProjectTree.slugOf(project.fields["title"] ?: project.id), "due" to due()))
     }
 
     fun renameProject(id: String, title: String) = io { edit(id) { it + ("title" to title.trim()) } }

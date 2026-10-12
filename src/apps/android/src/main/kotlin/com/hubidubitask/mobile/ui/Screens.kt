@@ -95,7 +95,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.NoteDue
+import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
@@ -177,7 +177,7 @@ private fun AddNoteSheet(task: EntityRecord?, vm: HubidubiTaskViewModel, onDismi
     }
 }
 
-/** A task straight into a project: what to do, and when, if you know. */
+/** A task straight into a project: what to do. Its date is the one Settings gives new tasks. */
 @Composable
 private fun AddTaskSheet(
     project: EntityRecord?,
@@ -189,55 +189,15 @@ private fun AddTaskSheet(
 ) {
     if (project == null && !loose) return
     val key = project?.id ?: "loose"
-    val c = HubidubiTaskTheme.colors
     var text by remember(key) { mutableStateOf("") }
-    var due by remember(key) { mutableStateOf<String?>(null) }
-    var picking by remember(key) { mutableStateOf(false) }
-    if (picking) {
-        val dateState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { picking = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    dateState.selectedDateMillis?.let { ms ->
-                        // UTC, as in DatePickerFor: the picker hands back UTC midnight.
-                        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-                        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                        due = fmt.format(java.util.Date(ms))
-                    }
-                    picking = false
-                }) { Text(t("Set")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { due = null; picking = false }) { Text(t("No date")) }
-            },
-        ) { DatePicker(state = dateState) }
-    }
     AppSheet(onDismiss) {
         SheetTitle(t("Add a task"), overline = project?.let { ReviewBrowse.labelOf(it) } ?: t("No project"))
         OutlinedTextField(value = text, onValueChange = { text = it },
             label = { Text(t("Task")) }, singleLine = true, colors = appFieldColors(),
             shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-        Row(
-            Modifier.padding(top = 12.dp).fillMaxWidth()
-                .defaultMinSize(minHeight = 52.dp)
-                .border(1.dp, c.glyph)
-                .clickable(role = Role.Button) { picking = true }
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
-                modifier = Modifier.size(20.dp))
-            Text(due?.let { t("Due %s", shortDate(it)) } ?: t("Add a date"),
-                style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
-                color = c.accent, modifier = Modifier.weight(1f))
-            if (due == null)
-                Text(t("optional"), style = MaterialTheme.typography.bodySmall, color = c.muted)
-        }
         PrimaryButton(t("Add"), {
-            if (project != null) { vm.addTask(project, text, due); onAdded(project) }
-            else vm.capture(text.trim(), due)
+            if (project != null) { vm.addTask(project, text); onAdded(project) }
+            else vm.capture(text.trim())
             onDismiss()
         },
             Modifier.fillMaxWidth().padding(top = 18.dp), enabled = text.isNotBlank())
@@ -720,33 +680,8 @@ private fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
         ActivityResultContracts.RequestPermission()) { granted -> if (granted) startRecording() }
 
     // Ask before filing: the same photo is a task ("do something about this") or
-    // a note ("keep this"), and only the user knows which. A date is offered at
-    // the same moment — it is the one fact you still have in mind at capture
-    // time and the thing that decides whether the item ever resurfaces.
-    var captureDue by remember { mutableStateOf<String?>(null) }
-    var pickingDate by remember { mutableStateOf(false) }
-
-    if (pickingDate) {
-        val dateState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { pickingDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    dateState.selectedDateMillis?.let { ms ->
-                        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-                        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                        captureDue = fmt.format(java.util.Date(ms))
-                    }
-                    pickingDate = false
-                }) { Text(t("Set")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { captureDue = null; pickingDate = false }) {
-                    Text(t("No date"))
-                }
-            },
-        ) { DatePicker(state = dateState) }
-    }
+    // a note ("keep this"), and only the user knows which. Its date is the one
+    // Settings gives new tasks and notes.
 
     pending?.let { p ->
         AppSheet(onDismiss = { pending = null }) {
@@ -771,39 +706,22 @@ private fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
                 Text(p.text, style = MaterialTheme.typography.titleSmall, maxLines = 3,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             }
-            Row(
-                Modifier.padding(top = 12.dp).fillMaxWidth()
-                    .defaultMinSize(minHeight = 52.dp)
-                    .border(1.dp, c.glyph)
-                    .clickable(role = Role.Button) { pickingDate = true }
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
-                    modifier = Modifier.size(20.dp))
-                Text(captureDue?.let { t("Due %s", shortDate(it)) } ?: t("Add a date"),
-                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
-                    color = c.accent, modifier = Modifier.weight(1f))
-                if (captureDue == null)
-                    Text(t("optional"), style = MaterialTheme.typography.bodySmall, color = c.muted)
-            }
             Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryButton(t("Note"), {
                     when (p.kind) {
-                        "image", "document" -> vm.noteImage(p.bytes!!, p.mime, p.text, captureDue)
-                        "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text, captureDue)
-                        else -> vm.noteText(p.text, captureDue)
+                        "image", "document" -> vm.noteImage(p.bytes!!, p.mime, p.text)
+                        "audio" -> vm.noteAudio(p.bytes!!, p.mime, p.text)
+                        else -> vm.noteText(p.text)
                     }
-                    pending = null; captureDue = null
+                    pending = null
                 }, Modifier.weight(1f), icon = Icons.AutoMirrored.Filled.Notes)
                 PrimaryButton(t("Task"), {
                     when (p.kind) {
-                        "image", "document" -> vm.captureImage(p.bytes!!, p.mime, p.text, captureDue)
-                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text, captureDue)
-                        else -> vm.capture(p.text, captureDue)
+                        "image", "document" -> vm.captureImage(p.bytes!!, p.mime, p.text)
+                        "audio" -> vm.captureAudio(p.bytes!!, p.mime, p.text)
+                        else -> vm.capture(p.text)
                     }
-                    pending = null; captureDue = null
+                    pending = null
                 }, Modifier.weight(1f), icon = Icons.Outlined.CheckBoxOutlineBlank)
             }
         }
@@ -934,7 +852,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
             if (view.groups.isEmpty()) item(key = "empty") {
                 Text(
                     if (state.dated.isEmpty())
-                        t("Nothing dated. Add a date when you capture, or long-press an item.")
+                        t("Nothing dated. Long-press an item to give it a date.")
                     else when (range) {
                         Agenda.Range.DAY -> t("Nothing due today.")
                         Agenda.Range.WEEK -> t("Nothing due in the next seven days.")
@@ -1305,13 +1223,13 @@ fun SettingsScreen(
                 }
             }
         }
-        // A new note's date when it is given none: tomorrow brings it back on
+        // The date every new task and note gets: tomorrow brings it back on
         // Incoming the next day.
-        SectionLabel(t("Due date for new notes"), modifier = Modifier.padding(top = 22.dp))
-        val noteDue by vm.noteDue.collectAsStateWithLifecycle()
+        SectionLabel(t("Due date for new tasks and notes"), modifier = Modifier.padding(top = 22.dp))
+        val newDue by vm.newDue.collectAsStateWithLifecycle()
         Box(Modifier.padding(horizontal = edge)) {
-            Segmented(NoteDue.OPTIONS.map { (id, label) -> id to t(label) }, noteDue,
-                { vm.setNoteDue(it) })
+            Segmented(NewItemDue.OPTIONS.map { (id, label) -> id to t(label) }, newDue,
+                { vm.setNewDue(it) })
         }
         // The app's own language, each named in itself.
         SectionLabel(t("Language"), modifier = Modifier.padding(top = 22.dp))

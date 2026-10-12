@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.NoteDue
+import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentAction
 import com.hubidubitask.core.agent.AgentItems
@@ -45,15 +45,19 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         _language.value = l
     }
 
-    /** When a new note is due ([NoteDue]), chosen in Settings and kept on this phone. */
-    private val prefs = app.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
-    private val _noteDue = MutableStateFlow(NoteDue.of(prefs.getString("note_due", null)))
-    val noteDue: StateFlow<String> = _noteDue.asStateFlow()
+    /**
+     * The due date every new task and note gets ([NewItemDue]), chosen in
+     * Settings; nothing is asked when one is made.
+     */
+    private val _newDue = MutableStateFlow(NewDue.load(app))
+    val newDue: StateFlow<String> = _newDue.asStateFlow()
 
-    fun setNoteDue(choice: String) {
-        prefs.edit().putString("note_due", NoteDue.of(choice)).apply()
-        _noteDue.value = NoteDue.of(choice)
+    fun setNewDue(choice: String) {
+        NewDue.save(getApplication(), choice)
+        _newDue.value = NewItemDue.of(choice)
     }
+
+    private fun due(): String? = NewItemDue.due(_newDue.value)
 
 
     data class UiState(
@@ -301,38 +305,37 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         lastHealth = null
     }
 
-    fun capture(text: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().capture(text, due) }
+    fun capture(text: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().capture(text, due()) }
         refresh()
     }
 
-    // --- media notes: text / image / audio; peer sync carries them to the computer.
-    // Without a date of their own they get the one Settings gives new notes. ---
+    // --- media notes: text / image / audio; peer sync carries them to the computer ---
 
-    fun noteText(title: String, due: String? = null, body: String = "") = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteText(title, body = body, due = due ?: NoteDue.due(_noteDue.value)) }
+    fun noteText(title: String, body: String = "") = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteText(title, body = body, due = due()) }
         refresh()
     }
 
-    fun noteImage(bytes: ByteArray, mime: String, title: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title, due ?: NoteDue.due(_noteDue.value)) }
+    fun noteImage(bytes: ByteArray, mime: String, title: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteMedia("image", bytes, mime, title, due()) }
         refresh()
     }
 
-    fun noteAudio(bytes: ByteArray, mime: String, title: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title, due ?: NoteDue.due(_noteDue.value)) }
+    fun noteAudio(bytes: ByteArray, mime: String, title: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().noteMedia("audio", bytes, mime, title, due()) }
         refresh()
     }
 
     // --- the same captures, filed as GTD inbox tasks instead of notes ---
 
-    fun captureImage(bytes: ByteArray, mime: String, text: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().captureMedia("image", bytes, mime, text, due) }
+    fun captureImage(bytes: ByteArray, mime: String, text: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().captureMedia("image", bytes, mime, text, due()) }
         refresh()
     }
 
-    fun captureAudio(bytes: ByteArray, mime: String, text: String, due: String? = null) = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().captureMedia("audio", bytes, mime, text, due) }
+    fun captureAudio(bytes: ByteArray, mime: String, text: String) = viewModelScope.launch {
+        withContext(Dispatchers.IO) { sync().captureMedia("audio", bytes, mime, text, due()) }
         refresh()
     }
 
@@ -373,10 +376,10 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** A task filed straight into [project], skipping the inbox. */
-    fun addTask(project: EntityRecord, text: String, due: String? = null) = viewModelScope.launch {
+    fun addTask(project: EntityRecord, text: String) = viewModelScope.launch {
         withContext(Dispatchers.IO) {
             sync().addNextAction(text.trim(), project.id,
-                ProjectTree.slugOf(project.fields["title"] ?: project.id), due)
+                ProjectTree.slugOf(project.fields["title"] ?: project.id), due())
         }
         refresh()
     }
@@ -424,7 +427,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     /** A note under a task. */
     fun addNote(parentId: String, title: String, body: String = "") = viewModelScope.launch {
-        withContext(Dispatchers.IO) { sync().noteText(title.trim(), body.trim(), parent = parentId) }
+        withContext(Dispatchers.IO) { sync().noteText(title.trim(), body.trim(), due = due(), parent = parentId) }
         refresh()
     }
 

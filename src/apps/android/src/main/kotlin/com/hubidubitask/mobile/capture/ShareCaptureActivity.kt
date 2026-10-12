@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Toast
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.sync.Sync
+import com.hubidubitask.mobile.ui.NewDue
 
 /**
  * Share-target capture. Text shared from any app lands here and goes straight
@@ -18,7 +19,7 @@ class ShareCaptureActivity : Activity() {
         com.hubidubitask.mobile.ui.UiLanguage.apply(this)
         val text = intent?.getStringExtra(Intent.EXTRA_TEXT)?.trim()
         if (!text.isNullOrEmpty()) {
-            Sync.open(applicationContext).capture(text)
+            Sync.open(applicationContext).capture(text, NewDue.date(applicationContext))
             Toast.makeText(this, t("Captured"), Toast.LENGTH_SHORT).show()
         }
         finish()

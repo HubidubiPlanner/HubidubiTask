@@ -2,10 +2,12 @@
 
 ## Unreleased
 
-- **New notes are due tomorrow.** A note written from the + (or a photo,
-  memo or file kept as a note) without a date of its own is due the next
-  day, so it comes back on Incoming. Settings › Due date for new notes
-  chooses Tomorrow, the default, or No date, on each device.
+- **New tasks and notes are due tomorrow, and nothing asks for a date.**
+  Whatever you make (a task, a note, a photo, memo or file, a capture from
+  the widget or the share menu) is due the next day, so it comes back on
+  Incoming. Settings › Due date for new tasks and notes chooses Tomorrow,
+  the default, or No date, on each device. The date row is gone from the
+  task sheet and from "Task or note?"; a long press still dates anything.
 - Settings lines everything up: the cards, fields, buttons and choices now
   start and end on the same edge as the headings, on the phone and the
   computer.

@@ -186,30 +186,7 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
             pending = PendingCapture("audio", t("Voice memo"), bytes, "audio/wav")
     }
 
-    // A date is offered with the question: the one fact still in mind at
-    // capture time, and what decides whether the item ever resurfaces.
-    var captureDue by remember { mutableStateOf<String?>(null) }
-    var pickingDate by remember { mutableStateOf(false) }
-
-    if (pickingDate) {
-        val dateState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { pickingDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    dateState.selectedDateMillis?.let { ms ->
-                        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-                        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                        captureDue = fmt.format(java.util.Date(ms))
-                    }
-                    pickingDate = false
-                }) { Text(t("Set")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { captureDue = null; pickingDate = false }) { Text(t("No date")) }
-            },
-        ) { DatePicker(state = dateState) }
-    }
+    // Its date is the one Settings gives new tasks and notes; nothing is asked.
 
     if (recording) {
         AppSheet(onDismiss = { stopRecording() }) {
@@ -252,39 +229,23 @@ internal fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
-            Row(
-                Modifier.padding(top = 12.dp).fillMaxWidth().defaultMinSize(minHeight = 52.dp)
-                    .border(1.dp, c.glyph).clickable(role = Role.Button) { pickingDate = true }
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = c.accent,
-                    modifier = Modifier.size(20.dp))
-                Text(captureDue?.let { t("Due %s", shortDate(it)) } ?: t("Add a date"),
-                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
-                    color = c.accent, modifier = Modifier.weight(1f))
-                if (captureDue == null)
-                    Text(t("optional"), style = MaterialTheme.typography.bodySmall, color = c.muted)
-            }
             Row(Modifier.padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryButton(t("Note"), {
                     when (p.kind) {
-                        "text" -> vm.noteText(p.text, captureDue, p.body)
-                        else -> vm.noteMedia(p.kind, p.bytes!!, p.mime, p.text, captureDue)
+                        "text" -> vm.noteText(p.text, p.body)
+                        else -> vm.noteMedia(p.kind, p.bytes!!, p.mime, p.text)
                     }
-                    pending = null; captureDue = null
+                    pending = null
                 }, Modifier.weight(1f), icon = Icons.AutoMirrored.Filled.Notes)
                 PrimaryButton(t("Task"), {
                     when (p.kind) {
                         // A task is one line. A short file fits; a long one is named.
                         "text" -> vm.capture(
                             if (p.body.isBlank()) p.text
-                            else if (p.body.length <= 160) p.text + "\n" + p.body else p.text,
-                            captureDue)
-                        else -> vm.captureMedia(p.kind, p.bytes!!, p.mime, p.text, captureDue)
+                            else if (p.body.length <= 160) p.text + "\n" + p.body else p.text)
+                        else -> vm.captureMedia(p.kind, p.bytes!!, p.mime, p.text)
                     }
-                    pending = null; captureDue = null
+                    pending = null
                 }, Modifier.weight(1f), icon = Icons.Outlined.CheckBoxOutlineBlank)
             }
         }

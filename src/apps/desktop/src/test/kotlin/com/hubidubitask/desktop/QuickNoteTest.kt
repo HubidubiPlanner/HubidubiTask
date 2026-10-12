@@ -2,17 +2,21 @@ package com.hubidubitask.desktop
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.runComposeUiTest
-import com.hubidubitask.core.NoteDue
+import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.desktop.ui.HubidubiTaskViewModel
 import java.nio.file.Files
 import java.time.LocalDate
@@ -22,7 +26,8 @@ import kotlin.test.assertNull
 
 /**
  * A long press on the + is a note in two taps: the cursor is in it, and Done
- * saves. The note is due on the day Settings gives new notes.
+ * saves. New notes and tasks are due on the day Settings gives them, and
+ * nothing asks for a date when one is made.
  */
 @OptIn(ExperimentalTestApi::class)
 class QuickNoteTest {
@@ -45,8 +50,21 @@ class QuickNoteTest {
         }
         assertEquals(2, store.all().count { it.type == "note" && it.fields["kind"] == "text" })
 
+        // A task to the inbox: no date to choose, and due tomorrow too.
+        setContent { App(vm, "next", dark = false) }
+        onNodeWithContentDescription("New project or task").performClick()
+        onNodeWithText("A task").performClick()
+        onNodeWithText("No project").performClick()
+        waitForIdle()
+        onAllNodesWithText("Add a date").assertCountEquals(0)
+        onNode(hasSetTextAction()).performTextInput("Buy stamps")
+        onNodeWithText("Add").performClick()
+        fun task(text: String) = store.all().firstOrNull { it.type == "inbox_item" && it.fields["text"] == text }
+        waitUntil(timeoutMillis = 5_000) { task("Buy stamps") != null }
+        assertEquals(LocalDate.now().plusDays(1).toString(), task("Buy stamps")!!.fields["due"])
+
         // With "No date" chosen, a new note has none.
-        vm.setNoteDue(NoteDue.NONE)
+        vm.setNewDue(NewItemDue.NONE)
         setContent { App(vm, "next", dark = false) }
         onNodeWithContentDescription("New project or task").performTouchInput { longClick() }
         waitForIdle()
@@ -54,5 +72,8 @@ class QuickNoteTest {
         onNode(isFocused() and hasSetTextAction()).performImeAction()
         waitUntil(timeoutMillis = 5_000) { note("Undated") != null }
         assertNull(note("Undated")!!.fields["due"])
+        vm.capture("Someday, maybe")
+        waitUntil(timeoutMillis = 5_000) { task("Someday, maybe") != null }
+        assertNull(task("Someday, maybe")!!.fields["due"])
     }
 }
