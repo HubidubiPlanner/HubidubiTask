@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Themed-icon layer (Android 13+): the launcher tints it, so one colour only. -->
+<!-- Themed-icon layer (Android 13+): the launcher tints it, so one colour only.
+     Without its badge the tick is drawn larger, to keep its weight over the H. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M27,29h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
-    <path
-        android:pathData="M64,69.5L67.5,73L74.5,65"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
+    <group android:scaleX="0.85" android:scaleY="0.85" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="#FFFFFF" android:pathData="M38,47h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
+        <path
+            android:pathData="M46.5,34.25L51.75,39.5L62.25,27.5"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
 </vector>

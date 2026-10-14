@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The "New note" widget and its preview in the widget list: drawn like a
-     themed launcher icon, a dark circle with the H and + in one light colour,
-     sized and placed as the launcher draws the app's own icon (the 108-unit
-     icon layer at four fifths of the circle), so it sits among themed icons as
-     one of them. Colours and the 61dp size are taken from such a home screen. -->
+     themed launcher icon, a dark circle with the H and the + above it in one
+     light colour, sized and placed as the launcher draws the app's own icon
+     (the 108-unit icon layer at four fifths of the circle), so it sits among
+     themed icons as one of them. Colours and the 61dp size are taken from such
+     a home screen. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="61dp"
     android:height="61dp"
@@ -15,7 +16,13 @@
         android:scaleY="0.5315"
         android:translateX="7.3"
         android:translateY="7.3">
-        <path android:fillColor="#F7EFEC" android:pathData="M27,29h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
-        <path android:fillColor="#F7EFEC" android:pathData="M70,32h6v5h5v6h-5v5h-6v-5h-5v-6h5z" />
+        <group android:scaleX="0.85" android:scaleY="0.85" android:pivotX="54" android:pivotY="54">
+            <path android:fillColor="#F7EFEC" android:pathData="M38,47h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
+            <path
+                android:pathData="M46,33.5H62M54,25.5V41.5"
+                android:strokeColor="#F7EFEC"
+                android:strokeWidth="4.5"
+                android:strokeLineCap="round" />
+        </group>
     </group>
 </vector>

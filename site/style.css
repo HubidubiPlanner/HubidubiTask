@@ -122,8 +122,8 @@ main { display: block; }
 /* The H of "Head" is the logo's H, with its check badge, set at the
    title's cap height on its baseline. The plain letter is there for screen
    readers and copying. */
-.logo-h svg { display: inline-block; height: 0.87em; width: 0.86em; vertical-align: -0.18em; fill: currentColor; }
-.logo-h .ring { fill: var(--paper); }
+/* The H stands on the baseline at cap height; its tick sits above it, as in the icon. */
+.logo-h svg { display: inline-block; height: 1.124em; width: 0.58em; margin: 0 0.04em; vertical-align: 0; fill: currentColor; }
 .logo-h .badge { fill: var(--accent); }
 .logo-h .tick { fill: none; stroke: var(--paper); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

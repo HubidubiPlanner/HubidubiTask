@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **The tick sits right above the H**, and New note's + too, everywhere the
+  logo is: the app icon and its themed version, New note's shortcut and
+  widget, the Mac and Linux icons, the website's favicon, icon and headline,
+  the Play icon and feature graphic (and the site's link preview). The H and
+  its badge are drawn a little smaller together, so they stay inside every
+  launcher's mask; on themed icons the bare tick or + is drawn larger.
 - **New note on the home screen.** The app's H with a + beside it, as a
   shortcut of the app icon (long-press it, drag New note out) and as a 1×1
   widget drawn like a themed icon: a black circle with the H and + in white,
