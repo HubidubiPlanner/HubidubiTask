@@ -4,9 +4,7 @@ import android.app.Activity
 import android.os.Bundle
 import android.text.InputType
 import android.widget.EditText
-import android.widget.Toast
 import com.hubidubitask.core.i18n.t
-import com.hubidubitask.mobile.sync.Sync
 import com.hubidubitask.mobile.ui.NewDue
 
 /**
@@ -27,8 +25,8 @@ class WidgetCaptureActivity : Activity() {
             .setPositiveButton(t("Save")) { _, _ ->
                 val text = input.text.toString().trim()
                 if (text.isNotEmpty()) {
-                    Sync.open(applicationContext).capture(text, NewDue.date(applicationContext))
-                    Toast.makeText(this, t("Captured"), Toast.LENGTH_SHORT).show()
+                    val due = NewDue.date(applicationContext)
+                    saveInBackground(this, t("Captured")) { it.capture(text, due) }
                 }
                 finish()
             }

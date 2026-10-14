@@ -14,7 +14,7 @@ JEDEN + DLA WSZYSTKIEGO, CO NOWE
 • Przytrzymaj +, a od razu piszesz notatkę: wpisz ją i naciśnij Gotowe.
 • Zadanie trafia do projektu albo prosto do skrzynki. Zdjęcie, nagranie lub plik pyta raz: coś do zrobienia czy coś do zachowania?
 • Nic nie pyta o datę: nowe zadanie lub notatka ma termin na jutro albo nie ma go wcale, jeśli tak wybierzesz w Ustawieniach.
-• Zapisuj tekst z widżetu na ekranie głównym lub z menu udostępniania dowolnej aplikacji.
+• Przycisk Nowa notatka na ekranie głównym, a także zapis z widżetu lub z menu udostępniania dowolnej aplikacji.
 
 ZROBIONE ZNACZY ZROBIONE
 • Przytrzymanie oznacza zadanie jako zrobione, przenosi je, ustawia datę albo zleca przegląd.

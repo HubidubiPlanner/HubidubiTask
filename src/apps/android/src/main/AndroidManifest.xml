@@ -69,6 +69,31 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true" />
 
+        <!-- "New note" on the home screen: a widget that looks like the app's
+             icon with a +, and the same as a shortcut of the app icon (made at
+             run time, see NoteShortcut). Both open the note sheet over the
+             home screen; its own empty task affinity keeps the app's screens
+             from coming up behind it. -->
+        <receiver
+            android:name=".capture.NoteWidgetProvider"
+            android:exported="false"
+            android:label="@string/note_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/note_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".capture.QuickNoteActivity"
+            android:screenOrientation="portrait"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
         <!-- Hands captured camera photos to the camera app via a content:// URI. -->
         <provider
             android:name="androidx.core.content.FileProvider"

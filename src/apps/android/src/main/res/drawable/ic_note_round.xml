@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The "New note" icon as a plain round picture, for the widget and its preview
+     in the widget list, which do not draw adaptive icons everywhere. The same
+     H and + as ic_note, cut to the part a launcher shows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <path android:fillColor="#56594D" android:pathData="M0,36a36,36 0,1 0,72 0a36,36 0,1 0,-72 0z" />
+    <group android:translateX="-18" android:translateY="-18">
+        <path android:fillColor="#D3C9AF" android:pathData="M27,29h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
+        <path android:fillColor="#B4997E" android:pathData="M70,32h6v5h5v6h-5v5h-6v-5h-5v-6h5z" />
+    </group>
+</vector>

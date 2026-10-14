@@ -2,4 +2,5 @@
 <resources>
     <string name="widget_capture_label">HubidubiTask: zapisz</string>
     <string name="widget_button_text">＋ Zapisz</string>
+    <string name="note_widget_label">Nowa notatka</string>
 </resources>

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **New note on the home screen.** The app's H with a + beside it, as a
+  shortcut of the app icon (long-press it, drag New note out) and as a 1×1
+  widget. A tap opens the note sheet over the home screen with the cursor in
+  it; Done saves it with the date Settings gives new notes, and the app never
+  opens. The shortcut is named in the app's language.
+- The home-screen Capture widget and capture from another app's share menu
+  saved on the main thread, which the database refuses: they crashed instead
+  of saving. All three now save in the background and say so once saved.
+
 ## 1.1.0 — 14 October 2026
 
 - **A review is a summary of what happened, kept under the title.** Review

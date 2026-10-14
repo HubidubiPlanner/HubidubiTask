@@ -766,9 +766,10 @@ private fun rememberCaptureActions(vm: HubidubiTaskViewModel): CaptureActions {
     )
 }
 
-/** A note written straight in: a title, and more below it if there is more. */
+/** A note written straight in: a title, and more below it if there is more.
+ *  Also what the home screen's "New note" opens, outside the app. */
 @Composable
-private fun NewNoteSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit) {
+internal fun NewNoteSheet(open: Boolean, onSave: (title: String, body: String) -> Unit, onDismiss: () -> Unit) {
     if (!open) return
     val c = HubidubiTaskTheme.colors
     var title by remember { mutableStateOf("") }
@@ -778,7 +779,7 @@ private fun NewNoteSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: ()
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     fun save() {
         if (title.isBlank()) return
-        vm.noteText(title.trim(), body = body.trim()); onDismiss()
+        onSave(title.trim(), body.trim()); onDismiss()
     }
     AppSheet(onDismiss) {
         SheetTitle(t("A note"))
@@ -803,7 +804,7 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
     var adding by remember { mutableStateOf(false) }
     var noting by remember { mutableStateOf(false) }
     NewMenu(adding, { adding = false }, state, vm)
-    NewNoteSheet(noting, vm) { noting = false }
+    NewNoteSheet(noting, { title, body -> vm.noteText(title, body) }) { noting = false }
     val c = HubidubiTaskTheme.colors
     var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
@@ -1286,7 +1287,7 @@ fun NewMenu(
     }
     AddTaskSheet(addingTaskTo, vm, onAdded = onTaskAdded) { addingTaskTo = null }
     AddTaskSheet(null, vm, onAdded = {}, loose = addingLooseTask) { addingLooseTask = false }
-    NewNoteSheet(writingNote, vm) { writingNote = false }
+    NewNoteSheet(writingNote, { title, body -> vm.noteText(title, body) }) { writingNote = false }
 
     if (open) {
         AppSheet(onDismiss = onClose) {
@@ -1454,7 +1455,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
     var noting by remember { mutableStateOf(false) }
     // Open the project a new task went into, so it is seen landing.
     NewMenu(adding, { adding = false }, state, vm, onTaskAdded = { expanded = expanded + it.id })
-    NewNoteSheet(noting, vm) { noting = false }
+    NewNoteSheet(noting, { title, body -> vm.noteText(title, body) }) { noting = false }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,

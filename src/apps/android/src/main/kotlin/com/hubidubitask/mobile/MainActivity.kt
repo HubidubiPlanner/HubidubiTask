@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent { HubidubiTaskApp(vm) }
         SyncWorker.schedule(this)
+        com.hubidubitask.mobile.capture.NoteShortcut.publish(this)
     }
 
     override fun onResume() {

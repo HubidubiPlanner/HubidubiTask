@@ -2,4 +2,5 @@
 <resources>
     <string name="widget_capture_label">HubidubiTask: erfassen</string>
     <string name="widget_button_text">＋ Erfassen</string>
+    <string name="note_widget_label">Neue Notiz</string>
 </resources>

@@ -44,6 +44,8 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     fun setLanguage(l: Language) {
         UiLanguage.save(getApplication(), l)
         _language.value = l
+        // The home screen's "New note" is named in the app's language too.
+        com.hubidubitask.mobile.capture.NoteShortcut.publish(getApplication())
     }
 
     /**

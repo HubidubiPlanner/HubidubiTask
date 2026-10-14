@@ -28,6 +28,10 @@ and the phone also hourly in the background.
   you can also drop a file on the window.
 - **Hold the +** for a note straight away: the cursor is already in it, and
   Done (Return on the computer) saves it.
+- **New note on the home screen** (phone): the app's H with a + beside it. Long-press
+  the app's icon and drag **New note** out, or add the **New note** widget. A tap
+  opens the note over the home screen, the cursor in it; Done saves it and the
+  app never opens.
 - **Nothing asks for a date.** Every new task and note is due tomorrow, so it
   comes back on Incoming the next day; **Settings → Due date for new tasks and
   notes** switches that to **No date**, kept on that device. The widget and
