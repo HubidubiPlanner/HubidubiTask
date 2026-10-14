@@ -4,7 +4,8 @@
 
 - **New note on the home screen.** The app's H with a + beside it, as a
   shortcut of the app icon (long-press it, drag New note out) and as a 1×1
-  widget. A tap opens the note sheet over the home screen with the cursor in
+  widget drawn like a themed icon: a black circle with the H and + in white,
+  the size of the icons around it, no name under it. A tap opens the note sheet over the home screen with the cursor in
   it; Done saves it with the date Settings gives new notes, and the app never
   opens. The shortcut is named in the app's language.
 - The home-screen Capture widget and capture from another app's share menu
