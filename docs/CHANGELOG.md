@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — 14 October 2026
 
 - **A review is a summary of what happened, kept under the title.** Review
   with AI now asks for what happened in the item: a project's from all its

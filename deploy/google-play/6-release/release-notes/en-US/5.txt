@@ -1,0 +1,6 @@
+What's new in 1.1.0
+• Hold the + to write a note straight away.
+• New tasks and notes are due tomorrow, or undated: choose in Settings. Nothing asks for a date.
+• Review with AI sums up what happened in a project, task or note. The summary stays under its title and says when it is out of date.
+• The Agent plugs into the AI agent you already run at home: OpenClaw, Hermes, opencode or Kilo.
+• Settings lines up edge to edge.

@@ -1,0 +1,6 @@
+Nowości w 1.1.0
+• Przytrzymaj +, aby od razu napisać notatkę.
+• Nowe zadania i notatki mają termin na jutro albo bez daty: wybierz w Ustawieniach. Nic nie pyta o datę.
+• Przegląd z AI podsumowuje, co się wydarzyło w projekcie, zadaniu lub notatce. Podsumowanie zostaje pod tytułem i mówi, gdy jest nieaktualne.
+• Agent łączy się z agentem AI, którego już uruchamiasz w domu: OpenClaw, Hermes, opencode lub Kilo.
+• Ustawienia równo od krawędzi do krawędzi.
