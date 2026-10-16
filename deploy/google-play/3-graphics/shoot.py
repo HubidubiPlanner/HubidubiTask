@@ -146,7 +146,8 @@ def play_set(p, out):
     p.tap("Order the worktop")
     p.shot(os.path.join(out, "4-item.jpg"))
     p.back()
-    p.tap("Book flights", hold=True)
+    # A project's long press: its summary under the title, then what can be done.
+    p.tap("Kitchen renovation", hold=True)
     p.shot(os.path.join(out, "5-review-with-ai.jpg"))
     p.back()
     tab(p, "Feeds")
@@ -155,6 +156,17 @@ def play_set(p, out):
     p.tap("Week")
     p.shot(os.path.join(out, "7-next-week.jpg"))
     tab(p, "Settings")
+    # Past the Pro card at the top, to the AI choices, the date new items get
+    # and the language. A slow drag still slides on a little, so it is set
+    # right afterwards by where the AI choices ended up: their heading just
+    # under the status bar, the card above it gone.
+    p.sh("input", "swipe", "540", "1750", "540", "650", "1500")
+    time.sleep(1.5)
+    off = p.find("SelfHostedAI")[1] - 215
+    if abs(off) > 30:
+        p.sh("input", "swipe", "540", "1200", "540", str(1200 - off), "1500")
+        time.sleep(1.5)
+    p.find("English")
     p.shot(os.path.join(out, "8-settings-ai.jpg"))
 
 
@@ -170,7 +182,7 @@ def web_set(p, out, night):
     p.tap("Kitchen renovation")
     p.tap("Trip to Lisbon")
     p.shot(os.path.join(out, "projects%s.jpg" % suffix))
-    p.tap("Book flights", hold=True)
+    p.tap("Kitchen renovation", hold=True)
     p.shot(os.path.join(out, "review%s.jpg" % suffix))
     p.back()
     tab(p, "Feeds")

@@ -3,6 +3,7 @@ package com.hubidubitask.mobile.demo
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.hubidubitask.mobile.browse.ItemSummary
 import com.hubidubitask.mobile.importer.Ics
 import com.hubidubitask.mobile.sync.Sync
 import java.time.LocalDate
@@ -35,7 +36,7 @@ class DemoSeed : BroadcastReceiver() {
             return id to tasks.map { (text, due) -> s.addNextAction(text, id, slug, due?.let(::day)) }
         }
 
-        val (_, kitchenTasks) = project("Kitchen renovation", listOf(
+        val (kitchen, kitchenTasks) = project("Kitchen renovation", listOf(
             "Call the tiler for a quote" to -1L,
             "Pick cabinet handles" to 0L,
             "Order the worktop" to 3L,
@@ -83,5 +84,18 @@ class DemoSeed : BroadcastReceiver() {
         feed("Lisbon tram timetable", "https://www.carris.pt/en/", "week", lisbon, -2L)
         feed("Tiler's price list", "https://example.com/tiles/prices", "month", null, null)
         feed("Board meeting agenda", "https://example.com/board", "day", null, 0L)
+
+        // Two summaries, as a review leaves them: kept on the item with the
+        // fingerprint of what they read, so they show as up to date.
+        fun review(id: String, text: String) {
+            val all = listOf("project", "next_action", "inbox_item", "note").flatMap { s.byType(it) }
+            val root = all.first { it.id == id }
+            s.setReview(id, text, ItemSummary.fingerprint(root, ItemSummary.under(root, all)))
+        }
+        review(kitchenTasks[2], "Ready to order: the wall is 312 cm and the window starts 120 cm " +
+            "from the left, as the note records. Nothing is ordered yet, and it is due in three days.")
+        // Short enough to be read whole under the title, where four lines show.
+        review(kitchen, "The worktop is measured and ready to order. The tiler's quote is a day " +
+            "late, and the cabinet handles are being picked today.")
     }
 }
