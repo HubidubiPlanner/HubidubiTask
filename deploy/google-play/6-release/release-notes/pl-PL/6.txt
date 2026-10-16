@@ -1,0 +1,5 @@
+Nowości w 1.2.0
+• Nowa notatka na ekranie głównym: skrót i widżet, które od razu otwierają notatkę, bez otwierania aplikacji.
+• Znaczek w logo jest teraz tuż nad literą H.
+• Ustawienia › Pro: daj znać, jeśli chcesz Pro. Wszystko zostaje za darmo.
+• Zapis z widżetu na ekranie głównym i z menu udostępniania innej aplikacji działa już bez awarii.

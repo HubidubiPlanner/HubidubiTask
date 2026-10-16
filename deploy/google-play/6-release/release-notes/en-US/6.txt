@@ -1,0 +1,5 @@
+What's new in 1.2.0
+• New note on your home screen: a shortcut and a widget that open a note straight away, without opening the app.
+• The logo's tick now sits right above the H.
+• Settings › Pro: tell us if you would want it. Everything stays free.
+• Capturing from the home-screen widget or another app's share menu no longer crashes.

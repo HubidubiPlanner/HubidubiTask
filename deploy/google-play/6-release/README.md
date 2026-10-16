@@ -1,12 +1,12 @@
 # 6. Release
 
 Release notes go in with each upload, per language:
-[`release-notes/en-US/5.txt`](release-notes/en-US/5.txt) and
-[`release-notes/pl-PL/5.txt`](release-notes/pl-PL/5.txt) for this version
-(versionCode 5; 500 characters at most). Older ones are kept beside them.
+[`release-notes/en-US/6.txt`](release-notes/en-US/6.txt) and
+[`release-notes/pl-PL/6.txt`](release-notes/pl-PL/6.txt) for this version
+(versionCode 6; 500 characters at most). Older ones are kept beside them.
 
 1. **Testing › Internal testing**: create a release, upload
-   `../1-app-bundle/out/hubidubitask-1.1.0-5.aab`, paste the release notes,
+   `../1-app-bundle/out/hubidubitask-1.2.0-6.aab`, paste the release notes,
    add yourself as a tester, install from the opt-in link. Check: the app
    opens on Incoming, the + menu, Settings › Language, pairing with the computer, a review with AI,
    adding a feed.

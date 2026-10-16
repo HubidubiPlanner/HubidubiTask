@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 — 16 October 2026
 
 - **Settings → Pro.** Pro isn't sold: the section says what it would be
   (syncing with your Mac and Linux computers) and has one button, **I want
@@ -15,7 +15,6 @@
 - On Linux, an API key or agent token is no longer lost when the keyring is
   locked or not running: it goes to a file only you can read, and moves into
   the keyring on the next save once there is one.
-
 - **The tick sits right above the H**, and New note's + too, everywhere the
   logo is: the app icon and its themed version, New note's shortcut and
   widget, the Mac and Linux icons, the website's favicon, icon and headline,
@@ -25,9 +24,10 @@
 - **New note on the home screen.** The app's H with a + beside it, as a
   shortcut of the app icon (long-press it, drag New note out) and as a 1×1
   widget drawn like a themed icon: a black circle with the H and + in white,
-  the size of the icons around it, no name under it. A tap opens the note sheet over the home screen with the cursor in
-  it; Done saves it with the date Settings gives new notes, and the app never
-  opens. The shortcut is named in the app's language.
+  the size of the icons around it, no name under it. A tap opens the note
+  sheet over the home screen with the cursor in it; Done saves it with the
+  date Settings gives new notes, and the app never opens. The shortcut is
+  named in the app's language.
 - The home-screen Capture widget and capture from another app's share menu
   saved on the main thread, which the database refuses: they crashed instead
   of saving. All three now save in the background and say so once saved.
