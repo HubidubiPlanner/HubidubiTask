@@ -1,5 +1,6 @@
 package com.hubidubitask.desktop.ui
 
+import com.hubidubitask.core.Backup
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.agent.Agent
@@ -407,6 +408,35 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         }
         refresh()
         return answer
+    }
+
+    // ---- a backup: everything on this computer as one file ([Backup]), and back
+
+    /** Everything here, written to [file]: how many items and how many photos, memos and files. */
+    suspend fun exportTo(file: java.io.File): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        val records = store.all()
+        file.outputStream().use { out ->
+            records.size to Backup.write(out, records, System.getProperty("jpackage.app-version") ?: "dev") { sha ->
+                store.blob(sha)?.takeIf { it.exists() }?.readBytes()
+            }
+        }
+    }
+
+    /** What restoring the backup in [file] would change here. Throws [Backup.NotABackup]. */
+    suspend fun planBackup(file: java.io.File): Backup.Plan = withContext(Dispatchers.IO) {
+        val contents = file.inputStream().use { Backup.read(it) }
+        Backup.plan(contents) { store.get(it) }
+    }
+
+    /** The items [plan] takes, then the backup's media this computer lacks. Returns how many items. */
+    suspend fun restoreBackup(file: java.io.File, plan: Backup.Plan): Int {
+        val n = withContext(Dispatchers.IO) {
+            plan.incoming.forEach { store.put(it) }
+            file.inputStream().use { input -> Backup.media(input) { _, bytes -> store.putBlob(bytes) } }
+            plan.incoming.size
+        }
+        refresh()
+        return n
     }
 
     // ---- one-time import, the same logic as the phone's

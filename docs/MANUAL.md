@@ -61,6 +61,16 @@ card says thanks. Everything else, syncing included, stays free.
   it is marked **Not up to date**, and the next review asks again. An item
   never reviewed shows nothing there.
 
+## A copy of everything
+
+**Settings › Export to a file** saves everything in the app as one file: your
+projects, tasks (done ones too), notes, events and feeds, with their reviews,
+and the photos, voice memos and files in them. Keys, tokens, pairing and
+settings stay on the device. **Settings › Import from another app ›
+HubidubiTask backup** reads such a file back, on the phone or the computer:
+it shows what it would add or replace, and takes only what is newer than what
+is there.
+
 ## Language
 
 **Settings → Language:** English, Polski, Deutsch, Français or Español. The

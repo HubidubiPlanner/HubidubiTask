@@ -3,6 +3,7 @@ package com.hubidubitask.mobile.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hubidubitask.core.Backup
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.agent.Agent
@@ -473,6 +474,40 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         val REVIEWABLE = listOf("project", "next_action", "inbox_item", "note")
+    }
+
+    // --- a backup: everything on this phone as one file ([Backup]), and back.
+
+    /** Everything here, written to [uri]: how many items and how many photos, memos and files. */
+    suspend fun exportTo(uri: android.net.Uri): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        val sync = sync()
+        val records = sync.store.all()
+        val out = getApplication<Application>().contentResolver.openOutputStream(uri, "w")
+            ?: throw java.io.IOException(t("Couldn't write the file."))
+        out.use { records.size to Backup.write(it, records, com.hubidubitask.mobile.BuildConfig.VERSION_NAME) { sha ->
+            sync.mediaFile(sha)?.readBytes() } }
+    }
+
+    /** What restoring the backup at [uri] would change here. Throws [Backup.NotABackup]. */
+    suspend fun planBackup(uri: android.net.Uri): Backup.Plan = withContext(Dispatchers.IO) {
+        val sync = sync()
+        val contents = getApplication<Application>().contentResolver.openInputStream(uri)?.use { Backup.read(it) }
+            ?: throw Backup.NotABackup()
+        Backup.plan(contents) { sync.store.get(it) }
+    }
+
+    /** The items [plan] takes, then the backup's media this phone lacks. Returns how many items. */
+    suspend fun restoreBackup(uri: android.net.Uri, plan: Backup.Plan): Int {
+        val n = withContext(Dispatchers.IO) {
+            val sync = sync()
+            plan.incoming.forEach { sync.store.put(it) }
+            getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
+                Backup.media(input) { sha, bytes -> sync.keepMedia(sha, bytes) }
+            }
+            plan.incoming.size
+        }
+        refresh()
+        return n
     }
 
     // --- one-time import. Nothing here is kept: the token and the calendar

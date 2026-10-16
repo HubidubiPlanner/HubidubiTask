@@ -64,6 +64,9 @@ class RoomLocalStore(private val db: HubidubiTaskDatabase) : LocalStore {
 
     fun byType(type: String): List<EntityRecord> = dao.byType(type).map { rowToRecord(it) }
 
+    /** Every live item, of every kind: what a backup holds. */
+    fun all(): List<EntityRecord> = dao.all().map { rowToRecord(it) }
+
     private fun rowToRecord(r: EntityRow) = EntityRecord(
         id = r.id, type = r.type, updated = r.updated,
         fields = Json.fieldsFromJson(r.fields_json), deleted = r.deleted,

@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Inbox
@@ -85,6 +86,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hubidubitask.core.Backup
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.i18n.I18n
@@ -1089,10 +1091,30 @@ fun SettingsScreen(
             Segmented(Language.entries.map { it to it.label }, language,
                 { vm.setLanguage(it) })
         }
-        // Kept quiet at the very end: something done once, when moving in,
-        // not a setting anyone looks for day to day.
+        // Kept quiet at the very end: things done once in a while, not settings
+        // anyone looks for day to day. Export first: a copy of everything as one
+        // file, the way to keep it outside the app; Import reads it back.
+        var exported by remember { mutableStateOf<String?>(null) }
+        SecondaryButton(t("Export to a file"), {
+            exported = null
+            val dialog = java.awt.FileDialog(null as java.awt.Frame?, t("Export to a file"), java.awt.FileDialog.SAVE)
+                .apply { file = Backup.fileName(); isVisible = true }
+            val name = dialog.file ?: return@SecondaryButton
+            val target = java.io.File(dialog.directory, name)
+            scope.launch {
+                exported = t("Exporting…")
+                exported = runCatching { vm.exportTo(target) }.fold(
+                    { (items, media) -> t("Exported %d items and %d attachments.", items, media) },
+                    { t("The export failed: %s", it.message ?: it.toString()) })
+            }
+        }, Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 28.dp),
+            icon = Icons.Outlined.FileUpload)
+        exported?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
+                modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
+        }
         SecondaryButton(t("Import from another app"), onImport,
-            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 28.dp),
+            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 10.dp),
             icon = Icons.Outlined.FileDownload)
         Spacer(Modifier.height(16.dp))
     }

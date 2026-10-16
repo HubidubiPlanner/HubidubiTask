@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **Settings › Export to a file**, above Import, on the phone and the
+  computer: everything in the app as one file (a ZIP), every project, task
+  done or not, note, event and feed with its review, and the photos, voice
+  memos and files they hold. Nothing of the device goes in: no keys, tokens,
+  pairing or settings. **Import › HubidubiTask backup** reads it back on any
+  device, taking only what is newer than what is there, so nothing newer is
+  lost and deleted items stay deleted.
+
 ## 1.2.0 — 16 October 2026
 
 - **Settings → Pro.** Pro isn't sold: the section says what it would be

@@ -92,6 +92,12 @@ class Sync private constructor(
     /** Local bytes for a media note, or null until peer sync has brought them. */
     fun mediaFile(sha: String): File? = File(blobsDir, sha).takeIf { it.exists() }
 
+    /** A photo, memo or file from a backup, kept by its hash unless it is here already. */
+    fun keepMedia(sha: String, bytes: ByteArray) {
+        blobsDir.mkdirs()
+        File(blobsDir, sha).takeIf { !it.exists() }?.writeBytes(bytes)
+    }
+
     // ---- reads for the native UI (from the local mirror; work offline) ----
 
     fun byType(type: String): List<EntityRecord> = store.byType(type)

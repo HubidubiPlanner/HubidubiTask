@@ -1,6 +1,8 @@
 package com.hubidubitask.mobile.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,11 +44,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.hubidubitask.core.Backup
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.importer.Todoist
 import kotlinx.coroutines.launch
 
-private enum class Source { TODOIST, GOOGLE }
+private enum class Source { TODOIST, GOOGLE, BACKUP }
 
 /**
  * One-time import from another app, reached from the bottom of Settings.
@@ -67,10 +71,26 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var todo by remember { mutableStateOf<Todoist.Plan?>(null) }
     var cal by remember { mutableStateOf<HubidubiTaskViewModel.CalendarPlan?>(null) }
+    var backup by remember { mutableStateOf<Pair<android.net.Uri, Backup.Plan>?>(null) }
     var done by remember { mutableStateOf<String?>(null) }
 
     fun reset() {
-        source = null; secret = ""; error = null; todo = null; cal = null; busy = false
+        source = null; secret = ""; error = null; todo = null; cal = null; backup = null; busy = false
+    }
+    // A backup is a file, not a token: the system's file picker, then what it holds.
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            busy = true; error = null
+            scope.launch {
+                runCatching { vm.planBackup(uri) }
+                    .onSuccess { backup = uri to it }
+                    .onFailure {
+                        error = if (it is Backup.NotABackup) t("That file isn't a HubidubiTask backup.")
+                                else it.message ?: t("Couldn't read it.")
+                    }
+                busy = false
+            }
+        }
     }
     BackHandler { if (source != null && done == null) reset() else onBack() }
 
@@ -80,7 +100,8 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"), tint = c.ink)
         }
         ScreenHeader(
-            when (source) { null -> t("Import"); Source.TODOIST -> "Todoist"; Source.GOOGLE -> "Google Calendar" },
+            when (source) { null -> t("Import"); Source.TODOIST -> "Todoist"; Source.GOOGLE -> "Google Calendar"
+                            Source.BACKUP -> t("HubidubiTask backup") },
             t("One time. Nothing is kept afterwards — not the token, not the address."),
         )
 
@@ -98,7 +119,9 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                         source = Source.TODOIST
                     }
                     SourceRow(Icons.Outlined.CalendarMonth, "Google Calendar",
-                        t("Events from the next 12 months"), last = true) { source = Source.GOOGLE }
+                        t("Events from the next 12 months")) { source = Source.GOOGLE }
+                    SourceRow(Icons.Outlined.Restore, t("HubidubiTask backup"),
+                        t("Everything, from Export to a file"), last = true) { source = Source.BACKUP }
                 }
             }
 
@@ -150,6 +173,34 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                         }.onFailure { error = it.message ?: t("The import failed.") }
                     }
                 }
+            }
+
+            backup != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                val (uri, p) = backup!!
+                Summary(buildList {
+                    add(Line(t("%d items new to this device", p.added)))
+                    if (p.replaced > 0) add(Line(t("%d newer than here — they replace what is here", p.replaced)))
+                    if (p.media > 0) add(Line(t("%d photos, voice memos and files", p.media)))
+                    if (p.alreadyHere > 0) add(Line(t("%d already in the app — skipped", p.alreadyHere), true))
+                }, emptyList())
+                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
+                Confirm(busy, p.incoming.isEmpty(), onCancel = ::reset) {
+                    busy = true
+                    scope.launch {
+                        val n = runCatching { vm.restoreBackup(uri, p) }
+                        busy = false
+                        n.onSuccess {
+                            done = t("Restored %d items. They reach your computer on the next sync.", it)
+                        }.onFailure { error = it.message ?: t("The import failed.") }
+                    }
+                }
+            }
+
+            source == Source.BACKUP -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
+                PrimaryButton(if (busy) t("Reading…") else t("Choose the file"),
+                    { pick.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) },
+                    Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy)
             }
 
             else -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {

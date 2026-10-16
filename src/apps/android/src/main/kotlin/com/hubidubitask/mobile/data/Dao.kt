@@ -20,6 +20,9 @@ interface EntityDao {
 
     @Query("SELECT * FROM entities WHERE type = :type AND deleted = 0 AND is_conflict_copy = 0 ORDER BY updated DESC")
     fun byType(type: String): List<EntityRow>
+
+    @Query("SELECT * FROM entities WHERE deleted = 0 AND is_conflict_copy = 0")
+    fun all(): List<EntityRow>
 }
 
 @Dao
