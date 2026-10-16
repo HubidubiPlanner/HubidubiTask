@@ -12,10 +12,11 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 /**
- * Everything in the app as one file, made by Settings › Export to a file and
- * read back by Import › HubidubiTask backup, on the phone or the computer.
+ * Everything in the app as one file, made by Settings › Export and read back
+ * by Import › HubidubiTask backup, on the phone or the computer.
  *
- * A ZIP: `backup.json` first, every item as sync carries it (projects, tasks
+ * Sealed with a password the user chooses ([Sealed]); inside, a ZIP:
+ * `backup.json` first, every item as sync carries it (projects, tasks
  * done or not, notes, events, feeds, their reviews), then `blobs/<sha256>` for
  * each photo, voice memo or file an item names and this device holds. Nothing
  * of the device itself goes in: no keys, tokens, pairing or settings.
@@ -31,6 +32,8 @@ object Backup {
     private const val BLOBS = "blobs/"
 
     class NotABackup : Exception("not a HubidubiTask backup")
+    /** The file is sealed and no password was given. */
+    class PasswordNeeded : Exception("password needed")
 
     /** What a backup holds, without its photos and memos. */
     data class Contents(val records: List<EntityRecord>, val created: String?, val appVersion: String?)
@@ -39,12 +42,16 @@ object Backup {
     data class Plan(val incoming: List<EntityRecord>, val added: Int, val replaced: Int, val alreadyHere: Int,
                     val media: Int)
 
-    /** The live items of [records] and the media they name, to [out]. Returns how many media went in. */
-    fun write(out: OutputStream, records: List<EntityRecord>, appVersion: String,
-              blob: (sha: String) -> ByteArray?): Int {
+    /**
+     * The live items of [records] and the media they name, to [out], sealed
+     * with [password] (null only in tests: a bare ZIP). Returns how many media
+     * went in.
+     */
+    fun write(out: OutputStream, records: List<EntityRecord>, appVersion: String, password: CharArray?,
+              rounds: Int = Sealed.ROUNDS, blob: (sha: String) -> ByteArray?): Int {
         val live = records.filter { !it.deleted }.sortedBy { it.id }
         var media = 0
-        ZipOutputStream(out).use { zip ->
+        ZipOutputStream(if (password == null) out else Sealed.seal(out, password, rounds)).use { zip ->
             val index = JSONObject().put("format", FORMAT).put("version", VERSION)
                 .put("app_version", appVersion).put("created", nowUtc())
                 .put("records", JSONArray().apply { live.forEach { put(PeerJson.record(it)) } })
@@ -62,9 +69,27 @@ object Backup {
         return media
     }
 
+    /** Whether the file starting in [input] is sealed, so a password must be asked for. */
+    fun isSealed(input: InputStream): Boolean {
+        val head = ByteArray(8)
+        var got = 0
+        while (got < head.size) { val k = input.read(head, got, head.size - got); if (k < 0) break; got += k }
+        return Sealed.isSealed(head.copyOf(got))
+    }
+
+    /** What is inside: opened with [password] when sealed; a bare ZIP from before sealing reads as it is. */
+    private fun inside(input: InputStream, password: CharArray?): InputStream {
+        val b = java.io.BufferedInputStream(input, 64)
+        b.mark(16)
+        val sealed = isSealed(b)
+        b.reset()
+        if (!sealed) return b
+        return Sealed.open(b, password ?: throw PasswordNeeded())
+    }
+
     /** The items in a backup, read from its index alone; the media are not read. */
-    fun read(input: InputStream): Contents {
-        ZipInputStream(input).use { zip ->
+    fun read(input: InputStream, password: CharArray?): Contents {
+        ZipInputStream(inside(input, password)).use { zip ->
             while (true) {
                 val entry = zip.nextEntry ?: throw NotABackup()
                 if (entry.name != INDEX) continue
@@ -78,8 +103,8 @@ object Backup {
     }
 
     /** Each photo, memo or file in a backup whose bytes match its name, one at a time. */
-    fun media(input: InputStream, each: (sha: String, bytes: ByteArray) -> Unit) {
-        ZipInputStream(input).use { zip ->
+    fun media(input: InputStream, password: CharArray?, each: (sha: String, bytes: ByteArray) -> Unit) {
+        ZipInputStream(inside(input, password)).use { zip ->
             while (true) {
                 val entry = zip.nextEntry ?: return
                 if (!entry.name.startsWith(BLOBS)) continue
@@ -115,5 +140,5 @@ object Backup {
         MessageDigest.getInstance("SHA-256").digest(b).joinToString("") { "%02x".format(it) }
 
     /** The file name offered when saving, dated like the app's own dates. */
-    fun fileName(today: java.time.LocalDate = java.time.LocalDate.now()) = "HubidubiTask backup $today.zip"
+    fun fileName(today: java.time.LocalDate = java.time.LocalDate.now()) = "HubidubiTask backup $today.hubidubitask"
 }

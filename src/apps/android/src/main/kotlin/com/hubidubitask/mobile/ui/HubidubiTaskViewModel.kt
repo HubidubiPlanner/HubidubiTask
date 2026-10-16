@@ -478,31 +478,36 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     // --- a backup: everything on this phone as one file ([Backup]), and back.
 
-    /** Everything here, written to [uri]: how many items and how many photos, memos and files. */
-    suspend fun exportTo(uri: android.net.Uri): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    /** Everything here, sealed with [password] and written to [uri]: how many items and media. */
+    suspend fun exportTo(uri: android.net.Uri, password: CharArray): Pair<Int, Int> = withContext(Dispatchers.IO) {
         val sync = sync()
         val records = sync.store.all()
         val out = getApplication<Application>().contentResolver.openOutputStream(uri, "w")
             ?: throw java.io.IOException(t("Couldn't write the file."))
-        out.use { records.size to Backup.write(it, records, com.hubidubitask.mobile.BuildConfig.VERSION_NAME) { sha ->
+        out.use { records.size to Backup.write(it, records, com.hubidubitask.mobile.BuildConfig.VERSION_NAME, password) { sha ->
             sync.mediaFile(sha)?.readBytes() } }
     }
 
-    /** What restoring the backup at [uri] would change here. Throws [Backup.NotABackup]. */
-    suspend fun planBackup(uri: android.net.Uri): Backup.Plan = withContext(Dispatchers.IO) {
+    /** Whether the backup at [uri] is sealed with a password. */
+    suspend fun backupIsSealed(uri: android.net.Uri): Boolean = withContext(Dispatchers.IO) {
+        getApplication<Application>().contentResolver.openInputStream(uri)?.use { Backup.isSealed(it) } ?: false
+    }
+
+    /** What restoring the backup at [uri] would change here. Throws [Backup.NotABackup], a wrong password. */
+    suspend fun planBackup(uri: android.net.Uri, password: CharArray?): Backup.Plan = withContext(Dispatchers.IO) {
         val sync = sync()
-        val contents = getApplication<Application>().contentResolver.openInputStream(uri)?.use { Backup.read(it) }
+        val contents = getApplication<Application>().contentResolver.openInputStream(uri)?.use { Backup.read(it, password) }
             ?: throw Backup.NotABackup()
         Backup.plan(contents) { sync.store.get(it) }
     }
 
     /** The items [plan] takes, then the backup's media this phone lacks. Returns how many items. */
-    suspend fun restoreBackup(uri: android.net.Uri, plan: Backup.Plan): Int {
+    suspend fun restoreBackup(uri: android.net.Uri, plan: Backup.Plan, password: CharArray?): Int {
         val n = withContext(Dispatchers.IO) {
             val sync = sync()
             plan.incoming.forEach { sync.store.put(it) }
             getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
-                Backup.media(input) { sha, bytes -> sync.keepMedia(sha, bytes) }
+                Backup.media(input, password) { sha, bytes -> sync.keepMedia(sha, bytes) }
             }
             plan.incoming.size
         }

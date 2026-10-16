@@ -69,27 +69,46 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
     var todo by remember { mutableStateOf<Todoist.Plan?>(null) }
     var cal by remember { mutableStateOf<HubidubiTaskViewModel.CalendarPlan?>(null) }
     var backup by remember { mutableStateOf<Pair<java.io.File, Backup.Plan>?>(null) }
+    // A sealed backup waits here for its password; the password lives as long as the screen.
+    var sealedFile by remember { mutableStateOf<java.io.File?>(null) }
+    var backupPassword by remember { mutableStateOf("") }
     var done by remember { mutableStateOf<String?>(null) }
 
     fun reset() {
-        source = null; secret = ""; error = null; todo = null; cal = null; backup = null; busy = false
+        source = null; secret = ""; error = null; todo = null; cal = null; backup = null
+        sealedFile = null; backupPassword = ""; busy = false
     }
     // A backup is a file, not a token: the system's file picker, then what it holds.
+    // What a backup would change, read once its password is known (or there is none).
+    fun plan(file: java.io.File) {
+        busy = true; error = null
+        scope.launch {
+            val password = backupPassword.ifEmpty { null }?.toCharArray()
+            runCatching { vm.planBackup(file, password) }
+                .onSuccess { backup = file to it; sealedFile = null }
+                .onFailure {
+                    error = when (it) {
+                        is com.hubidubitask.core.Sealed.WrongPassword -> t("Wrong password, or the file is damaged.")
+                        is com.hubidubitask.core.Sealed.Damaged -> t("The backup is damaged or incomplete.")
+                        is Backup.NotABackup -> t("That file isn't a HubidubiTask backup.")
+                        else -> it.message ?: t("Couldn't read it.")
+                    }
+                }
+            busy = false
+        }
+    }
+    // A sealed one asks for its password first.
+    fun opened(file: java.io.File) {
+        scope.launch {
+            if (runCatching { vm.backupIsSealed(file) }.getOrDefault(false)) { sealedFile = file; error = null }
+            else plan(file)
+        }
+    }
     fun pick() {
         val dialog = java.awt.FileDialog(null as java.awt.Frame?, t("HubidubiTask backup"), java.awt.FileDialog.LOAD)
             .apply { isVisible = true }
         val name = dialog.file ?: return
-        val file = java.io.File(dialog.directory, name)
-        busy = true; error = null
-        scope.launch {
-            runCatching { vm.planBackup(file) }
-                .onSuccess { backup = file to it }
-                .onFailure {
-                    error = if (it is Backup.NotABackup) t("That file isn't a HubidubiTask backup.")
-                            else it.message ?: t("Couldn't read it.")
-                }
-            busy = false
-        }
+        opened(java.io.File(dialog.directory, name))
     }
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
@@ -119,7 +138,7 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                     SourceRow(Icons.Outlined.CalendarMonth, "Google Calendar",
                         t("Events from the next 12 months")) { source = Source.GOOGLE }
                     SourceRow(Icons.Outlined.Restore, t("HubidubiTask backup"),
-                        t("Everything, from Export to a file"), last = true) { source = Source.BACKUP }
+                        t("Everything, from Export"), last = true) { source = Source.BACKUP }
                 }
             }
 
@@ -185,13 +204,27 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                 Confirm(busy, p.incoming.isEmpty(), onCancel = ::reset) {
                     busy = true
                     scope.launch {
-                        val n = runCatching { vm.restoreBackup(file, p) }
+                        val n = runCatching { vm.restoreBackup(file, p, backupPassword.ifEmpty { null }?.toCharArray()) }
                         busy = false
                         n.onSuccess {
                             done = t("Restored %d items. They reach your phone on the next sync.", it)
                         }.onFailure { error = it.message ?: t("The import failed.") }
                     }
                 }
+            }
+
+            sealedFile != null -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(t("Password"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                OutlinedTextField(
+                    value = backupPassword, onValueChange = { backupPassword = it; error = null },
+                    singleLine = true, enabled = !busy,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+                    colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth(),
+                )
+                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
+                PrimaryButton(if (busy) t("Reading…") else t("Continue"), { plan(sealedFile!!) },
+                    Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy && backupPassword.isNotEmpty())
             }
 
             source == Source.BACKUP -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -412,27 +412,32 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     // ---- a backup: everything on this computer as one file ([Backup]), and back
 
-    /** Everything here, written to [file]: how many items and how many photos, memos and files. */
-    suspend fun exportTo(file: java.io.File): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    /** Everything here, sealed with [password] and written to [file]: how many items and media. */
+    suspend fun exportTo(file: java.io.File, password: CharArray): Pair<Int, Int> = withContext(Dispatchers.IO) {
         val records = store.all()
         file.outputStream().use { out ->
-            records.size to Backup.write(out, records, System.getProperty("jpackage.app-version") ?: "dev") { sha ->
+            records.size to Backup.write(out, records, System.getProperty("jpackage.app-version") ?: "dev", password) { sha ->
                 store.blob(sha)?.takeIf { it.exists() }?.readBytes()
             }
         }
     }
 
-    /** What restoring the backup in [file] would change here. Throws [Backup.NotABackup]. */
-    suspend fun planBackup(file: java.io.File): Backup.Plan = withContext(Dispatchers.IO) {
-        val contents = file.inputStream().use { Backup.read(it) }
+    /** Whether the backup in [file] is sealed with a password. */
+    suspend fun backupIsSealed(file: java.io.File): Boolean = withContext(Dispatchers.IO) {
+        file.inputStream().use { Backup.isSealed(it) }
+    }
+
+    /** What restoring the backup in [file] would change here. Throws [Backup.NotABackup], a wrong password. */
+    suspend fun planBackup(file: java.io.File, password: CharArray?): Backup.Plan = withContext(Dispatchers.IO) {
+        val contents = file.inputStream().use { Backup.read(it, password) }
         Backup.plan(contents) { store.get(it) }
     }
 
     /** The items [plan] takes, then the backup's media this computer lacks. Returns how many items. */
-    suspend fun restoreBackup(file: java.io.File, plan: Backup.Plan): Int {
+    suspend fun restoreBackup(file: java.io.File, plan: Backup.Plan, password: CharArray?): Int {
         val n = withContext(Dispatchers.IO) {
             plan.incoming.forEach { store.put(it) }
-            file.inputStream().use { input -> Backup.media(input) { _, bytes -> store.putBlob(bytes) } }
+            file.inputStream().use { input -> Backup.media(input, password) { _, bytes -> store.putBlob(bytes) } }
             plan.incoming.size
         }
         refresh()

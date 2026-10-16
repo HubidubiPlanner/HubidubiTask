@@ -1303,30 +1303,85 @@ fun SettingsScreen(
         }
         // Kept quiet at the very end: things done once in a while, not settings
         // anyone looks for day to day. Export first: a copy of everything as one
-        // file, the way to keep it outside the app; Import reads it back.
+        // file sealed with a password, the way to keep it outside the app;
+        // Import reads it back, among the other places it reads from.
         var exported by remember { mutableStateOf<String?>(null) }
+        var askingPassword by remember { mutableStateOf(false) }
+        // Held only between the password sheet and the file picker.
+        var exportPassword by remember { mutableStateOf("") }
         val export = rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+            val password = exportPassword.toCharArray()
+            exportPassword = ""
             if (uri != null) scope.launch {
                 exported = t("Exporting…")
-                exported = runCatching { vm.exportTo(uri) }.fold(
+                exported = runCatching { vm.exportTo(uri, password) }.fold(
                     { (items, media) -> t("Exported %d items and %d attachments.", items, media) },
                     { t("The export failed: %s", it.message ?: it.toString()) })
+                password.fill(' ')
             }
         }
-        SecondaryButton(t("Export to a file"), { exported = null; export.launch(Backup.fileName()) },
+        BackupPasswordSheet(askingPassword, { askingPassword = false }) {
+            exportPassword = it; askingPassword = false
+            export.launch(Backup.fileName())
+        }
+        SecondaryButton(t("Export"), { exported = null; askingPassword = true },
             Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 28.dp),
             icon = Icons.Outlined.FileUpload)
         exported?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
                 modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
         }
-        SecondaryButton(t("Import from another app"), onImport,
+        SecondaryButton(t("Import"), onImport,
             Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 10.dp),
             icon = Icons.Outlined.FileDownload)
         Spacer(Modifier.height(16.dp))
     }
 }
+
+/**
+ * The password a backup is sealed with, asked twice before Export saves it.
+ * It is the only way back into the file, so the one line under the fields says
+ * so, and turns into what is wrong while it is.
+ */
+@Composable
+private fun BackupPasswordSheet(open: Boolean, onDismiss: () -> Unit, onExport: (String) -> Unit) {
+    if (!open) return
+    val c = HubidubiTaskTheme.colors
+    var password by remember { mutableStateOf("") }
+    var again by remember { mutableStateOf("") }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val problem = when {
+        password.isNotEmpty() && password.length < MIN_BACKUP_PASSWORD -> t("At least 8 characters")
+        again.isNotEmpty() && again != password -> t("The passwords differ.")
+        else -> null
+    }
+    val ok = password.length >= MIN_BACKUP_PASSWORD && again == password
+    AppSheet(onDismiss) {
+        SheetTitle(t("Export"))
+        OutlinedTextField(value = password, onValueChange = { password = it },
+            label = { Text(t("Password")) }, singleLine = true, colors = appFieldColors(),
+            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                imeAction = ImeAction.Next),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+        LaunchedEffect(Unit) { focus.requestFocus() }
+        OutlinedTextField(value = again, onValueChange = { again = it },
+            label = { Text(t("Same password again")) }, singleLine = true, colors = appFieldColors(),
+            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { if (ok) onExport(password) }),
+            shape = RectangleShape, modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
+        Text(problem ?: t("Without it, the backup can't be opened."),
+            style = MaterialTheme.typography.bodySmall, color = if (problem != null) c.danger else c.muted,
+            modifier = Modifier.padding(top = 10.dp))
+        PrimaryButton(t("Export"), { onExport(password) },
+            Modifier.fillMaxWidth().padding(top = 18.dp), enabled = ok)
+    }
+}
+
+private const val MIN_BACKUP_PASSWORD = 8
 
 /**
  * What the + starts, the same on Next and Projects: what it is (a project, a

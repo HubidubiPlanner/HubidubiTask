@@ -24,22 +24,22 @@ class BackupTest {
     )
 
     private fun backup(): ByteArray = ByteArrayOutputStream().also { out ->
-        assertEquals(1, Backup.write(out, records, "1.3.0") { if (it == sha) photo else null })
+        assertEquals(1, Backup.write(out, records, "1.3.0", null) { if (it == sha) photo else null })
     }.toByteArray()
 
     @Test
     fun `everything live comes back, done tasks and reviews included, deleted ones not`() {
-        val c = Backup.read(ByteArrayInputStream(backup()))
+        val c = Backup.read(ByteArrayInputStream(backup()), null)
         assertEquals(records.filter { !it.deleted }.sortedBy { it.id }, c.records)
         assertEquals("1.3.0", c.appVersion)
         val media = mutableMapOf<String, String>()
-        Backup.media(ByteArrayInputStream(backup())) { s, b -> media[s] = b.decodeToString() }
+        Backup.media(ByteArrayInputStream(backup()), null) { s, b -> media[s] = b.decodeToString() }
         assertEquals(mapOf(sha to "a photo"), media)
     }
 
     @Test
     fun `a restore takes only what is newer than here`() {
-        val c = Backup.read(ByteArrayInputStream(backup()))
+        val c = Backup.read(ByteArrayInputStream(backup()), null)
         val here = mapOf(
             // Edited here after the backup: kept.
             "p_1" to rec("p_1", "project", "2026-10-09T10:00:00Z", "title" to "Kitchen and hall"),
@@ -61,13 +61,13 @@ class BackupTest {
         val zip = ByteArrayOutputStream().also { out ->
             ZipOutputStream(out).use { it.putNextEntry(ZipEntry("something.txt")); it.write("hi".toByteArray()) }
         }.toByteArray()
-        assertFailsWith<Backup.NotABackup> { Backup.read(ByteArrayInputStream(zip)) }
-        assertFailsWith<Backup.NotABackup> { Backup.read(ByteArrayInputStream("not a zip".toByteArray())) }
+        assertFailsWith<Backup.NotABackup> { Backup.read(ByteArrayInputStream(zip), null) }
+        assertFailsWith<Backup.NotABackup> { Backup.read(ByteArrayInputStream("not a zip".toByteArray()), null) }
         val tampered = ByteArrayOutputStream().also { out ->
             ZipOutputStream(out).use { it.putNextEntry(ZipEntry("blobs/$sha")); it.write("another photo".toByteArray()) }
         }.toByteArray()
         var seen = 0
-        Backup.media(ByteArrayInputStream(tampered)) { _, _ -> seen++ }
+        Backup.media(ByteArrayInputStream(tampered), null) { _, _ -> seen++ }
         assertEquals(0, seen)
     }
 }

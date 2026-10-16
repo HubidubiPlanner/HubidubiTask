@@ -2,13 +2,17 @@
 
 ## Unreleased
 
-- **Settings › Export to a file**, above Import, on the phone and the
-  computer: everything in the app as one file (a ZIP), every project, task
-  done or not, note, event and feed with its review, and the photos, voice
-  memos and files they hold. Nothing of the device goes in: no keys, tokens,
-  pairing or settings. **Import › HubidubiTask backup** reads it back on any
-  device, taking only what is newer than what is there, so nothing newer is
-  lost and deleted items stay deleted.
+- **Settings › Export**, above Import, on the phone and the computer:
+  everything in the app as one file, every project, task done or not, note,
+  event and feed with its review, and the photos, voice memos and files they
+  hold, sealed with a password you choose (AES-256-GCM, the key drawn from the
+  password with PBKDF2-HMAC-SHA256, 600 000 rounds). Without the password the
+  file can't be read or opened, and a file changed or cut short is refused
+  whole. Nothing of the device goes in: no keys, tokens, pairing or settings.
+- **Settings › Import** (was "Import from another app") now also reads such a
+  file back, **HubidubiTask backup**, on any device: it asks for the password,
+  shows what it would add or replace, and takes only what is newer than what
+  is there, so nothing newer is lost and deleted items stay deleted.
 
 ## 1.2.0 — 16 October 2026
 
