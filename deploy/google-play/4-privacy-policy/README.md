@@ -13,7 +13,9 @@ the website by `deploy/website`. It must be live before you submit.
 
 What it says, so you can check it against the app content answers in step 5:
 
-- The developer runs no server and receives no data.
+- The developer runs no server. The one thing that reaches the developer is
+  an "I want Pro" answer (platform, version, language), sent through a Google
+  Form, and only when the user presses that button in Settings.
 - What is stored where: an encrypted database on the phone, the app's folder
   on a computer, API keys in the system's secure storage.
 - Every way data leaves a device, each started by the user: sync between the

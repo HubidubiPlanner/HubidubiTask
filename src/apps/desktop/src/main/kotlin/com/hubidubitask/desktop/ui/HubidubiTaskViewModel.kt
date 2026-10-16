@@ -474,6 +474,22 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     private fun eventId(uid: String) = "e_" + MessageDigest.getInstance("SHA-256")
         .digest(uid.toByteArray()).joinToString("") { "%02x".format(it) }.take(16)
 
+    // ---- Pro: not sold yet. "I want Pro" only counts who would want it.
+
+    /** The form the answer goes to; a test points it elsewhere. */
+    internal var proForm = com.hubidubitask.core.pro.ProInterest.FORM
+
+    /** Whether this computer has already said it wants Pro. */
+    fun proWanted(): Boolean = store.kv("pro_wanted") != null
+
+    /** Say so, once: true when the answer went through. */
+    suspend fun wantPro(): Boolean = withContext(Dispatchers.IO) {
+        com.hubidubitask.core.pro.ProInterest.send(
+            if (com.hubidubitask.desktop.Platform.isMac) "mac" else "linux",
+            // jpackage names the version to the app it launches; a run from Gradle has none.
+            System.getProperty("jpackage.app-version") ?: "dev", language.value.code, proForm)
+    }.also { if (it) store.setKv("pro_wanted", nowUtc()) }
+
     // ---- pairing
 
     /** "Pair a phone": show a code here and wait for it to be typed on the phone. */

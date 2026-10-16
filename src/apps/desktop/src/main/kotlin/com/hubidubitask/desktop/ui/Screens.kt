@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
@@ -81,6 +82,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.EntityRecord
@@ -874,6 +876,50 @@ private fun StatusRow(label: String, value: String, good: Boolean, last: Boolean
     }
 }
 
+/**
+ * Pro, which is not sold yet: what it would be, and one click to say you want
+ * it. The click is counted (core ProInterest), once; then the card says thanks.
+ */
+@Composable
+private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
+    val c = HubidubiTaskTheme.colors
+    val scope = rememberCoroutineScope()
+    var wanted by remember { mutableStateOf(vm.proWanted()) }
+    var sending by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    SectionLabel(t("Pro"), modifier = Modifier.padding(top = 0.dp))
+    CardGroup(inset = edge) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Icon(if (wanted) Icons.Outlined.CheckCircle else Icons.Outlined.Sync, contentDescription = null,
+                tint = if (wanted) c.ok else c.accent, modifier = Modifier.padding(top = 1.dp).size(22.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(if (wanted) t("Thanks, we've counted you") else t("Sync this computer with your phone"),
+                    style = MaterialTheme.typography.bodyMedium)
+                Text(if (wanted) t("Pro gets built if enough people want it.")
+                    else t("Pro isn't available yet. Want it? One click tells us."),
+                    style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
+        }
+    }
+    if (!wanted) {
+        Row(Modifier.padding(start = edge, end = edge, top = 10.dp)) {
+            PrimaryButton(if (sending) t("Sending…") else t("I want Pro"), {
+                sending = true; failed = false
+                scope.launch {
+                    val ok = vm.wantPro()
+                    sending = false
+                    if (ok) wanted = true else failed = true
+                }
+            }, Modifier.weight(1f), enabled = !sending)
+        }
+        if (failed)
+            Text(t("That didn't go through. Try again when you're online."),
+                style = MaterialTheme.typography.bodySmall, color = c.danger,
+                modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
+    }
+}
+
 @Composable
 fun SettingsScreen(
     state: HubidubiTaskViewModel.UiState,
@@ -921,7 +967,8 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader(t("Settings"))
-        SectionLabel(t("Phones"), modifier = Modifier.padding(top = 0.dp))
+        ProSection(vm, edge)
+        SectionLabel(t("Phones"))
         CardGroup(inset = edge) {
             if (state.peers.isEmpty()) StatusRow(t("No phone paired yet"), "", good = false, last = true)
             state.peers.forEachIndexed { i, p ->

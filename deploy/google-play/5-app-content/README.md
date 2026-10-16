@@ -62,17 +62,28 @@ The facts, from the code:
   they configured, a feed's page check, a one-time import.
 - The local database is encrypted (SQLCipher, key sealed by the Keystore), and
   `allowBackup="false"`, so nothing goes to Android's cloud backup.
+- **Settings → Pro → I want Pro** (since 1.2): pressing it sends the developer
+  one answer through a Google Form, over HTTPS: the platform, the app's
+  version and its language. No identifier, nothing about the person or their
+  items; sent once per install, and only on that press.
 
 **Recommended answers**
 
 | Question | Answer |
 |---|---|
-| Does your app collect or share any of the required user data types? | **No** |
+| Does your app collect or share any of the required user data types? | **Yes** |
+| Data type | **App activity › App interactions** (the "I want Pro" press) |
+| Collected / shared | **Collected**; **not shared** |
+| Processed ephemerally? | **No** (each answer is kept, to be counted) |
+| Required or optional? | **Optional** (only if the user presses the button) |
+| Purpose | **Analytics** (counting who wants Pro) |
+| Encrypted in transit? | **Yes** |
+| Deletion | Users can ask by email; an answer carries no identifier, so it cannot be told apart from anyone else's |
 
-Why **No**: nothing goes to the developer, or to a third party the developer
-chose. Sync goes to the user's own devices; reviews and imports go to services
-the user picked and configured, and only when they ask. Play does not count
-user-initiated transfers to a service the user chose as sharing.
+Everything else stays out of the form: sync goes to the user's own devices;
+reviews and imports go to services the user picked and configured, and only
+when they ask. Play does not count user-initiated transfers to a service the
+user chose as sharing. Before 1.2 (no Pro button) the answer was **No**.
 
 If you prefer the conservative route, declare instead: **collected** ›
 Personal info › Other (task and note text), Photos and videos, Audio (voice
