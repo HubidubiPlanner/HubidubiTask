@@ -46,8 +46,9 @@ for page in glob.glob(os.path.join(public, "*.html")):
         s = s.replace('href="downloads/', 'href="%s/' % dl_url)
     open(page, "w", encoding="utf-8").write(s)
     name = os.path.basename(page)
-    # Every local link and image must be there.
-    for ref in re.findall(r'(?:href|src|srcset)="([^"#:]+)(?:#[^"]*)?"', s):
+    # Every local link and image must be there. A ?query (a cache-buster
+    # such as favicon.svg?v=2) is not part of the file name.
+    for ref in re.findall(r'(?:href|src|srcset)="([^"#:?]+)(?:\?[^"#]*)?(?:#[^"]*)?"', s):
         if ref and not os.path.exists(os.path.join(public, ref)):
             problems.append("%s links to %s, which is not there" % (name, ref))
     if offers == "1" and name == "download.html":
