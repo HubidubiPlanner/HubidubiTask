@@ -1,0 +1,4 @@
+What's new in 2.0.0
+• Settings › Export: everything in the app in one file, projects, tasks, notes, photos and voice memos, protected with a password you choose.
+• Settings › Import reads that file back on your phone or computer, taking only what is newer than what is there.
+• Your data stays yours: without the password, the file can't be opened.

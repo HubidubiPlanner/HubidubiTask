@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 — 16 October 2026
 
 - **Settings › Export**, above Import, on the phone and the computer:
   everything in the app as one file, every project, task done or not, note,

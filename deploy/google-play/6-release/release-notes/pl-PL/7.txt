@@ -1,0 +1,4 @@
+Nowości w 2.0.0
+• Ustawienia › Eksportuj: wszystko z aplikacji w jednym pliku, projekty, zadania, notatki, zdjęcia i notatki głosowe, chronione wybranym przez Ciebie hasłem.
+• Ustawienia › Import wczytuje ten plik z powrotem na telefonie lub komputerze, biorąc tylko to, co nowsze.
+• Twoje dane zostają Twoje: bez hasła pliku nie da się otworzyć.
