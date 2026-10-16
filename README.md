@@ -14,6 +14,7 @@ The whole picture: [`docs/ecosystem.html`](docs/ecosystem.html).
 | [`src/apps/`](src/apps) | The app: one Gradle build. `android/` the phone app, `desktop/` the macOS and Linux app, `shared/` what both use (items, sync, feeds, agents). |
 | [`deploy/`](deploy) | Getting it out: Google Play (`google-play/`), the website with its downloads (`website/`), the Omarchy image (`omarchy/`). Numbered steps inside each. |
 | [`distribution/arch/`](distribution/arch) | The Linux package for Arch and Omarchy, built in containers by `build.sh`. |
+| [`distribution/appimage/`](distribution/appimage) | The AppImage for any x86_64 Linux, from the same Linux build (`distribution/linux/app-image.sh`). |
 | [`site/`](site) | The public website. |
 | [`docs/`](docs) | The ecosystem page and the manual. |
 
@@ -36,6 +37,7 @@ cd src/apps
 ./gradlew :android:assembleDebug              # phone app
 ./gradlew :desktop:createDistributable        # Mac app (on a Mac)
 distribution/arch/build.sh                    # Linux: the Arch package, from any Docker host
+distribution/appimage/build.sh                # Linux: the AppImage, from any Docker host
 deploy/omarchy/build-fork-in-colima.sh        # Omarchy image with the app
 sh deploy/google-play/1-app-bundle/build.sh   # the signed Play bundle, checked
 sh deploy/website/1-downloads/build.sh        # website: Mac and Linux downloads

@@ -6,7 +6,7 @@ takes three steps, one folder each:
 
 | Step | Folder | What it does |
 |---|---|---|
-| 1 | [`1-downloads/`](1-downloads) | Builds the free Mac app and the Linux package, with checksums |
+| 1 | [`1-downloads/`](1-downloads) | Builds the free Mac app, the Linux package and the AppImage, with checksums |
 | 2 | [`2-site/`](2-site) | Puts the site and the downloads together, with your address and email from `site.env`, and checks the pages against the files |
 | 3 | [`3-publish/`](3-publish) | Uploads it, and what to check afterwards |
 

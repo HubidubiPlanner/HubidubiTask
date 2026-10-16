@@ -16,6 +16,8 @@ deploy/omarchy/omarchy-pkgs/
 
 # The app package distribution/arch/build.sh makes
 distribution/arch/out/
+# ...and the AppImage distribution/appimage/build.sh makes
+distribution/appimage/out/
 *.pkg.tar.zst
 
 # Python caches

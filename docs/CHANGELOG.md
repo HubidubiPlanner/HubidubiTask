@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **Settings → Pro.** Pro isn't sold: the section says what it would be
+  (syncing with your Mac and Linux computers) and has one button, **I want
+  Pro**. Pressing it sends one answer to the app's own form (platform,
+  version, language, nothing else) so the people who want it can be counted,
+  then thanks you; it asks only once. On the phone and on the computer.
+- **Linux: an AppImage.** One file, `HubidubiTask-x86_64.AppImage`, runs on
+  most x86_64 distributions without installing, with its own Java runtime;
+  the Arch package stays. Both are made from one Linux build
+  (`distribution/linux/app-image.sh`), the AppImage by
+  `distribution/appimage/build.sh`.
+- On Linux, an API key or agent token is no longer lost when the keyring is
+  locked or not running: it goes to a file only you can read, and moves into
+  the keyring on the next save once there is one.
+
 - **The tick sits right above the H**, and New note's + too, everywhere the
   logo is: the app icon and its themed version, New note's shortcut and
   widget, the Mac and Linux icons, the website's favicon, icon and headline,

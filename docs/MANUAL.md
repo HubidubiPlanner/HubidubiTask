@@ -8,6 +8,11 @@ each other current over your own Wi-Fi.
 
 - **Phone:** from Google Play, or `./gradlew :android:installDebug` while developing.
 - **Mac:** `HubidubiTask.app` (build it with `./gradlew :desktop:createDistributable`).
+- **Linux, any distribution (x86_64):** `HubidubiTask-x86_64.AppImage`. Make it
+  runnable (`chmod +x HubidubiTask-x86_64.AppImage`) and start it; nothing is
+  installed. If a firewall is on, let your home network reach the app: TCP
+  5244 (sync) and UDP 5353 (finding it), for example
+  `sudo ufw allow from 192.168.0.0/16 to any port 5244 proto tcp`.
 - **Linux (Arch, Omarchy):** `sudo pacman -U hubidubitask-*.pkg.tar.zst`, or use
   the Omarchy image from `deploy/omarchy/`, which has the app installed. The
   package opens the sync port (5244) to private networks in Omarchy's firewall.
@@ -18,6 +23,14 @@ Both on the same Wi-Fi. On the phone: **Settings → Pair with a computer**; on
 the computer: **Settings → Pair a phone**. One of them shows a code, you type
 it on the other. From then on they sync every minute while the app is open,
 and the phone also hourly in the background.
+
+## Pro
+
+Pro isn't sold yet. It would be syncing with your Mac and Linux computers.
+**Settings → Pro → I want Pro** says you would want it: the app sends one
+answer (the platform, the app's version and its language, nothing else) so
+the people who want Pro can be counted. Once sent, the button goes and the
+card says thanks. Everything else, syncing included, stays free.
 
 ## Everyday use
 
@@ -98,6 +111,6 @@ write their task with Claude.
 ## Where your data lives
 
 - **Phone:** in the app's own encrypted database.
-- **Computer:** `~/.local/share/hubidubitask/` (Linux) or
+- **Computer:** `~/.local/share/hubidubitask/` (Linux, the AppImage too) or
   `~/Library/Application Support/HubidubiTask/` (Mac): an SQLite database,
   attachments by hash, and the TLS identity phones pin.

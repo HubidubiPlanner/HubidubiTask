@@ -1,0 +1,5 @@
+#!/bin/sh
+# The AppImage's way in: the app's own launcher, called by its real path so
+# it finds the Java runtime that came with it.
+here="$(dirname "$(readlink -f "$0")")"
+exec "${APPDIR:-$here}/usr/lib/hubidubitask/bin/HubidubiTask" "$@"

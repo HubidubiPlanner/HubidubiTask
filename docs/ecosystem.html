@@ -177,9 +177,9 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <h3>Computer</h3>
       <p class="role">The same app on a big screen.</p>
       <dl>
-        <dt>System</dt><dd>macOS, or Linux (Arch, Omarchy) on x86_64</dd>
+        <dt>System</dt><dd>macOS, or Linux on x86_64 (any distribution as an AppImage; Arch and Omarchy as a package)</dd>
         <dt>Source</dt><dd><span class="path">src/apps/desktop/</span> with <span class="path">src/apps/shared/</span></dd>
-        <dt>Install</dt><dd>Mac: <code>:desktop:createDistributable</code>. Linux: the Arch package from <span class="path">distribution/arch/build.sh</span></dd>
+        <dt>Install</dt><dd>Mac: <code>:desktop:createDistributable</code>. Linux: the AppImage from <span class="path">distribution/appimage/build.sh</span>, or the Arch package from <span class="path">distribution/arch/build.sh</span>, both from one Linux build</dd>
         <dt>Data</dt><dd><span class="path">~/.local/share/hubidubitask</span> or <span class="path">~/Library/Application Support/HubidubiTask</span></dd>
       </dl>
     </article>
@@ -210,7 +210,8 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <tbody>
         <tr><td>Phone and computer</td><td>Peer sync: each sends what the other has not seen, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Self-signed certificate pinned at pairing; a token per phone</td></tr>
         <tr><td>Apps and your own agent</td><td>OpenClaw, Hermes and others: the OpenAI chat shape, one message with the items as text; opencode and Kilo: a session per question, answered in a JSON schema, then deleted. Changes come back as add_task, capture, mark_done and are checked before the app applies them</td><td>the agent's</td><td>IP in Settings; the port, or each agent's usual one</td><td>Its token or password, in the system's secret store; HTTPS tried first and its certificate pinned; plain HTTP only to home-network addresses</td></tr>
-        <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring</td></tr>
+        <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring (a file only you can read when there is no working keyring)</td></tr>
+        <tr><td>Apps and the "I want Pro" form</td><td>One form answer, once per install, only when pressed: platform, version, language</td><td>443</td><td>The developer's Google Form</td><td>HTTPS; no identifier</td></tr>
         <tr><td>Apps and SelfHostedAI or OpenAI</td><td>An encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>Encryption or a pinned TLS certificate</td></tr>
         <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
       </tbody>
@@ -241,6 +242,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <tbody>
         <tr><td>src/apps/</td><td>The app: android/, desktop/ (macOS and Linux), shared/</td></tr>
         <tr><td>distribution/arch/</td><td>The Linux package for Arch and Omarchy</td></tr>
+        <tr><td>distribution/appimage/</td><td>The AppImage for any x86_64 Linux; distribution/linux/ builds the app image both wrap</td></tr>
         <tr><td>deploy/google-play/</td><td>Publishing on Google Play, step by step</td></tr>
         <tr><td>deploy/website/</td><td>Publishing the website and its downloads</td></tr>
         <tr><td>deploy/omarchy/</td><td>The Omarchy image with the app installed</td></tr>
@@ -259,6 +261,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; Incoming first, with its title and the "+" where Projects has it; Feeds; four AI choices; Review with AI; English, Polish, German, French and Spanish, chosen in Settings.</span></li>
     <li><span class="pill ok">Works</span><span>The Agent plugs into the user's own agent (OpenClaw, Hermes, opencode, Kilo, OpenAI-shaped), found by IP; tested against stand-ins of each, not yet against a live one.</span></li>
     <li><span class="pill ok">Works</span><span>The Arch package installs with pacman in a clean Arch system and the app starts and draws its screens.</span></li>
+    <li><span class="pill ok">Works</span><span>Settings › Pro on the phone and the computer: Pro isn't sold; "I want Pro" sends one answer to the developer's Google Form so interest can be counted. The form itself is still to be made, so nothing is sent yet.</span></li>
     <li><span class="pill warn">Open</span><span>Google Play: everything to submit is in deploy/google-play, step by step; the upload itself is done by hand in Play Console.</span></li>
     <li><span class="pill warn">Open</span><span>The website is ready to publish (deploy/website) once it has an address, a contact email and a host.</span></li>
     <li><span class="pill warn">Open</span><span>The Omarchy image has not been rebuilt since it switched to the app-only package.</span></li>
@@ -267,5 +270,5 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   </ul>
 </section>
 
-<footer>Written from the repository as it stands on 7 October 2026.</footer>
+<footer>Written from the repository as it stands on 16 October 2026.</footer>
 </div>
