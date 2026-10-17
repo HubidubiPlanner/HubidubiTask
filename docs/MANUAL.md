@@ -19,10 +19,13 @@ each other current over your own Wi-Fi.
 
 ## Pair the phone with the computer
 
-Both on the same Wi-Fi. On the phone: **Settings → Pair device → Pair with a
-computer**; on the computer: **Settings → Pair device → Pair a phone**. One of them shows a code, you type
-it on the other. From then on they sync every minute while the app is open,
-and the phone also hourly in the background.
+Both on the same Wi-Fi. On either one: **Settings → Pair device → Pair a new
+device**, then the same on the other. One of them shows a code, you type it on
+the other. From then on they sync every minute while the app is open, and the
+phone also hourly in the background. Pair as many as you like: a phone with
+several computers, a computer with several phones. Each is synced in turn, so
+what is written on one reaches all of them. **Pair device** lists them, with
+Sync now and Unpair for each.
 
 ## Pro
 
@@ -83,13 +86,15 @@ its page.
 
 ## AI
 
-**Settings → AI Agent** chooses one of four:
+**Settings → AI Agent** chooses one of four. There is no Save: a change is kept
+a moment after you make it, then checked, and the line under the fields says
+what answered.
 
 | Choice | What to enter |
 |---|---|
-| SelfHostedAI | The server's address and the model to use. Chosen until you pick another. |
+| Claude | An API key from the Anthropic Console (kept in the system's keychain). Chosen until you pick another. |
+| SelfHostedAI | The server's address and the model to use |
 | OpenAI | The address of a server that speaks OpenAI's API; it answers with the first model it lists |
-| Claude | An API key from the Anthropic Console (kept in the system's keychain) |
 | Agent | The IP of the computer where your own agent runs, its token or password, and its port if it isn't the usual one |
 
 **Agent** is an AI agent you already run on a computer at home. Nothing of
@@ -103,7 +108,7 @@ ours is installed there. The app recognises, from the address alone:
 | Kilo | `KILO_SERVER_PASSWORD=… kilo serve --hostname 0.0.0.0 --port …` | the one you give |
 
 Any other server that speaks OpenAI's chat API works too, with the first model
-it lists. Save in **Settings** finds which agent answers and says so; with an
+it lists. Once the address is typed, **Settings** finds which agent answers and says so; with an
 empty port it tries the usual ones. HTTPS is tried first and its certificate is
 pinned; without HTTPS the app talks only to addresses in your home network.
 The token opens that computer (the agent can run commands there), so keep it

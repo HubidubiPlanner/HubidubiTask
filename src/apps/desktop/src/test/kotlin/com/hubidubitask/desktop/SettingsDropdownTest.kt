@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 /**
  * Settings is a list of dropdowns: the AI agent, the devices, the due date and
  * the language. Choosing changes what is shown: the Model field only for
- * SelfHostedAI, the API key only for Claude.
+ * SelfHostedAI, the API key only for Claude; there is no Save, a choice keeps itself.
  */
 @OptIn(ExperimentalTestApi::class)
 class SettingsDropdownTest {
@@ -40,21 +40,27 @@ class SettingsDropdownTest {
         waitForIdle()
         shot("settings-top")
 
-        // SelfHostedAI, the default: its address and its model.
-        onNodeWithText("Model").assertExists()
-        onNodeWithText("SelfHostedAI").performClick()
-        waitForIdle()
-        shot("settings-ai-open")
-        onAllNodesWithText("Claude").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
-        waitForIdle()
+        // Claude, the default: its key alone; no address, no model, no Save.
         onNodeWithText("Claude API key").assertExists()
         assertEquals(0, onAllNodesWithText("Model").fetchSemanticsNodes().size)
-        // OpenAI: an address, and no model asked for.
+        assertEquals(0, onAllNodesWithText("Save").fetchSemanticsNodes().size)
         onNodeWithText("Claude").performClick()
+        waitForIdle()
+        shot("settings-ai-open")
+        // SelfHostedAI: its address and its model.
+        onAllNodesWithText("SelfHostedAI").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
+        waitForIdle()
+        onNodeWithText("Model").assertExists()
+        onNodeWithText("Server address").assertExists()
+        // OpenAI: an address, and no model asked for.
+        onNodeWithText("SelfHostedAI").performClick()
         onAllNodesWithText("OpenAI").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
         waitForIdle()
         onNodeWithText("Server address").assertExists()
         assertEquals(0, onAllNodesWithText("Model").fetchSemanticsNodes().size)
+        // The choice keeps itself, a moment later.
+        mainClock.advanceTimeBy(1_500)
+        waitUntil(timeoutMillis = 5_000) { vm.agentConfig().protocol == "openai" }
 
         // The language, from its list.
         onNodeWithText("English").performScrollTo().performClick()

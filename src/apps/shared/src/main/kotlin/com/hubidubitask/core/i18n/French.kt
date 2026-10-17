@@ -157,6 +157,7 @@ internal val FRENCH: Map<String, String> = mapOf(
     "Open HubidubiTask on the computer, same Wi-Fi. The device you start on shows a code; type it on the other." to "Ouvrez HubidubiTask sur l’ordinateur, sur le même Wi-Fi. L’appareil sur lequel vous commencez affiche un code ; saisissez-le sur l’autre.",
     "Overdue" to "En retard",
     "Pair" to "Associer",
+    "Pair a new device" to "Associer un nouvel appareil",
     "Pair a phone" to "Associer un téléphone",
     "Pair device" to "Associer un appareil",
     "Pair with a computer" to "Associer à un ordinateur",

@@ -157,6 +157,7 @@ internal val GERMAN: Map<String, String> = mapOf(
     "Open HubidubiTask on the computer, same Wi-Fi. The device you start on shows a code; type it on the other." to "Öffne HubidubiTask auf dem Computer, im selben WLAN. Das Gerät, auf dem du anfängst, zeigt einen Code; gib ihn auf dem anderen ein.",
     "Overdue" to "Überfällig",
     "Pair" to "Koppeln",
+    "Pair a new device" to "Neues Gerät koppeln",
     "Pair a phone" to "Telefon koppeln",
     "Pair device" to "Gerät koppeln",
     "Pair with a computer" to "Mit einem Computer koppeln",

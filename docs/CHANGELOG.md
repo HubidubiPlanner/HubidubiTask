@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **More than one device.** A phone can now be paired with several computers,
+  as a computer already could with several phones; each is synced in turn, so
+  what is written on one reaches them all. A phone paired before keeps its
+  computer. **Settings › Pair device** lists them, with Sync now and Unpair
+  for each, and a **Pair a new device** button under it, always in sight.
+- **Claude is the default AI agent**, and first in the list.
+- **No Save in Settings › AI Agent**: a change is kept a moment after it is
+  made, then checked, and the line under the fields says what answered. The
+  line under them no longer shows a server address before anything is
+  saved; with Claude chosen it showed SelfHostedAI's, and with SelfHostedAI it
+  repeated the field.
+
 ## 2.1.0 — 17 October 2026
 
 - **Settings, made clearer**, on the phone and the computer: each setting is a

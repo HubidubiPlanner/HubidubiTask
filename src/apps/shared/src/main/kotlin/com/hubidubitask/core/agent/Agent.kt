@@ -38,11 +38,11 @@ data class AgentConfig(
 
         /** Every agent the apps can use, in the order Settings offers them. */
         /** Labels only: the ids are what settings store, so they never change. "Agent" is the user's own. */
-        val PROTOCOLS = listOf("selfhostedai" to "SelfHostedAI", "openai" to "OpenAI",
-            "claude" to "Claude", "harness" to "Agent")
+        val PROTOCOLS = listOf("claude" to "Claude", "selfhostedai" to "SelfHostedAI",
+            "openai" to "OpenAI", "harness" to "Agent")
 
-        /** What a fresh install uses: the first choice in Settings. */
-        const val DEFAULT_PROTOCOL = "selfhostedai"
+        /** What a fresh install uses: the first choice in Settings, Claude. */
+        const val DEFAULT_PROTOCOL = "claude"
 
         /**
          * What a feed writes its task with. Never the user's own agent: a feed's

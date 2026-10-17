@@ -78,7 +78,8 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         /** Calendar events (imported here or on the computer), for Next. */
         val events: List<EntityRecord> = emptyList(),
         /** The paired Mac, if any. */
-        val mac: com.hubidubitask.mobile.net.MacLink.Mac? = null,
+        /** The computers this phone is paired with. */
+        val macs: List<com.hubidubitask.mobile.net.MacLink.Mac> = emptyList(),
         /** Watched pages, each turned into at most one task per period. */
         val feeds: List<EntityRecord> = emptyList(),
         /** Each reviewed item's summary, and whether it still describes what is there. */
@@ -153,7 +154,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     private fun proPrefs() = getApplication<Application>()
         .getSharedPreferences("pro", android.content.Context.MODE_PRIVATE)
 
-    /** Sync with the paired computer now, not at the next minute. */
+    /** Sync with the paired computers now, not at the next minute. */
     fun syncMacNow() = viewModelScope.launch {
         _state.value = _state.value.copy(syncing = true)
         withContext(Dispatchers.IO) { runCatching { Sync.syncMac(getApplication()) } }
@@ -161,8 +162,9 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(syncing = false)
     }
 
-    fun unpairMac() {
-        com.hubidubitask.mobile.net.MacLink.forget(getApplication()); refresh()
+    /** Let go of one computer; the others stay paired. */
+    fun unpairMac(id: String) {
+        com.hubidubitask.mobile.net.MacLink.forget(getApplication(), id); refresh()
     }
 
     /**
@@ -206,7 +208,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         val s = withContext(Dispatchers.IO) {
             val sync = sync()
             UiState(
-                paired = com.hubidubitask.mobile.net.MacLink.load(getApplication()) != null,
+                paired = com.hubidubitask.mobile.net.MacLink.all(getApplication()).isNotEmpty(),
                 inbox = sync.inbox(),
                 nextActions = sync.nextActions(),
                 staleProjects = sync.projectsWithoutNextAction(),
@@ -214,7 +216,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
                 projects = sync.projects(),
                 dated = sync.dated(),
                 events = sync.events(),
-                mac = com.hubidubitask.mobile.net.MacLink.load(getApplication()),
+                macs = com.hubidubitask.mobile.net.MacLink.all(getApplication()),
                 inference = _state.value.inference,
                 feeds = sync.feeds().sortedBy { com.hubidubitask.core.feed.Feeds.label(it).lowercase() },
                 reviews = ItemSummary.statuses(REVIEWABLE.flatMap { sync.byType(it) }),

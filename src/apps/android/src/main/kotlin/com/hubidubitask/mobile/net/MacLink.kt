@@ -36,7 +36,7 @@ object MacLink {
     // on 1.7.0 still find each other.
     private const val SERVICE = "_hubidubios-peer._tcp"
 
-    // ---- this phone, and the Mac it is paired with
+    // ---- this phone, and the computers it is paired with
 
     fun deviceId(context: Context): String {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -45,25 +45,57 @@ object MacLink {
         }
     }
 
-    fun load(context: Context): Mac? {
+    /**
+     * Every computer this phone is paired with, in the order they were paired.
+     * Each is a peer of its own with its own cursor, so what comes from one goes
+     * on to the others at their next round.
+     */
+    @Synchronized
+    fun all(context: Context): List<Mac> {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return Mac(p.getString("id", null) ?: return null, p.getString("name", "Computer")!!,
-            p.getString("host", null) ?: return null, p.getInt("port", 5244),
-            p.getString("fp", null) ?: return null, p.getString("token", null) ?: return null,
+        p.getString(LIST, null)?.let { s ->
+            val a = runCatching { org.json.JSONArray(s) }.getOrNull() ?: return emptyList()
+            return (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let(::macOf) }
+        }
+        // Paired before there could be more than one: that one starts the list.
+        val one = Mac(p.getString("id", null) ?: return emptyList(), p.getString("name", "Computer")!!,
+            p.getString("host", null) ?: return emptyList(), p.getInt("port", 5244),
+            p.getString("fp", null) ?: return emptyList(), p.getString("token", null) ?: return emptyList(),
             p.getString("last_sync", null))
+        write(context, listOf(one))
+        return listOf(one)
     }
 
+    /** Keep [m]: a new computer joins the list, one paired again replaces itself in it. */
+    @Synchronized
     fun save(context: Context, m: Mac) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString("id", m.id).putString("name", m.name).putString("host", m.host)
-            .putInt("port", m.port).putString("fp", m.fingerprint).putString("token", m.token)
-            .putString("last_sync", m.lastSync).apply()
+        val list = all(context)
+        write(context, if (list.any { it.id == m.id }) list.map { if (it.id == m.id) m else it } else list + m)
     }
 
-    fun forget(context: Context) {
-        val self = deviceId(context)
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear()
-            .putString("self_id", self).apply()
+    /** Let go of one computer; the others stay paired. */
+    @Synchronized
+    fun forget(context: Context, id: String) = write(context, all(context).filter { it.id != id })
+
+    private const val LIST = "macs"
+
+    private fun write(context: Context, macs: List<Mac>) {
+        val a = org.json.JSONArray()
+        macs.forEach { m ->
+            a.put(org.json.JSONObject().put("id", m.id).put("name", m.name).put("host", m.host)
+                .put("port", m.port).put("fp", m.fingerprint).put("token", m.token)
+                .put("last_sync", m.lastSync ?: org.json.JSONObject.NULL))
+        }
+        // The single computer's own keys go: the list is the one place now.
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .remove("id").remove("name").remove("host").remove("port").remove("fp").remove("token")
+            .remove("last_sync").putString(LIST, a.toString()).apply()
+    }
+
+    private fun macOf(o: org.json.JSONObject): Mac? {
+        fun s(k: String) = o.optString(k).takeIf { it.isNotEmpty() && !o.isNull(k) }
+        return Mac(s("id") ?: return null, s("name") ?: "Computer", s("host") ?: return null,
+            o.optInt("port", 5244), s("fp") ?: return null, s("token") ?: return null, s("last_sync"))
     }
 
     // ---- finding Macs
@@ -174,12 +206,26 @@ object MacLink {
     data class Fetched(val sha: String, val file: File, val mime: String, val noteId: String)
 
     /**
-     * One sync round with the paired Mac. If it isn't where it was, look for it
-     * on the LAN by its certificate (its address may have changed) and try again.
+     * One sync round with each paired computer, in turn. Null when none is
+     * paired or none answered; otherwise what went and came, all told.
      */
     fun sync(context: Context, store: PeerStore, blobsDir: File,
              onFetched: (Fetched) -> Unit = {}): Round? {
-        var mac = load(context) ?: return null
+        var total: Round? = null
+        for (mac in all(context)) {
+            val r = syncWith(context, mac, store, blobsDir, onFetched) ?: continue
+            total = Round((total?.sent ?: 0) + r.sent, (total?.received ?: 0) + r.received)
+        }
+        return total
+    }
+
+    /**
+     * One round with one computer. If it isn't where it was, look for it on the
+     * LAN by its certificate (its address may have changed) and try again.
+     */
+    private fun syncWith(context: Context, paired: Mac, store: PeerStore, blobsDir: File,
+                         onFetched: (Fetched) -> Unit): Round? {
+        var mac = paired
         val attempt = { m: Mac -> runCatching { round(context, m, store, blobsDir, onFetched) } }
         var result = attempt(mac)
         if (result.isFailure) {

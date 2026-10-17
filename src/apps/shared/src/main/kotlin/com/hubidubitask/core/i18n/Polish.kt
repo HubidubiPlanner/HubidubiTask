@@ -157,6 +157,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "Open HubidubiTask on the computer, same Wi-Fi. The device you start on shows a code; type it on the other." to "Otwórz HubidubiTask na komputerze, w tej samej sieci Wi-Fi. Urządzenie, na którym zaczniesz, pokaże kod; wpisz go na drugim.",
     "Overdue" to "Zaległe",
     "Pair" to "Sparuj",
+    "Pair a new device" to "Paruj nowe urządzenie",
     "Pair a phone" to "Sparuj telefon",
     "Pair device" to "Paruj urządzenie",
     "Pair with a computer" to "Sparuj z komputerem",

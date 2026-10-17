@@ -316,7 +316,7 @@ class Sync private constructor(
         fun open(context: Context): Sync =
             Sync(RoomLocalStore(Database.get(context)), File(context.filesDir, "blobs"))
 
-        /** One round with the paired computer, if there is one. */
+        /** One round with each paired computer, if there is any. */
         fun syncMac(context: Context): com.hubidubitask.mobile.net.MacLink.Round? {
             val db = Database.get(context)
             val peers = com.hubidubitask.mobile.data.PhonePeerStore(db, RoomLocalStore(db))
