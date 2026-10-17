@@ -51,40 +51,43 @@ data class AppColors(
     val ok: Color,         // "connected", "synced"
 )
 
+// The same sand and moss, with more contrast: darker words and greys, borders
+// that show, cards clearly lighter than the page, a deeper accent.
 private val Piasek = AppColors(
-    paper = Color(0xFFE9E1CF),
-    raised = Color(0xFFF5F0E4),
-    line = Color(0xFFCFC2AB),
-    ink = Color(0xFF2E3028),
-    muted = Color(0xFF5E5B52),
-    accent = Color(0xFF7A624C),
-    frame = Color(0xFF56594D),
-    glyph = Color(0xFFB4997E),
-    well = Color(0xFFCFC2AB),
-    button = Color(0xFF7A624C),
-    onButton = Color(0xFFF8F4EB),
-    onButtonMuted = Color(0xFFE8DCCB),
-    nav = Color(0xFFDDD3BC),
-    danger = Color(0xFF9B3A32),          // brick, not fire-engine
-    ok = Color(0xFF5F7A4C),
+    paper = Color(0xFFE7DEC9),
+    raised = Color(0xFFFCFAF5),
+    line = Color(0xFFB3A487),
+    ink = Color(0xFF1B1C17),
+    muted = Color(0xFF47443C),
+    accent = Color(0xFF634C38),
+    frame = Color(0xFF3F4237),
+    glyph = Color(0xFF8E7559),
+    well = Color(0xFFC9BB9E),
+    button = Color(0xFF5A4431),
+    onButton = Color(0xFFFFFDF8),
+    onButtonMuted = Color(0xFFEDE3D3),
+    nav = Color(0xFFD5C9AD),
+    danger = Color(0xFF8A2A22),          // brick, not fire-engine
+    ok = Color(0xFF486535),
 )
 
+// Dark the same way: a deeper page, brighter words, borders that show.
 private val Mech = AppColors(
-    paper = Color(0xFF1C1D18),
-    raised = Color(0xFF25271F),
-    line = Color(0xFF3A3C33),
-    ink = Color(0xFFD3C9AF),
-    muted = Color(0xFF9A9686),
-    accent = Color(0xFFB4997E),
-    frame = Color(0xFF848072),
-    glyph = Color(0xFF56594D),
-    well = Color(0xFF3A3C33),
-    button = Color(0xFFB4997E),
-    onButton = Color(0xFF1C1D18),
+    paper = Color(0xFF12130F),
+    raised = Color(0xFF23251D),
+    line = Color(0xFF575A4C),
+    ink = Color(0xFFF1EADA),
+    muted = Color(0xFFBDB8A6),
+    accent = Color(0xFFD6BA99),
+    frame = Color(0xFFA9A594),
+    glyph = Color(0xFF7A7D6D),
+    well = Color(0xFF3E4136),
+    button = Color(0xFFD6BA99),
+    onButton = Color(0xFF12130F),
     onButtonMuted = Color(0xFF3A3129),
-    nav = Color(0xFF151612),
-    danger = Color(0xFFD08A80),
-    ok = Color(0xFF8FA877),
+    nav = Color(0xFF0B0C09),
+    danger = Color(0xFFEFA59A),
+    ok = Color(0xFFA8C38E),
 )
 
 private fun schemeOf(c: AppColors, dark: Boolean) = if (dark) darkColorScheme(

@@ -101,6 +101,7 @@ import androidx.core.content.FileProvider
 import com.hubidubitask.core.Backup
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.NewItemDue
+import com.hubidubitask.core.agent.AgentConfig.Companion.PROTOCOLS
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
@@ -1084,7 +1085,7 @@ private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
     var wanted by remember { mutableStateOf(vm.proWanted()) }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
-    SectionLabel(t("Pro"), modifier = Modifier.padding(top = 0.dp))
+    SectionLabel(t("Pro"), modifier = Modifier.padding(top = 28.dp))
     CardGroup(inset = edge) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -1146,6 +1147,7 @@ fun SettingsScreen(
     // system's secret store.
     var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
     val claude = protocol == "claude"
+    val selfhosted = protocol == "selfhostedai"
     // The user's own agent on a computer at home: its IP, port and token.
     val harness = protocol == "harness"
     val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.AgentLink.split(vm.harnessEndpoint()) }
@@ -1163,43 +1165,12 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader(t("Settings"))
-        ProSection(vm, edge)
-        // The computer (Mac or Linux) this phone keeps in step with, every minute.
-        var pairingMac by remember { mutableStateOf(false) }
-        PairMacSheet(pairingMac, vm) { pairingMac = false }
-        SectionLabel(t("Computer"))
-        val mac = state.mac
-        if (mac != null) {
-            CardGroup(inset = edge) {
-                StatusRow(mac.name, mac.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) }
-                    ?: t("paired, not synced yet"), mac.lastSync != null)
-                StatusRow(t("AI"), state.inference.server ?: t("not configured"),
-                    state.inference.connected, last = true)
-            }
-            Row(Modifier.padding(start = edge, end = edge, top = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton(if (state.syncing) t("Syncing…") else t("Sync now"), { vm.syncMacNow() },
-                    Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)
-                SecondaryButton(t("Unpair"), { vm.unpairMac() }, Modifier.weight(1f))
-            }
-        } else {
-            CardGroup(inset = edge) {
-                StatusRow(t("AI"), state.inference.server ?: t("not configured"),
-                    state.inference.connected, last = true)
-            }
-            Row(Modifier.padding(start = edge, end = edge, top = 10.dp)) {
-                PrimaryButton(t("Pair with a computer"), { pairingMac = true }, Modifier.weight(1f),
-                    icon = Icons.Outlined.Link)
-            }
-        }
-
-        SectionLabel(t("AI"), modifier = Modifier.padding(top = 10.dp))
+        // Which AI answers reviews, and only what that one needs to be reached.
+        SectionLabel(t("AI Agent"))
 
         Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Segmented(
-                com.hubidubitask.core.agent.AgentConfig.PROTOCOLS.map { (id, label) -> id to t(label) },
-                protocol, { protocol = it; message = null },
-            )
+            Dropdown(t(PROTOCOLS.first { it.first == protocol }.second),
+                PROTOCOLS.map { (id, label) -> DropdownItem(t(label), id == protocol) { protocol = id; message = null } })
 
             if (claude)
                 LabeledField(t("Claude API key"), claudeKey, { claudeKey = it; message = null },
@@ -1221,8 +1192,9 @@ fun SettingsScreen(
                     helper = "",
                     enabled = true, placeholder = "https://192.168.1.50:8443")
 
-            // The user's agent decides its own model.
-            if (!harness)
+            // Only SelfHostedAI is told which of its models to use; the others choose
+            // their own (Claude the app's, an OpenAI-shaped server its first).
+            if (selfhosted)
                 LabeledField(t("Model"), model, { model = it; message = null },
                     helper = "",
                     enabled = true, placeholder = defaultModel)
@@ -1254,7 +1226,7 @@ fun SettingsScreen(
                     } else {
                     vm.setAgentConfig(saved.copy(
                         endpoint = endpoint.trim(), protocol = protocol,
-                        model = model.ifBlank { defaultModel },
+                        model = if (selfhosted) model.ifBlank { defaultModel } else defaultModel,
                         apiKey = if (claude) claudeKey.trim() else null))
                     scope.launch {
                         // Saving is not the same as working. An address nothing
@@ -1278,29 +1250,45 @@ fun SettingsScreen(
                 },
             )
 
-            message?.let {
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (connected) c.ok else c.muted)
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
-                }
+            // What answers now, or what the last Save found.
+            Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Dot(if (if (message != null) connected else state.inference.connected) c.ok else c.muted)
+                Text(message ?: state.inference.server ?: t("not configured"),
+                    style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
+        }
+        // The computer (Mac or Linux) this phone keeps in step with, every minute:
+        // its name, and what can be done with it.
+        var pairingMac by remember { mutableStateOf(false) }
+        PairMacSheet(pairingMac, vm) { pairingMac = false }
+        SectionLabel(t("Pair device"), modifier = Modifier.padding(top = 22.dp))
+        val mac = state.mac
+        Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Dropdown(mac?.name ?: t("Not paired"),
+                if (mac != null) listOf(
+                    DropdownItem(if (state.syncing) t("Syncing…") else t("Sync now")) { vm.syncMacNow() },
+                    DropdownItem(t("Unpair"), danger = true) { vm.unpairMac() },
+                ) else listOf(DropdownItem(t("Pair with a computer")) { pairingMac = true }))
+            if (mac != null) Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Dot(if (mac.lastSync != null) c.ok else c.muted)
+                Text(mac.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) }
+                    ?: t("paired, not synced yet"), style = MaterialTheme.typography.bodySmall, color = c.muted)
             }
         }
         // The date every new task and note gets: tomorrow brings it back on
         // Incoming the next day.
         SectionLabel(t("Due date for new tasks and notes"), modifier = Modifier.padding(top = 22.dp))
         val newDue by vm.newDue.collectAsStateWithLifecycle()
-        Box(Modifier.padding(horizontal = edge)) {
-            Segmented(NewItemDue.OPTIONS.map { (id, label) -> id to t(label) }, newDue,
-                { vm.setNewDue(it) })
-        }
+        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
+            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
+            Modifier.padding(horizontal = edge))
         // The app's own language, each named in itself.
         SectionLabel(t("Language"), modifier = Modifier.padding(top = 22.dp))
         val language by vm.language.collectAsStateWithLifecycle()
-        Box(Modifier.padding(horizontal = edge)) {
-            Segmented(Language.entries.map { it to it.label }, language,
-                { vm.setLanguage(it) })
-        }
+        Dropdown(language.label, Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } },
+            Modifier.padding(horizontal = edge))
         // Kept quiet at the very end: things done once in a while, not settings
         // anyone looks for day to day. Export first: a copy of everything as one
         // file sealed with a password, the way to keep it outside the app;
@@ -1335,6 +1323,8 @@ fun SettingsScreen(
         SecondaryButton(t("Import"), onImport,
             Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 10.dp),
             icon = Icons.Outlined.FileDownload)
+        // Last: what is not here yet.
+        ProSection(vm, edge)
         Spacer(Modifier.height(16.dp))
     }
 }

@@ -19,8 +19,14 @@ class OpenAiClient(private val config: AgentConfig) : ModelClient {
         config.apiKey?.takeIf { it.isNotBlank() }?.let { header("Authorization", "Bearer $it") }
     }
 
+    // With no model named, the first the server lists, asked for once.
+    @Volatile private var listed: String? = null
+    private fun model(): String = config.model.takeIf { it.isNotBlank() } ?: listed
+        ?: health().models.firstOrNull { it.isNotBlank() }?.also { listed = it }
+        ?: throw AgentError("the server lists no model")
+
     override fun complete(messages: List<Message>): String {
-        val body = JSONObject().put("model", config.model).put("temperature", 0.2)
+        val body = JSONObject().put("model", model()).put("temperature", 0.2)
             .put("messages", JSONArray().apply {
                 messages.forEach { put(JSONObject().put("role", it.role).put("content", it.content)) }
             })

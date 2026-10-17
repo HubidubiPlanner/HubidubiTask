@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **Settings, made clearer**, on the phone and the computer: each setting is a
+  dropdown under its heading, showing what it is set to. **AI Agent** (was
+  AI) comes first, asking only for what the chosen one needs; the Model field
+  is for SelfHostedAI alone (Claude uses the app's model, an OpenAI-shaped server
+  answers with the first model it lists). Then **Pair device**: on the phone
+  the computer it is paired with, Sync now and Unpair, or Pair with a
+  computer; on the computer the phones, Pair a phone, and Unpair for each
+  (the computer could not unpair a phone before). Then the due date for new
+  items, the language, Export and Import, and Pro last.
+- **More contrast**: the same sand and moss, with darker words and greys,
+  borders that show, cards clearly lighter than the page, and deeper buttons;
+  in the dark theme a deeper page and brighter words. Body text, grey text and
+  buttons now pass WCAG AA in both themes.
+
 ## 2.0.0 — 16 October 2026
 
 - **Settings › Export**, above Import, on the phone and the computer:

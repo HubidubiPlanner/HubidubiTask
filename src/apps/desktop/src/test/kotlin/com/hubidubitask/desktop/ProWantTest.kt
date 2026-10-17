@@ -4,6 +4,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import com.hubidubitask.core.pro.ProInterest
 import com.hubidubitask.desktop.ui.HubidubiTaskViewModel
@@ -38,10 +39,10 @@ class ProWantTest {
             val vm = HubidubiTaskViewModel(store, PeerServer(store, "Test Mac") {}).apply { proForm = f.form }
             setContent { App(vm, "settings", dark = false) }
             // The form refuses it: said so, and the button stays.
-            onNodeWithText("I want Pro").performClick()
+            onNodeWithText("I want Pro").performScrollTo().performClick()
             waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("That didn't go through", substring = true)).fetchSemanticsNodes().isNotEmpty() }
             f.code = 200
-            onNodeWithText("I want Pro").performClick()
+            onNodeWithText("I want Pro").performScrollTo().performClick()
             waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("Thanks, we've counted you")).fetchSemanticsNodes().isNotEmpty() }
             assertEquals(0, onAllNodes(hasText("I want Pro")).fetchSemanticsNodes().size)
             val sent = f.bodies.last().split('&').associate { it.substringBefore('=') to it.substringAfter('=') }

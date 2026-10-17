@@ -20,7 +20,7 @@ demo data carries two reviews, kept up to date, so a summary shows under a title
 5. `5-review-with-ai.jpg`: a long press on a project: its summary under the title, Review with AI
 6. `6-feeds.jpg`: three watched web pages
 7. `7-next-week.jpg`: Incoming, Week view, grouped by day
-8. `8-settings-ai.jpg`: Settings, scrolled to the four AI choices, the due date new tasks and notes get, and the language
+8. `8-settings-ai.jpg`: Settings: the AI agent and what it needs, Pair device, the due date new tasks and notes get
 
 ## Making them again
 

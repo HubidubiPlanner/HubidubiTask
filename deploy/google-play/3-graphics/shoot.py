@@ -85,7 +85,7 @@ class Phone:
 
 
 # What each tab shows once it is open, to know the tap landed.
-LANDMARK = {"Incoming": "Day", "Projects": "New project or task", "Feeds": "New feed", "Settings": "AI"}
+LANDMARK = {"Incoming": "Day", "Projects": "New project or task", "Feeds": "New feed", "Settings": "AI AGENT"}
 
 
 def tab(p, name):
@@ -156,17 +156,8 @@ def play_set(p, out):
     p.tap("Week")
     p.shot(os.path.join(out, "7-next-week.jpg"))
     tab(p, "Settings")
-    # Past the Pro card at the top, to the AI choices, the date new items get
-    # and the language. A slow drag still slides on a little, so it is set
-    # right afterwards by where the AI choices ended up: their heading just
-    # under the status bar, the card above it gone.
-    p.sh("input", "swipe", "540", "1750", "540", "650", "1500")
-    time.sleep(1.5)
-    off = p.find("SelfHostedAI")[1] - 215
-    if abs(off) > 30:
-        p.sh("input", "swipe", "540", "1200", "540", str(1200 - off), "1500")
-        time.sleep(1.5)
-    p.find("English")
+    # It opens on the AI agent, the devices, the due date and the language.
+    p.find("SelfHostedAI")
     p.shot(os.path.join(out, "8-settings-ai.jpg"))
 
 

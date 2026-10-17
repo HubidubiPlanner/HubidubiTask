@@ -54,7 +54,9 @@ data class AgentConfig(
             "claude" -> CLAUDE_MODEL
             "harness" -> ""
             "selfhostedai" -> "fast"
-            else -> "local"
+            // An OpenAI-shaped server is not asked for a model by name: it
+            // answers with the first one it lists (OpenAiClient).
+            else -> ""
         }
     }
 }

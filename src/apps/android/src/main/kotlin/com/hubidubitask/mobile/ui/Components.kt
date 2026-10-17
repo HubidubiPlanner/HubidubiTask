@@ -22,7 +22,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -35,14 +40,21 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hubidubitask.core.i18n.I18n
@@ -321,6 +333,62 @@ fun <T> Segmented(
                 Text(label, style = MaterialTheme.typography.bodySmall,
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
                     color = if (on) c.onButton else c.ink)
+            }
+        }
+    }
+}
+
+/** One entry of a [Dropdown]: what it says, and what choosing it does. */
+data class DropdownItem(
+    val label: String,
+    val selected: Boolean = false,
+    val danger: Boolean = false,
+    val onClick: () -> Unit,
+)
+
+/**
+ * A setting's current value with an arrow; a tap opens its choices right under
+ * it, the current one ticked. Settings is a list of these, each under its
+ * heading, so every setting reads as what it is and what it is set to.
+ */
+@Composable
+fun Dropdown(value: String, items: List<DropdownItem>, modifier: Modifier = Modifier) {
+    val c = HubidubiTaskTheme.colors
+    var open by remember { mutableStateOf(false) }
+    var width by remember { mutableStateOf(0) }
+    Box(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp)
+                .onSizeChanged { width = it.width }
+                .background(c.raised).border(1.dp, c.glyph)
+                .clickable(role = Role.DropdownList) { open = true }
+                .padding(start = 16.dp, end = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = c.ink, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = c.accent,
+                modifier = Modifier.size(26.dp))
+        }
+        DropdownMenu(
+            expanded = open, onDismissRequest = { open = false },
+            modifier = Modifier.width(with(LocalDensity.current) { width.toDp() }),
+            shape = RectangleShape, containerColor = c.raised,
+            border = androidx.compose.foundation.BorderStroke(1.dp, c.glyph),
+        ) {
+            items.forEach { item ->
+                DropdownMenuItem(
+                    text = {
+                        Text(item.label, style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (item.selected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (item.danger) c.danger else c.ink)
+                    },
+                    trailingIcon = if (item.selected) ({
+                        Icon(Icons.Filled.Check, contentDescription = null, tint = c.accent,
+                            modifier = Modifier.size(20.dp))
+                    }) else null,
+                    onClick = { open = false; item.onClick() },
+                )
             }
         }
     }

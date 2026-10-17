@@ -19,8 +19,8 @@ each other current over your own Wi-Fi.
 
 ## Pair the phone with the computer
 
-Both on the same Wi-Fi. On the phone: **Settings → Pair with a computer**; on
-the computer: **Settings → Pair a phone**. One of them shows a code, you type
+Both on the same Wi-Fi. On the phone: **Settings → Pair device → Pair with a
+computer**; on the computer: **Settings → Pair device → Pair a phone**. One of them shows a code, you type
 it on the other. From then on they sync every minute while the app is open,
 and the phone also hourly in the background.
 
@@ -83,12 +83,12 @@ its page.
 
 ## AI
 
-**Settings**, under **AI**, chooses one of four:
+**Settings → AI Agent** chooses one of four:
 
 | Choice | What to enter |
 |---|---|
-| SelfHostedAI | The server's address. Chosen until you pick another. |
-| OpenAI | The address of a server that speaks OpenAI's API, and the model's name |
+| SelfHostedAI | The server's address and the model to use. Chosen until you pick another. |
+| OpenAI | The address of a server that speaks OpenAI's API; it answers with the first model it lists |
 | Claude | An API key from the Anthropic Console (kept in the system's keychain) |
 | Agent | The IP of the computer where your own agent runs, its token or password, and its port if it isn't the usual one |
 
