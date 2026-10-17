@@ -40,8 +40,9 @@ class SettingsDropdownTest {
         waitForIdle()
         shot("settings-top")
 
-        // Claude, the default: its key alone; no address, no model, no Save.
-        onNodeWithText("Claude API key").assertExists()
+        // Claude, the default: its key's field alone, untitled; no address, no model, no Save.
+        assertEquals(0, onAllNodesWithText("Claude API key").fetchSemanticsNodes().size)
+        assertEquals(1, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)
         assertEquals(0, onAllNodesWithText("Model").fetchSemanticsNodes().size)
         assertEquals(0, onAllNodesWithText("Save").fetchSemanticsNodes().size)
         onNodeWithText("Claude").performClick()
@@ -71,7 +72,16 @@ class SettingsDropdownTest {
         onAllNodes(hasText("JĘZYK")).fetchSemanticsNodes().isNotEmpty()
         vm.setLanguage(Language.EN)
         waitForIdle()
-        onNodeWithText("Pair device".uppercase()).performScrollTo()
-        shot("settings-bottom")
+        // Paired devices: each with when it last synced, on its right in the list, and New device.
+        store.addPeer(Store.Peer("phone-1", "Pixel", "token", "2026-10-18T09:00:00Z", null))
+        vm.refresh()
+        waitUntil(timeoutMillis = 5_000) { vm.state.value.peers.isNotEmpty() }
+        onNodeWithText("PAIRED DEVICES").performScrollTo()
+        assertEquals(0, onAllNodesWithText("not synced yet").fetchSemanticsNodes().size)
+        onNodeWithText("Pixel").performClick()
+        waitForIdle()
+        onNodeWithText("not synced yet").assertExists()
+        onNodeWithText("New device").assertExists()
+        shot("settings-devices-open")
     }
 }

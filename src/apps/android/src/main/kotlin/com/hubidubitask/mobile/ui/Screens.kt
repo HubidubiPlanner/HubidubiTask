@@ -1041,7 +1041,8 @@ private fun LabeledField(
 ) {
     val c = HubidubiTaskTheme.colors
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        if (label.isNotEmpty())
+            Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value, onValueChange = onValueChange,
             visualTransformation = if (secret)
@@ -1183,7 +1184,7 @@ fun SettingsScreen(
                 PROTOCOLS.map { (id, label) -> DropdownItem(t(label), id == protocol) { protocol = id; message = null; touched = true } })
 
             if (claude)
-                LabeledField(t("Claude API key"), claudeKey, { claudeKey = it; message = null; touched = true },
+                LabeledField("", claudeKey, { claudeKey = it; message = null; touched = true },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
             else if (harness) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1272,23 +1273,17 @@ fun SettingsScreen(
         // minute: a list of them, and New device in it to pair another.
         var pairingMac by remember { mutableStateOf(false) }
         PairMacSheet(pairingMac, vm) { pairingMac = false }
-        SectionLabel(t("Pair device"))
+        SectionLabel(t("Paired devices"))
         val macs = state.macs
-        // The one chosen in the list: its last sync, Sync now and Unpair under it.
+        // The one chosen in the list: Sync now and Unpair under it.
         var chosenMac by remember { mutableStateOf<String?>(null) }
         val mac = macs.firstOrNull { it.id == chosenMac } ?: macs.firstOrNull()
         Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            fun synced(m: com.hubidubitask.mobile.net.MacLink.Mac) =
-                m.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) } ?: t("paired, not synced yet")
             Dropdown(mac?.name ?: t("Not paired"),
-                macs.map { m -> DropdownItem("${m.name} · ${synced(m)}", m.id == mac?.id) { chosenMac = m.id } } +
-                    DropdownItem(t("New device")) { pairingMac = true })
+                macs.map { m ->
+                    DropdownItem(m.name, m.id == mac?.id, detail = syncedAt(m.lastSync)) { chosenMac = m.id }
+                } + DropdownItem(t("New device")) { pairingMac = true })
             if (mac != null) {
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (mac.lastSync != null) c.ok else c.muted)
-                    Text(synced(mac), style = MaterialTheme.typography.bodySmall, color = c.muted)
-                }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SecondaryButton(if (state.syncing) t("Syncing…") else t("Sync now"), { vm.syncMacNow() },
                         Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)

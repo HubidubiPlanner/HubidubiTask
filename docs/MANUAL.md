@@ -19,14 +19,14 @@ each other current over your own Wi-Fi.
 
 ## Pair the phone with the computer
 
-Both on the same Wi-Fi. On either one: **Settings → Pair device → New device**,
+Both on the same Wi-Fi. On either one: **Settings → Paired devices → New device**,
 then the same on the other. One of them shows a code, you type it on
 the other. From then on they sync every minute while the app is open, and the
 phone also hourly in the background. Pair as many as you like: a phone with
 several computers, a computer with several phones. Each is synced in turn, so
-what is written on one reaches all of them. **Pair device** lists them; the one
-chosen shows when it last synced, with Sync now (on the phone) and Unpair under
-it.
+what is written on one reaches all of them. **Paired devices** lists them, each
+with when it last synced on its right; the one chosen has Sync now (on the
+phone) and Unpair under the list.
 
 ## Pro
 

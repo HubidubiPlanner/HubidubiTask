@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.hubidubitask.core.i18n.t
 import com.hubidubitask.core.i18n.I18n
 
 // The few pieces every screen is built from. Keeping them here is what makes
@@ -343,6 +344,8 @@ data class DropdownItem(
     val label: String,
     val selected: Boolean = false,
     val danger: Boolean = false,
+    /** Shown on the right of the entry, quieter: when a device last synced. */
+    val detail: String? = null,
     val onClick: () -> Unit,
 )
 
@@ -383,9 +386,15 @@ fun Dropdown(value: String, items: List<DropdownItem>, modifier: Modifier = Modi
                             fontWeight = if (item.selected) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (item.danger) c.danger else c.ink)
                     },
-                    trailingIcon = if (item.selected) ({
-                        Icon(Icons.Filled.Check, contentDescription = null, tint = c.accent,
-                            modifier = Modifier.size(20.dp))
+                    trailingIcon = if (item.selected || item.detail != null) ({
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            item.detail?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
+                            }
+                            if (item.selected) Icon(Icons.Filled.Check, contentDescription = null, tint = c.accent,
+                                modifier = Modifier.size(20.dp))
+                        }
                     }) else null,
                     onClick = { open = false; item.onClick() },
                 )
@@ -393,3 +402,11 @@ fun Dropdown(value: String, items: List<DropdownItem>, modifier: Modifier = Modi
         }
     }
 }
+
+/** When a device last synced, short and in this device's time: "Fri 16 Oct 22:54". */
+fun syncedAt(iso: String?): String = iso?.let {
+    runCatching {
+        val local = java.time.Instant.parse(it).atZone(java.time.ZoneId.systemDefault())
+        shortDate(local.toLocalDate().toString()) + " " + "%02d:%02d".format(local.hour, local.minute)
+    }.getOrNull()
+} ?: t("not synced yet")

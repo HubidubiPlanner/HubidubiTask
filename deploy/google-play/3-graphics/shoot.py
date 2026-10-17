@@ -157,7 +157,7 @@ def play_set(p, out):
     p.shot(os.path.join(out, "7-next-week.jpg"))
     tab(p, "Settings")
     # It opens on the AI agent (Claude, by default), the devices, the due date and the language.
-    p.find("Claude API key")
+    p.find("Claude")
     p.shot(os.path.join(out, "8-settings-ai.jpg"))
 
 

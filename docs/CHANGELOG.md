@@ -5,11 +5,13 @@
 - **More than one device.** A phone can now be paired with several computers,
   as a computer already could with several phones; each is synced in turn, so
   what is written on one reaches them all. A phone paired before keeps its
-  computer. **Settings › Pair device** lists them with **New device** among
-  them to pair another; the one chosen shows when it last synced, with Sync
-  now (on the phone) and Unpair under it.
+  computer. **Settings › Paired devices** lists them, each with when it last
+  synced on its right, and **New device** among them to pair another; the
+  one chosen has Sync now (on the phone) and Unpair under the list.
 - Settings opens with **Due date for new tasks and notes**, then AI Agent,
-  Pair device and Language, evenly spaced (each heading had an extra margin).
+  Paired devices and Language, evenly spaced (each heading had an extra
+  margin). The Claude key's field stands without a title; its placeholder
+  says what goes in.
 - **Claude is the default AI agent**, and first in the list.
 - **No Save in Settings › AI Agent**: a change is kept a moment after it is
   made, then checked, and the line under the fields says what answered. The

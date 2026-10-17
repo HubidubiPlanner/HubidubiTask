@@ -849,7 +849,8 @@ private fun LabeledField(
 ) {
     val c = HubidubiTaskTheme.colors
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        if (label.isNotEmpty())
+            Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value, onValueChange = onValueChange,
             visualTransformation = if (secret)
@@ -992,7 +993,7 @@ fun SettingsScreen(
                 PROTOCOLS.map { (id, label) -> DropdownItem(t(label), id == protocol) { protocol = id; message = null; touched = true } })
 
             if (claude)
-                LabeledField(t("Claude API key"), claudeKey, { claudeKey = it; message = null; touched = true },
+                LabeledField("", claudeKey, { claudeKey = it; message = null; touched = true },
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
             else if (harness) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1079,22 +1080,16 @@ fun SettingsScreen(
         }
         // The phones this computer keeps in step with: a list of them, and New
         // device in it to pair another.
-        SectionLabel(t("Pair device"))
-        // The one chosen in the list: its last sync, and Unpair under it.
+        SectionLabel(t("Paired devices"))
+        // The one chosen in the list: Unpair under it.
         var chosenPhone by remember { mutableStateOf<String?>(null) }
         val phone = state.peers.firstOrNull { it.id == chosenPhone } ?: state.peers.firstOrNull()
         Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            fun synced(p: com.hubidubitask.desktop.Store.Peer) =
-                p.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) } ?: t("paired, not synced yet")
             Dropdown(phone?.name ?: t("No phone paired yet"),
-                state.peers.map { p -> DropdownItem("${p.name} · ${synced(p)}", p.id == phone?.id) { chosenPhone = p.id } } +
-                    DropdownItem(t("New device")) { pairing = true })
+                state.peers.map { p ->
+                    DropdownItem(p.name, p.id == phone?.id, detail = syncedAt(p.lastSync)) { chosenPhone = p.id }
+                } + DropdownItem(t("New device")) { pairing = true })
             if (phone != null) {
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (phone.lastSync != null) c.ok else c.muted)
-                    Text(synced(phone), style = MaterialTheme.typography.bodySmall, color = c.muted)
-                }
                 SecondaryButton(t("Unpair"), { chosenPhone = null; vm.unpair(phone.id) }, Modifier.fillMaxWidth())
             }
         }
