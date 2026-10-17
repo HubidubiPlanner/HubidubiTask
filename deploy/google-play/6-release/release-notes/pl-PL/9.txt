@@ -1,0 +1,5 @@
+Nowości w 2.2.0
+• Motywy kolorów: Ustawienia › Motyw kolorów – Piasek, Papier, Noc, Las i Ocean, wszystkie o wysokim kontraście.
+• Więcej niż jedno urządzenie: Ustawienia › Sparowane urządzenia pokazują je z czasem ostatniej synchronizacji; Nowe urządzenie paruje kolejne.
+• Claude jest domyślnym agentem AI, a ustawienia zapisują się same, bez przycisku Zapisz.
+• Ustawienia zaczynają się od terminu dla nowych zadań i notatek.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 — 18 October 2026
 
 - **Color themes.** **Settings › Color theme** offers five, on the phone and
   the computer: Sand, the app's own, following the system's light or dark

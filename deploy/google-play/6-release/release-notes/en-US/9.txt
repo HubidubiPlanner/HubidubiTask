@@ -1,0 +1,5 @@
+What's new in 2.2.0
+• Color themes: Settings › Color theme offers Sand, Paper, Night, Forest and Ocean, all high in contrast.
+• More than one device: Settings › Paired devices lists them with their last sync; New device pairs another.
+• Claude is the default AI agent, and settings save themselves: no Save button.
+• Settings starts with the due date for new tasks and notes.
