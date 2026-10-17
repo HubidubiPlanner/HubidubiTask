@@ -977,6 +977,13 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader(t("Settings"))
+        // The date every new task and note gets: tomorrow brings it back on
+        // Incoming the next day.
+        SectionLabel(t("Due date for new tasks and notes"))
+        val newDue by vm.newDue.collectAsState()
+        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
+            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
+            Modifier.padding(horizontal = edge))
         // Which AI answers reviews, and only what that one needs to be reached.
         SectionLabel(t("AI Agent"))
 
@@ -1070,36 +1077,29 @@ fun SettingsScreen(
                 }
             }
         }
-        // The phones this computer keeps in step with: their names, each one to
-        // let go in the list, and a new one always one tap away under it.
-        SectionLabel(t("Pair device"), modifier = Modifier.padding(top = 22.dp))
+        // The phones this computer keeps in step with: a list of them, and New
+        // device in it to pair another.
+        SectionLabel(t("Pair device"))
+        // The one chosen in the list: its last sync, and Unpair under it.
+        var chosenPhone by remember { mutableStateOf<String?>(null) }
+        val phone = state.peers.firstOrNull { it.id == chosenPhone } ?: state.peers.firstOrNull()
         Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             fun synced(p: com.hubidubitask.desktop.Store.Peer) =
                 p.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) } ?: t("paired, not synced yet")
-            Dropdown(if (state.peers.isEmpty()) t("No phone paired yet") else state.peers.joinToString(", ") { it.name },
-                if (state.peers.isEmpty()) listOf(DropdownItem(t("Pair a new device")) { pairing = true })
-                else state.peers.map { p ->
-                    DropdownItem(t("Unpair %s", "${p.name} (${synced(p)})"), danger = true) { vm.unpair(p.id) }
-                })
-            state.peers.forEach { p ->
+            Dropdown(phone?.name ?: t("No phone paired yet"),
+                state.peers.map { p -> DropdownItem("${p.name} · ${synced(p)}", p.id == phone?.id) { chosenPhone = p.id } } +
+                    DropdownItem(t("New device")) { pairing = true })
+            if (phone != null) {
                 Row(verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (p.lastSync != null) c.ok else c.muted)
-                    Text("${p.name} · ${synced(p)}", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    Dot(if (phone.lastSync != null) c.ok else c.muted)
+                    Text(synced(phone), style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
+                SecondaryButton(t("Unpair"), { chosenPhone = null; vm.unpair(phone.id) }, Modifier.fillMaxWidth())
             }
-            SecondaryButton(t("Pair a new device"), { pairing = true }, Modifier.fillMaxWidth(),
-                icon = Icons.Outlined.Link)
         }
-        // The date every new task and note gets: tomorrow brings it back on
-        // Incoming the next day.
-        SectionLabel(t("Due date for new tasks and notes"), modifier = Modifier.padding(top = 22.dp))
-        val newDue by vm.newDue.collectAsState()
-        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
-            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
-            Modifier.padding(horizontal = edge))
         // The app's own language, each named in itself.
-        SectionLabel(t("Language"), modifier = Modifier.padding(top = 22.dp))
+        SectionLabel(t("Language"))
         val language by vm.language.collectAsState()
         Dropdown(language.label, Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } },
             Modifier.padding(horizontal = edge))

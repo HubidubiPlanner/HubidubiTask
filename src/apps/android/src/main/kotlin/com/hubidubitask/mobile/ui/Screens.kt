@@ -1168,6 +1168,13 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader(t("Settings"))
+        // The date every new task and note gets: tomorrow brings it back on
+        // Incoming the next day.
+        SectionLabel(t("Due date for new tasks and notes"))
+        val newDue by vm.newDue.collectAsStateWithLifecycle()
+        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
+            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
+            Modifier.padding(horizontal = edge))
         // Which AI answers reviews, and only what that one needs to be reached.
         SectionLabel(t("AI Agent"))
 
@@ -1262,40 +1269,35 @@ fun SettingsScreen(
             }
         }
         // The computers (Mac or Linux) this phone keeps in step with, every
-        // minute: their names, Sync now and Unpair in the list, and a new one
-        // always one tap away under it.
+        // minute: a list of them, and New device in it to pair another.
         var pairingMac by remember { mutableStateOf(false) }
         PairMacSheet(pairingMac, vm) { pairingMac = false }
-        SectionLabel(t("Pair device"), modifier = Modifier.padding(top = 22.dp))
+        SectionLabel(t("Pair device"))
         val macs = state.macs
+        // The one chosen in the list: its last sync, Sync now and Unpair under it.
+        var chosenMac by remember { mutableStateOf<String?>(null) }
+        val mac = macs.firstOrNull { it.id == chosenMac } ?: macs.firstOrNull()
         Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             fun synced(m: com.hubidubitask.mobile.net.MacLink.Mac) =
                 m.lastSync?.let { t("synced %s UTC", it.take(16).replace('T', ' ')) } ?: t("paired, not synced yet")
-            Dropdown(if (macs.isEmpty()) t("Not paired") else macs.joinToString(", ") { it.name },
-                if (macs.isEmpty()) listOf(DropdownItem(t("Pair a new device")) { pairingMac = true })
-                else listOf(DropdownItem(if (state.syncing) t("Syncing…") else t("Sync now")) { vm.syncMacNow() }) +
-                    macs.map { m ->
-                        DropdownItem(t("Unpair %s", "${m.name} (${synced(m)})"), danger = true) { vm.unpairMac(m.id) }
-                    })
-            macs.forEach { m ->
+            Dropdown(mac?.name ?: t("Not paired"),
+                macs.map { m -> DropdownItem("${m.name} · ${synced(m)}", m.id == mac?.id) { chosenMac = m.id } } +
+                    DropdownItem(t("New device")) { pairingMac = true })
+            if (mac != null) {
                 Row(verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (m.lastSync != null) c.ok else c.muted)
-                    Text("${m.name} · ${synced(m)}", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    Dot(if (mac.lastSync != null) c.ok else c.muted)
+                    Text(synced(mac), style = MaterialTheme.typography.bodySmall, color = c.muted)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SecondaryButton(if (state.syncing) t("Syncing…") else t("Sync now"), { vm.syncMacNow() },
+                        Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)
+                    SecondaryButton(t("Unpair"), { chosenMac = null; vm.unpairMac(mac.id) }, Modifier.weight(1f))
                 }
             }
-            SecondaryButton(t("Pair a new device"), { pairingMac = true }, Modifier.fillMaxWidth(),
-                icon = Icons.Outlined.Link)
         }
-        // The date every new task and note gets: tomorrow brings it back on
-        // Incoming the next day.
-        SectionLabel(t("Due date for new tasks and notes"), modifier = Modifier.padding(top = 22.dp))
-        val newDue by vm.newDue.collectAsStateWithLifecycle()
-        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
-            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
-            Modifier.padding(horizontal = edge))
         // The app's own language, each named in itself.
-        SectionLabel(t("Language"), modifier = Modifier.padding(top = 22.dp))
+        SectionLabel(t("Language"))
         val language by vm.language.collectAsStateWithLifecycle()
         Dropdown(language.label, Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } },
             Modifier.padding(horizontal = edge))
