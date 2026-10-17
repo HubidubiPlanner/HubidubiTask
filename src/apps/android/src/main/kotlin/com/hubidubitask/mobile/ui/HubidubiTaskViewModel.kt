@@ -63,6 +63,15 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun due(): String? = NewItemDue.due(_newDue.value)
 
+    /** The colour theme ([ColorTheme]) chosen in Settings. */
+    private val _theme = MutableStateFlow(ThemeChoice.load(app))
+    val theme: StateFlow<ColorTheme> = _theme.asStateFlow()
+
+    fun setTheme(theme: ColorTheme) {
+        ThemeChoice.save(getApplication(), theme)
+        _theme.value = theme
+    }
+
 
     data class UiState(
         val paired: Boolean = false,

@@ -1101,6 +1101,13 @@ fun SettingsScreen(
         val language by vm.language.collectAsState()
         Dropdown(language.label, Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } },
             Modifier.padding(horizontal = edge))
+        // The colours: Sand follows the system's light or dark, the others are
+        // always one of them, said on the right of each in the list.
+        SectionLabel(t("Color theme"))
+        val theme by vm.theme.collectAsState()
+        Dropdown(t(theme.label), ColorTheme.entries.map {
+            DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }
+        }, Modifier.padding(horizontal = edge))
         // Kept quiet at the very end: things done once in a while, not settings
         // anyone looks for day to day. Export first: a copy of everything as one
         // file sealed with a password, the way to keep it outside the app;

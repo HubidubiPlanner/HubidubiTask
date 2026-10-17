@@ -40,7 +40,8 @@ private data class Dest(val route: String, val label: String, val icon: ImageVec
 
 @Composable
 fun HubidubiTaskApp(vm: HubidubiTaskViewModel = viewModel()) {
-    HubidubiTaskTheme {
+    val theme by vm.theme.collectAsStateWithLifecycle()
+    HubidubiTaskTheme(theme) {
         val c = HubidubiTaskTheme.colors
         Surface(color = c.paper) {
             val nav = rememberNavController()

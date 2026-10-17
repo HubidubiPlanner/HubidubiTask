@@ -37,6 +37,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.hubidubitask.core.i18n.t
+import com.hubidubitask.desktop.ui.ColorTheme
 import com.hubidubitask.desktop.ui.HubidubiTaskTheme
 import com.hubidubitask.desktop.ui.HubidubiTaskViewModel
 import com.hubidubitask.desktop.ui.FeedsScreen
@@ -49,6 +50,11 @@ private data class Dest(val route: String, val label: String, val icon: ImageVec
 
 fun main() {
     val store = Store()
+    // The title bar takes the theme's light or dark from the start; Java can't
+    // change it on an open window, so a new choice reaches it at the next start.
+    ColorTheme.of(store.kv("theme")).dark?.let {
+        System.setProperty("apple.awt.application.appearance", if (it) "NSAppearanceNameDarkAqua" else "NSAppearanceNameAqua")
+    }
     var vm: HubidubiTaskViewModel? = null
     val server = PeerServer(store, deviceName = Platform.computerName()) { vm?.refresh() }
     server.start()
@@ -71,7 +77,8 @@ fun main() {
 
 @Composable
 fun App(vm: HubidubiTaskViewModel, start: String = "next", dark: Boolean? = null) {
-    HubidubiTaskTheme(dark ?: isSystemInDarkTheme()) {
+    val theme by vm.theme.collectAsState()
+    HubidubiTaskTheme(theme, dark ?: isSystemInDarkTheme()) {
         val c = HubidubiTaskTheme.colors
         val state by vm.state.collectAsState()
         var route by remember { mutableStateOf(start) }

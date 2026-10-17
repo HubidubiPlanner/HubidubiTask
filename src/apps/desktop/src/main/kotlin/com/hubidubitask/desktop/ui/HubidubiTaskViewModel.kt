@@ -72,6 +72,15 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     private fun due(): String? = NewItemDue.due(_newDue.value)
 
+    /** The colour theme ([ColorTheme]) chosen in Settings, kept on this computer. */
+    private val _theme = MutableStateFlow(ColorTheme.of(store.kv("theme")))
+    val theme: StateFlow<ColorTheme> = _theme
+
+    fun setTheme(theme: ColorTheme) {
+        store.setKv("theme", theme.id)
+        _theme.value = theme
+    }
+
     /** What a question to the user's agent carries, and where its changes land. */
     private val items = com.hubidubitask.desktop.agent.Items(store) { refresh() }
 

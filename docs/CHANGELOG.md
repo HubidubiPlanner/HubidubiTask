@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Color themes.** **Settings › Color theme** offers five, on the phone and
+  the computer: Sand, the app's own, following the system's light or dark
+  and with more contrast again; Paper, black on white; Night, white on black;
+  Forest, deep green on pale green; Ocean, white on deep navy. In each, body
+  text is 7:1 or better against the page and cards, and borders 3:1. The
+  phone's status bar icons follow the theme.
 - **More than one device.** A phone can now be paired with several computers,
   as a computer already could with several phones; each is synced in turn, so
   what is written on one reaches them all. A phone paired before keeps its

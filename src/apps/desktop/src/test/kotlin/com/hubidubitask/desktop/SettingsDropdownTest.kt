@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
 import com.hubidubitask.core.i18n.Language
+import com.hubidubitask.desktop.ui.ColorTheme
 import com.hubidubitask.desktop.ui.HubidubiTaskViewModel
 import java.io.File
 import java.nio.file.Files
@@ -19,8 +20,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Settings is a list of dropdowns: the AI agent, the devices, the due date and
- * the language. Choosing changes what is shown: the Model field only for
+ * Settings is a list of dropdowns: the due date, the AI agent, the devices,
+ * the language and the colour theme. Choosing changes what is shown: the Model field only for
  * SelfHostedAI, the API key only for Claude; there is no Save, a choice keeps itself.
  */
 @OptIn(ExperimentalTestApi::class)
@@ -84,5 +85,21 @@ class SettingsDropdownTest {
         onNodeWithText("not synced yet").assertExists()
         onNodeWithText("New device").assertExists()
         shot("settings-devices-open")
+        onAllNodesWithText("Pixel").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
+        waitForIdle()
+
+        // The colour theme, from its list, each saying whether it is light or dark; kept.
+        onNodeWithText("COLOR THEME").performScrollTo()
+        onNodeWithText("Sand").performClick()
+        waitForIdle()
+        onNodeWithText("Follows the system").assertExists()
+        assertEquals(2, onAllNodesWithText("Dark").fetchSemanticsNodes().size)
+        shot("settings-theme-open")
+        onNodeWithText("Night").performClick()
+        waitForIdle()
+        assertEquals(ColorTheme.NIGHT, vm.theme.value)
+        assertEquals("night", store.kv("theme"))
+        assertEquals(ColorTheme.NIGHT, HubidubiTaskViewModel(store, PeerServer(store, "Test Mac") {}).theme.value)
+        shot("settings-night")
     }
 }

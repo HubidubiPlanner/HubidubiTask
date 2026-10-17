@@ -85,6 +85,14 @@ system's language if it is one of these, and English otherwise. Reviews with
 AI answer in the chosen language; a feed's task is written in the language of
 its page.
 
+## Color theme
+
+**Settings → Color theme:** Sand, the app's own, follows the system's light or
+dark mode; Paper and Forest are always light, Night and Ocean always dark. Each
+keeps text and borders in high contrast. The choice is kept on that device. On
+the Mac, the title bar takes a new theme's light or dark the next time the app
+starts.
+
 ## AI
 
 **Settings → AI Agent** chooses one of four. There is no Save: a change is kept

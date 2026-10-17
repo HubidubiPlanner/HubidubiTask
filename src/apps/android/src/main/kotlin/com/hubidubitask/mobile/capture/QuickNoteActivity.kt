@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.ui.HubidubiTaskTheme
 import com.hubidubitask.mobile.ui.NewDue
+import com.hubidubitask.mobile.ui.ThemeChoice
 import com.hubidubitask.mobile.ui.NewNoteSheet
 import com.hubidubitask.mobile.ui.UiLanguage
 
@@ -23,7 +24,7 @@ class QuickNoteActivity : ComponentActivity() {
         // The home screen shows through under the status bar too, not a black strip.
         enableEdgeToEdge()
         setContent {
-            HubidubiTaskTheme {
+            HubidubiTaskTheme(ThemeChoice.load(applicationContext)) {
                 NewNoteSheet(true, onSave = { title, body ->
                     val due = NewDue.date(applicationContext)
                     saveInBackground(this, t("Note saved")) { it.noteText(title, body, due) }

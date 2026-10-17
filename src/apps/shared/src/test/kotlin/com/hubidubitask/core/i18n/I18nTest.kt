@@ -17,8 +17,10 @@ class I18nTest {
         val found = roots.flatMap { root -> root.walkTopDown().filter { it.extension == "kt" && "/core/i18n/" !in it.path }.toList() }
             .flatMap { f -> call.findAll(f.readText()).map { it.groupValues[1] }.toList() }.toSet()
         assertTrue(found.size > 150, "the scan found only ${found.size} texts; are the source folders where the test expects?")
-        // Labels from lists, translated where they are shown: tabs, ranges, periods, the agent, the feed kind.
-        return found + setOf("Incoming", "Projects", "Feeds", "Settings", "Day", "Week", "Month", "Agent", "A web page") -
+        // Labels from lists, translated where they are shown: tabs, ranges, periods, the agent, the feed kind,
+        // the colour themes and what each is.
+        return found + setOf("Incoming", "Projects", "Feeds", "Settings", "Day", "Week", "Month", "Agent", "A web page",
+            "Sand", "Paper", "Night", "Forest", "Ocean", "Follows the system", "Light", "Dark") -
             setOf("SelfHostedAI", "OpenAI", "Claude")
     }
 
