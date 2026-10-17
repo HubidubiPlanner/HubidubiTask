@@ -948,11 +948,14 @@ fun SettingsScreen(
     // The default is filled in rather than hinted at: an empty box reads as
     // "you must supply this", which is exactly what it is not.
     val defaultModel = com.hubidubitask.core.agent.AgentConfig.defaultModel(protocol)
-    var model by remember { mutableStateOf(saved.model) }
+    // Empty unless one of the server's own was chosen: the default shows as
+    // the placeholder, and an empty field means the default.
+    var model by remember {
+        mutableStateOf(saved.model.takeIf { it != com.hubidubitask.core.agent.AgentConfig.defaultModel(saved.protocol) }.orEmpty())
+    }
     // Switching protocol swaps the default, unless the user typed their own.
     LaunchedEffect(protocol) {
-        if (model.isBlank() || model in setOf("fast", "local",
-                com.hubidubitask.core.agent.AgentConfig.CLAUDE_MODEL)) model = defaultModel
+        if (model in setOf("fast", "local", com.hubidubitask.core.agent.AgentConfig.CLAUDE_MODEL)) model = ""
     }
     // Claude's key is kept apart from the other agents' settings, in the
     // system's secret store.
@@ -997,27 +1000,27 @@ fun SettingsScreen(
                     helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
             else if (harness) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LabeledField("IP", harnessIp, { harnessIp = it; message = null; touched = true },
-                        helper = "", enabled = true, placeholder = "192.168.1.50",
+                    LabeledField("", harnessIp, { harnessIp = it; message = null; touched = true },
+                        helper = "", enabled = true, placeholder = t("IP address"),
                         modifier = Modifier.weight(2f))
-                    LabeledField(t("Port"), harnessPort, { harnessPort = it.filter(Char::isDigit); message = null; touched = true },
-                        helper = "", enabled = true, placeholder = "",
+                    LabeledField("", harnessPort, { harnessPort = it.filter(Char::isDigit); message = null; touched = true },
+                        helper = "", enabled = true, placeholder = t("Port"),
                         modifier = Modifier.weight(1f))
                 }
-                LabeledField(t("Token or password"), harnessToken, { harnessToken = it; message = null; touched = true },
-                    helper = "", enabled = true, placeholder = "", secret = true)
+                LabeledField("", harnessToken, { harnessToken = it; message = null; touched = true },
+                    helper = "", enabled = true, placeholder = t("Token or password"), secret = true)
             }
             else
-                LabeledField(t("Server address"), endpoint, { endpoint = it; message = null; touched = true },
+                LabeledField("", endpoint, { endpoint = it; message = null; touched = true },
                     helper = "",
-                    enabled = true, placeholder = "https://192.168.1.50:8443")
+                    enabled = true, placeholder = t("Server address"))
 
             // Only SelfHostedAI is told which of its models to use; the others choose
             // their own (Claude the app's, an OpenAI-shaped server its first).
             if (selfhosted)
-                LabeledField(t("Model"), model, { model = it; message = null; touched = true },
+                LabeledField("", model, { model = it; message = null; touched = true },
                     helper = "",
-                    enabled = true, placeholder = defaultModel)
+                    enabled = true, placeholder = "${t("Model")}: $defaultModel")
 
             // No Save: a change is kept on its own a moment after the last
             // keystroke or choice, then checked, and the line under says what

@@ -48,17 +48,18 @@ class SettingsDropdownTest {
         onNodeWithText("Claude").performClick()
         waitForIdle()
         shot("settings-ai-open")
-        // SelfHostedAI: its address and its model.
+        // SelfHostedAI: its address and its model, untitled; the model empty, its default as the placeholder.
         onAllNodesWithText("SelfHostedAI").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
         waitForIdle()
-        onNodeWithText("Model").assertExists()
-        onNodeWithText("Server address").assertExists()
-        // OpenAI: an address, and no model asked for.
+        assertEquals(2, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)
+        onNodeWithText("Model: fast").assertExists()
+        assertEquals(0, onAllNodesWithText("Server address").fetchSemanticsNodes().size)
+        // OpenAI: an address alone, and no model asked for.
         onNodeWithText("SelfHostedAI").performClick()
         onAllNodesWithText("OpenAI").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
         waitForIdle()
-        onNodeWithText("Server address").assertExists()
-        assertEquals(0, onAllNodesWithText("Model").fetchSemanticsNodes().size)
+        assertEquals(1, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)
+        assertEquals(0, onAllNodesWithText("Model", substring = true).fetchSemanticsNodes().size)
         // The choice keeps itself, a moment later.
         mainClock.advanceTimeBy(1_500)
         waitUntil(timeoutMillis = 5_000) { vm.agentConfig().protocol == "openai" }

@@ -109,6 +109,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "In Todoist: Settings → Integrations → Developer → API token." to "W Todoist: Ustawienia → Integracje → Programista → Token API.",
     "Inbox" to "Skrzynka",
     "Incoming" to "Nadchodzące",
+    "IP address" to "Adres IP",
     "Its attachment is deleted too." to "Załącznik też zostanie usunięty.",
     "Language" to "Język",
     "Later" to "Później",

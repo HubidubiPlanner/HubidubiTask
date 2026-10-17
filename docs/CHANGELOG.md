@@ -10,8 +10,10 @@
   one chosen has Sync now (on the phone) and Unpair under the list.
 - Settings opens with **Due date for new tasks and notes**, then AI Agent,
   Paired devices and Language, evenly spaced (each heading had an extra
-  margin). The Claude key's field stands without a title; its placeholder
-  says what goes in.
+  margin). The AI Agent's fields stand without titles, their placeholders
+  saying what goes in: the Claude key, the server address, "Model: fast"
+  (SelfHostedAI's model field stays empty unless another is chosen), and the
+  agent's IP address, port, and token or password.
 - **Claude is the default AI agent**, and first in the list.
 - **No Save in Settings › AI Agent**: a change is kept a moment after it is
   made, then checked, and the line under the fields says what answered. The

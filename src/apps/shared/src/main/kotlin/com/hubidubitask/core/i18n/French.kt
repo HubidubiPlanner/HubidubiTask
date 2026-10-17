@@ -109,6 +109,7 @@ internal val FRENCH: Map<String, String> = mapOf(
     "In Todoist: Settings → Integrations → Developer → API token." to "Dans Todoist : Paramètres → Intégrations → Développeur → Jeton d’API.",
     "Inbox" to "Boîte de réception",
     "Incoming" to "À venir",
+    "IP address" to "Adresse IP",
     "Its attachment is deleted too." to "Sa pièce jointe est aussi supprimée.",
     "Language" to "Langue",
     "Later" to "Plus tard",
