@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 — 17 October 2026
 
 - **Settings, made clearer**, on the phone and the computer: each setting is a
   dropdown under its heading, showing what it is set to. **AI Agent** (was

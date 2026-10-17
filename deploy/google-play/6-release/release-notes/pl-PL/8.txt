@@ -1,0 +1,4 @@
+Nowości w 2.1.0
+• Czytelniejsze Ustawienia: każde ustawienie to lista rozwijana z bieżącą wartością. Najpierw Agent AI, potem Paruj urządzenie, termin i język; Pro na końcu.
+• Większy kontrast: ciemniejszy tekst, widoczne ramki i wyraźniejsze przyciski, w jasnym i ciemnym motywie.
+• Z 2.0.0: Ustawienia › Eksportuj zapisuje wszystko w jednym pliku chronionym hasłem, a Import go wczytuje.
