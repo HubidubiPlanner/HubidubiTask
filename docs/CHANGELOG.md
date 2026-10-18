@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.3.0 — 19 October 2026
 
 - **Paired devices last.** Settings runs Due date for new tasks and notes,
   AI Agent, Language, Color theme, then Paired devices; after them only

@@ -1,0 +1,4 @@
+Nowości w 2.3.0
+• Pro to jeden przycisk na końcu Ustawień: „Zapisz się do wersji Pro” z tym, co da wersja Pro.
+• Ustawienia w czytelniejszej kolejności: termin, Agent AI, język, motyw kolorów, potem sparowane urządzenia, a za nimi tylko Eksport, Import i Pro.
+• Z 2.2.0: pięć motywów kolorów, więcej niż jedno urządzenie, Claude jako domyślny agent AI.

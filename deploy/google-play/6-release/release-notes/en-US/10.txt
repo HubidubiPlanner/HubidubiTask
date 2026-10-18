@@ -1,0 +1,4 @@
+What's new in 2.3.0
+• Pro is one button at the end of Settings: "Sign up for Pro" with what Pro would bring.
+• Settings in a clearer order: due date, AI Agent, language, color theme, then paired devices, with only Export, Import and Pro after them.
+• From 2.2.0: five color themes, more than one paired device, Claude as the default AI agent.
