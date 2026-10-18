@@ -149,7 +149,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "not configured" to "nie skonfigurowano",
     "Not in a project" to "Poza projektem",
     "Not paired" to "Nie sparowano",
-    "not synced yet" to "jeszcze nie zsynchronizowano",
+    "not synced yet" to "nie zsynchronizowano",
     "Not up to date" to "Nieaktualne",
     "Note" to "Notatka",
     "Note saved" to "Zapisano notatkę",

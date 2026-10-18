@@ -149,7 +149,7 @@ internal val FRENCH: Map<String, String> = mapOf(
     "not configured" to "non configuré",
     "Not in a project" to "Hors projet",
     "Not paired" to "Non associé",
-    "not synced yet" to "pas encore synchronisé",
+    "not synced yet" to "jamais synchronisé",
     "Not up to date" to "Plus à jour",
     "Note" to "Note",
     "Note saved" to "Note enregistrée",
