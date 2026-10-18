@@ -30,10 +30,11 @@ phone) and Unpair under the list.
 ## Pro
 
 Pro isn't sold yet. It would be syncing with your Mac and Linux computers.
-**Settings → Pro → I want Pro** says you would want it: the app sends one
-answer (the platform, the app's version and its language, nothing else) so
-the people who want Pro can be counted. Once sent, the button goes and the
-card says thanks. Everything else, syncing included, stays free.
+The last button in **Settings**, **Sign up for Pro**, says you would want it:
+the app sends one answer (the platform, the app's version and its language,
+nothing else; no name, no email) so the people who want Pro can be counted.
+Once sent, the button goes and a line says thanks. Everything else, syncing
+included, stays free.
 
 ## Everyday use
 

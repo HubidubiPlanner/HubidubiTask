@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -175,12 +176,13 @@ fun PrimaryButton(
     val c = HubidubiTaskTheme.colors
     Button(
         onClick = onClick, enabled = enabled, shape = RectangleShape,
-        modifier = modifier.height(48.dp),
+        // At least the usual height; taller when the words take two lines.
+        modifier = modifier.heightIn(min = 48.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = c.button, contentColor = c.onButton,
             disabledContainerColor = c.line, disabledContentColor = c.muted,
         ),
-        contentPadding = PaddingValues(horizontal = 18.dp),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
     ) { ButtonContent(text, icon) }
 }
 

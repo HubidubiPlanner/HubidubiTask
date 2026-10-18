@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Pro is one button.** The Pro heading, card and I want Pro button are
+  one button at the end of Settings whose words say what Pro is: "Sign up
+  for Pro: sync with your Mac and Linux computers" on the phone, "…sync
+  this computer with your phone" on the computer. Pressing it still sends
+  only the one count; then a line of thanks takes its place.
+
 ## 2.2.0 — 18 October 2026
 
 - **Color themes.** **Settings › Color theme** offers five, on the phone and

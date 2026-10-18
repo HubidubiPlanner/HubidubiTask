@@ -885,8 +885,9 @@ private fun StatusRow(label: String, value: String, good: Boolean, last: Boolean
 }
 
 /**
- * Pro, which is not sold yet: what it would be, and one click to say you want
- * it. The click is counted (core ProInterest), once; then the card says thanks.
+ * Pro, which is not sold yet: one button whose words say what it would be.
+ * Pressing it signs this install up, counted once (core ProInterest); then a
+ * line of thanks takes its place.
  */
 @Composable
 private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
@@ -895,36 +896,27 @@ private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
     var wanted by remember { mutableStateOf(vm.proWanted()) }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
-    SectionLabel(t("Pro"), modifier = Modifier.padding(top = 28.dp))
-    CardGroup(inset = edge) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Icon(if (wanted) Icons.Outlined.CheckCircle else Icons.Outlined.Sync, contentDescription = null,
-                tint = if (wanted) c.ok else c.accent, modifier = Modifier.padding(top = 1.dp).size(22.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(if (wanted) t("Thanks, we've counted you") else t("Sync this computer with your phone"),
-                    style = MaterialTheme.typography.bodyMedium)
-                Text(if (wanted) t("Pro gets built if enough people want it.")
-                    else t("Pro isn't available yet. Want it? One click tells us."),
+    Column(Modifier.padding(start = edge, end = edge, top = 28.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (wanted)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = c.ok,
+                    modifier = Modifier.padding(top = 1.dp).size(20.dp))
+                Text(t("Thanks, you're signed up for Pro. It gets built if enough people want it."),
                     style = MaterialTheme.typography.bodySmall, color = c.muted)
             }
-        }
-    }
-    if (!wanted) {
-        Row(Modifier.padding(start = edge, end = edge, top = 10.dp)) {
-            PrimaryButton(if (sending) t("Sending…") else t("I want Pro"), {
+        else {
+            PrimaryButton(if (sending) t("Sending…") else t("Sign up for Pro: sync this computer with your phone"), {
                 sending = true; failed = false
                 scope.launch {
                     val ok = vm.wantPro()
                     sending = false
                     if (ok) wanted = true else failed = true
                 }
-            }, Modifier.weight(1f), enabled = !sending)
+            }, Modifier.fillMaxWidth(), enabled = !sending)
+            if (failed)
+                Text(t("That didn't go through. Try again when you're online."),
+                    style = MaterialTheme.typography.bodySmall, color = c.danger)
         }
-        if (failed)
-            Text(t("That didn't go through. Try again when you're online."),
-                style = MaterialTheme.typography.bodySmall, color = c.danger,
-                modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
     }
 }
 

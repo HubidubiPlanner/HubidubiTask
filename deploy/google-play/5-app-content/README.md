@@ -62,7 +62,7 @@ The facts, from the code:
   they configured, a feed's page check, a one-time import.
 - The local database is encrypted (SQLCipher, key sealed by the Keystore), and
   `allowBackup="false"`, so nothing goes to Android's cloud backup.
-- **Settings → Pro → I want Pro** (since 1.2): pressing it sends the developer
+- **Settings → Sign up for Pro** (since 1.2): pressing it sends the developer
   one answer through a Google Form, over HTTPS: the platform, the app's
   version and its language. No identifier, nothing about the person or their
   items; sent once per install, and only on that press.
@@ -72,7 +72,7 @@ The facts, from the code:
 | Question | Answer |
 |---|---|
 | Does your app collect or share any of the required user data types? | **Yes** |
-| Data type | **App activity › App interactions** (the "I want Pro" press) |
+| Data type | **App activity › App interactions** (the "Sign up for Pro" press) |
 | Collected / shared | **Collected**; **not shared** |
 | Processed ephemerally? | **No** (each answer is kept, to be counted) |
 | Required or optional? | **Optional** (only if the user presses the button) |

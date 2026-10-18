@@ -6,7 +6,7 @@ import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 /**
- * "I want Pro". Nothing is sold yet: a press is one answer to the owner's own
+ * "Sign up for Pro". Nothing is sold yet: a press is one answer to the owner's own
  * Google Form, so the people who want Pro can be counted before it is built.
  * The answer says which platform, which version and which language, and
  * nothing else: no id, no cookie, nothing about the person or their items.

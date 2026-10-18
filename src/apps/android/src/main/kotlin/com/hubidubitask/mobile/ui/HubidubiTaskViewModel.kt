@@ -149,7 +149,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         return msg
     }
 
-    // ---- Pro: not sold yet. "I want Pro" only counts who would want it.
+    // ---- Pro: not sold yet. "Sign up for Pro" only counts who would want it.
 
     /** Whether this phone has already said it wants Pro. */
     fun proWanted(): Boolean = proPrefs().getBoolean("wanted", false)

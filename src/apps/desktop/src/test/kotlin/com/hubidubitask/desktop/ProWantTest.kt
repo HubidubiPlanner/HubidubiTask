@@ -33,18 +33,18 @@ class ProWantTest {
     }
 
     @Test
-    fun `I want Pro is sent once, and thanked`() = runComposeUiTest {
+    fun `Sign up for Pro is sent once, and thanked`() = runComposeUiTest {
         val store = Store(Files.createTempDirectory("hubi").toFile())
         Form(500).use { f ->
             val vm = HubidubiTaskViewModel(store, PeerServer(store, "Test Mac") {}).apply { proForm = f.form }
             setContent { App(vm, "settings", dark = false) }
             // The form refuses it: said so, and the button stays.
-            onNodeWithText("I want Pro").performScrollTo().performClick()
+            onNodeWithText("Sign up for Pro: sync this computer with your phone").performScrollTo().performClick()
             waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("That didn't go through", substring = true)).fetchSemanticsNodes().isNotEmpty() }
             f.code = 200
-            onNodeWithText("I want Pro").performScrollTo().performClick()
-            waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("Thanks, we've counted you")).fetchSemanticsNodes().isNotEmpty() }
-            assertEquals(0, onAllNodes(hasText("I want Pro")).fetchSemanticsNodes().size)
+            onNodeWithText("Sign up for Pro: sync this computer with your phone").performScrollTo().performClick()
+            waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("Thanks, you're signed up for Pro", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+            assertEquals(0, onAllNodes(hasText("Sign up for Pro", substring = true)).fetchSemanticsNodes().size)
             val sent = f.bodies.last().split('&').associate { it.substringBefore('=') to it.substringAfter('=') }
             assertTrue(sent["entry.1"] in setOf("mac", "linux"))
             assertEquals("dev", sent["entry.2"]); assertEquals("en", sent["entry.3"])
@@ -54,7 +54,7 @@ class ProWantTest {
         val again = HubidubiTaskViewModel(store, PeerServer(store, "Test Mac") {})
         setContent { App(again, "settings", dark = false) }
         waitForIdle()
-        onNodeWithText("Thanks, we've counted you").assertExists()
-        assertEquals(0, onAllNodes(hasText("I want Pro")).fetchSemanticsNodes().size)
+        onNodeWithText("Thanks, you're signed up for Pro", substring = true).assertExists()
+        assertEquals(0, onAllNodes(hasText("Sign up for Pro", substring = true)).fetchSemanticsNodes().size)
     }
 }
