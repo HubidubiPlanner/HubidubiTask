@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Paired devices last.** Settings runs Due date for new tasks and notes,
+  AI Agent, Language, Color theme, then Paired devices; after them only
+  Export and Import, and the Pro button at the very end.
 - **Pro is one button.** The Pro heading, card and I want Pro button are
   one button at the end of Settings whose words say what Pro is: "Sign up
   for Pro: sync with your Mac and Linux computers" on the phone, "…sync
