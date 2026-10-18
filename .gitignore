@@ -6,13 +6,6 @@ build/
 .gradle/
 .kotlin/
 
-# Vendored upstream checkouts for the Omarchy image build. Pristine clones
-# with their own .git, restored per deploy/omarchy/FORK.md; our delta lives in
-# hubidubitask-omarchy-iso.patch.
-deploy/omarchy/omarchy/
-deploy/omarchy/omarchy-iso/
-deploy/omarchy/omarchy-pkgs/
-*.iso
 
 # The app package distribution/arch/build.sh makes
 distribution/arch/out/

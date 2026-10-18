@@ -192,13 +192,6 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <dt>Set up</dt><dd>The site's agent page: network mode on, a token, the port open</dd>
       </dl>
     </article>
-    <article class="machine">
-      <h3>Omarchy image</h3>
-      <p class="role">An Omarchy installer with the app installed. Nothing else of Omarchy changes, apart from boot fixes for new NVIDIA cards.</p>
-      <dl>
-        <dt>Build</dt><dd><span class="path">deploy/omarchy/build-fork-in-colima.sh</span></dd>
-      </dl>
-    </article>
   </div>
 </section>
 
@@ -245,7 +238,6 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>distribution/appimage/</td><td>The AppImage for any x86_64 Linux; distribution/linux/ builds the app image both wrap</td></tr>
         <tr><td>deploy/google-play/</td><td>Publishing on Google Play, step by step</td></tr>
         <tr><td>deploy/website/</td><td>Publishing the website and its downloads</td></tr>
-        <tr><td>deploy/omarchy/</td><td>The Omarchy image with the app installed</td></tr>
         <tr><td>site/</td><td>The public website</td></tr>
         <tr><td>docs/</td><td>This page and the manual</td></tr>
       </tbody>
@@ -264,7 +256,6 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     <li><span class="pill ok">Works</span><span>Settings › Pro on the phone and the computer: Pro isn't sold; "I want Pro" sends one answer to the developer's Google Form so interest can be counted. The form itself is still to be made, so nothing is sent yet.</span></li>
     <li><span class="pill warn">Open</span><span>Google Play: everything to submit is in deploy/google-play, step by step; the upload itself is done by hand in Play Console.</span></li>
     <li><span class="pill warn">Open</span><span>The website is ready to publish (deploy/website) once it has an address, a contact email and a host.</span></li>
-    <li><span class="pill warn">Open</span><span>The Omarchy image has not been rebuilt since it switched to the app-only package.</span></li>
     <li><span class="pill warn">Open</span><span>A live try with an agent on a home server running Qwen3.6-35B.</span></li>
     <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off.</span></li>
   </ul>

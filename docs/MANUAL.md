@@ -13,8 +13,7 @@ each other current over your own Wi-Fi.
   installed. If a firewall is on, let your home network reach the app: TCP
   5244 (sync) and UDP 5353 (finding it), for example
   `sudo ufw allow from 192.168.0.0/16 to any port 5244 proto tcp`.
-- **Linux (Arch, Omarchy):** `sudo pacman -U hubidubitask-*.pkg.tar.zst`, or use
-  the Omarchy image from `deploy/omarchy/`, which has the app installed. The
+- **Linux (Arch, Omarchy):** `sudo pacman -U hubidubitask-*.pkg.tar.zst`. The
   package opens the sync port (5244) to private networks in Omarchy's firewall.
 
 ## Pair the phone with the computer
