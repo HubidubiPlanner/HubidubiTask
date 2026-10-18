@@ -3,6 +3,7 @@ package com.hubidubitask.desktop
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.onAllNodesWithText
@@ -20,8 +21,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Settings is a list of dropdowns: the due date, the AI agent, the devices,
- * the language and the colour theme. Choosing changes what is shown: the Model field only for
+ * Settings is a table of the due date, the language, the theme and the
+ * devices, each row opening its list, and the AI agent under it as before. Choosing changes what is shown: the Model field only for
  * SelfHostedAI, the API key only for Claude; there is no Save, a choice keeps itself.
  */
 @OptIn(ExperimentalTestApi::class)
@@ -71,25 +72,28 @@ class SettingsDropdownTest {
         onNodeWithText("Polski").performClick()
         waitForIdle()
         assertEquals(Language.PL, vm.language.value)
-        onAllNodes(hasText("JĘZYK")).fetchSemanticsNodes().isNotEmpty()
+        onNodeWithText("Język").assertExists()
         vm.setLanguage(Language.EN)
         waitForIdle()
-        // Paired devices: each with when it last synced, on its right in the list, and New device.
+        // Devices: each with when it last synced and a tick once it has, and a
+        // button on its right that unpairs it; New device after them.
         store.addPeer(Store.Peer("phone-1", "Pixel", "token", "2026-10-18T09:00:00Z", null))
+        store.addPeer(Store.Peer("phone-2", "Phone", "token", "2026-10-18T09:00:00Z", "2026-10-18T10:00:00Z"))
         vm.refresh()
-        waitUntil(timeoutMillis = 5_000) { vm.state.value.peers.isNotEmpty() }
-        onNodeWithText("PAIRED DEVICES").performScrollTo()
+        waitUntil(timeoutMillis = 5_000) { vm.state.value.peers.size == 2 }
+        onNodeWithText("Devices").performScrollTo()
         assertEquals(0, onAllNodesWithText("not synced yet").fetchSemanticsNodes().size)
-        onNodeWithText("Pixel").performClick()
+        onNodeWithText("Devices").performClick()
         waitForIdle()
         onNodeWithText("not synced yet").assertExists()
+        assertEquals(1, onAllNodes(hasContentDescription("Synced")).fetchSemanticsNodes().size)
         onNodeWithText("New device").assertExists()
         shot("settings-devices-open")
-        onAllNodesWithText("Pixel").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
-        waitForIdle()
+        onNode(hasContentDescription("Unpair Pixel")).performClick()
+        waitUntil(timeoutMillis = 5_000) { vm.state.value.peers.map { it.name } == listOf("Phone") }
 
         // The colour theme, from its list, each saying whether it is light or dark; kept.
-        onNodeWithText("COLOR THEME").performScrollTo()
+        onNodeWithText("Theme").performScrollTo()
         onNodeWithText("Sand").performClick()
         waitForIdle()
         onNodeWithText("Follows the system").assertExists()

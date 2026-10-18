@@ -1088,7 +1088,7 @@ private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
     var wanted by remember { mutableStateOf(vm.proWanted()) }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
-    Column(Modifier.padding(start = edge, end = edge, top = 28.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.padding(start = edge, end = edge, top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (wanted)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = c.ok,
@@ -1164,14 +1164,43 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
         ScreenHeader(t("Settings"))
-        // The date every new task and note gets: tomorrow brings it back on
-        // Incoming the next day.
-        SectionLabel(t("Due date for new tasks and notes"))
+        // The everyday settings as one table without frames: what each is on the
+        // left, what it is set to on the right; a row opens its choices.
         val newDue by vm.newDue.collectAsStateWithLifecycle()
-        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
-            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
-            Modifier.padding(horizontal = edge))
-        // Which AI answers reviews, and only what that one needs to be reached.
+        val language by vm.language.collectAsStateWithLifecycle()
+        val theme by vm.theme.collectAsStateWithLifecycle()
+        // The computers (Mac or Linux) this phone keeps in step with, every
+        // minute. In the list each has when it last synced, a tick once it has,
+        // and a button on its right that unpairs it; then Sync now, and New
+        // device to pair another.
+        var pairingMac by remember { mutableStateOf(false) }
+        PairMacSheet(pairingMac, vm) { pairingMac = false }
+        val macs = state.macs
+        val labelWidth = labelColumnWidth(listOf(t("Due date for new tasks"), t("Language"), t("Theme"), t("Devices")), max = 180.dp)
+        Column(Modifier.padding(horizontal = edge)) {
+            // The date every new task and note gets: tomorrow brings it back on
+            // Incoming the next day.
+            SettingRow(t("Due date for new tasks"), t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
+                NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
+                labelWidth)
+            // The app's own language, each named in itself.
+            SettingRow(t("Language"), language.label,
+                Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } }, labelWidth)
+            // Sand follows the system's light or dark, the others are always one
+            // of them, said on the right of each in the list.
+            SettingRow(t("Theme"), t(theme.label), ColorTheme.entries.map {
+                DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }
+            }, labelWidth)
+            SettingRow(t("Devices"), macs.joinToString(", ") { it.name }.ifEmpty { t("Not paired") },
+                macs.map { m ->
+                    DropdownItem(m.name, detail = syncedAt(m.lastSync), done = m.lastSync != null,
+                        onRemove = { vm.unpairMac(m.id) }, removeLabel = t("Unpair %s", m.name)) {}
+                } + (if (macs.isEmpty()) emptyList()
+                    else listOf(DropdownItem(if (state.syncing) t("Syncing…") else t("Sync now")) { vm.syncMacNow() })) +
+                    DropdownItem(t("New device")) { pairingMac = true }, labelWidth, last = true)
+        }
+        // Under the table, as before: which AI answers reviews, under its own
+        // heading, and only what that one needs to be reached.
         SectionLabel(t("AI Agent"))
 
         Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -1264,42 +1293,8 @@ fun SettingsScreen(
                 }
             }
         }
-        // The app's own language, each named in itself.
-        SectionLabel(t("Language"))
-        val language by vm.language.collectAsStateWithLifecycle()
-        Dropdown(language.label, Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } },
-            Modifier.padding(horizontal = edge))
-        // The colours: Sand follows the system's light or dark, the others are
-        // always one of them, said on the right of each in the list.
-        SectionLabel(t("Color theme"))
-        val theme by vm.theme.collectAsStateWithLifecycle()
-        Dropdown(t(theme.label), ColorTheme.entries.map {
-            DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }
-        }, Modifier.padding(horizontal = edge))
-        // The computers (Mac or Linux) this phone keeps in step with, every
-        // minute: a list of them, and New device in it to pair another.
-        var pairingMac by remember { mutableStateOf(false) }
-        PairMacSheet(pairingMac, vm) { pairingMac = false }
-        SectionLabel(t("Paired devices"))
-        val macs = state.macs
-        // The one chosen in the list: Sync now and Unpair under it.
-        var chosenMac by remember { mutableStateOf<String?>(null) }
-        val mac = macs.firstOrNull { it.id == chosenMac } ?: macs.firstOrNull()
-        Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Dropdown(mac?.name ?: t("Not paired"),
-                macs.map { m ->
-                    DropdownItem(m.name, m.id == mac?.id, detail = syncedAt(m.lastSync)) { chosenMac = m.id }
-                } + DropdownItem(t("New device")) { pairingMac = true })
-            if (mac != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SecondaryButton(if (state.syncing) t("Syncing…") else t("Sync now"), { vm.syncMacNow() },
-                        Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !state.syncing)
-                    SecondaryButton(t("Unpair"), { chosenMac = null; vm.unpairMac(mac.id) }, Modifier.weight(1f))
-                }
-            }
-        }
         // Kept quiet at the very end: things done once in a while, not settings
-        // anyone looks for day to day. Export first: a copy of everything as one
+        // anyone looks for day to day. Export and Import side by side: a copy of everything as one
         // file sealed with a password, the way to keep it outside the app;
         // Import reads it back, among the other places it reads from.
         var exported by remember { mutableStateOf<String?>(null) }
@@ -1322,16 +1317,15 @@ fun SettingsScreen(
             exportPassword = it; askingPassword = false
             export.launch(Backup.fileName())
         }
-        SecondaryButton(t("Export"), { exported = null; askingPassword = true },
-            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 28.dp),
-            icon = Icons.Outlined.FileUpload)
+        Row(Modifier.padding(start = edge, end = edge, top = 28.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SecondaryButton(t("Export"), { exported = null; askingPassword = true }, Modifier.weight(1f),
+                icon = Icons.Outlined.FileUpload)
+            SecondaryButton(t("Import"), onImport, Modifier.weight(1f), icon = Icons.Outlined.FileDownload)
+        }
         exported?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
                 modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
         }
-        SecondaryButton(t("Import"), onImport,
-            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 10.dp),
-            icon = Icons.Outlined.FileDownload)
         // Last: what is not here yet.
         ProSection(vm, edge)
         Spacer(Modifier.height(16.dp))

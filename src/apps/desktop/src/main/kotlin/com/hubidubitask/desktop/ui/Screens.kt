@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -896,7 +897,7 @@ private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
     var wanted by remember { mutableStateOf(vm.proWanted()) }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
-    Column(Modifier.padding(start = edge, end = edge, top = 28.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.padding(start = edge, end = edge, top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (wanted)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = c.ok,
@@ -972,168 +973,167 @@ fun SettingsScreen(
     val edge = 20.dp
 
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
-        ScreenHeader(t("Settings"))
-        // The date every new task and note gets: tomorrow brings it back on
-        // Incoming the next day.
-        SectionLabel(t("Due date for new tasks and notes"))
-        val newDue by vm.newDue.collectAsState()
-        Dropdown(t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
-            NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
-            Modifier.padding(horizontal = edge))
-        // Which AI answers reviews, and only what that one needs to be reached.
-        SectionLabel(t("AI Agent"))
-
-        Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Dropdown(t(PROTOCOLS.first { it.first == protocol }.second),
-                PROTOCOLS.map { (id, label) -> DropdownItem(t(label), id == protocol) { protocol = id; message = null; touched = true } })
-
-            if (claude)
-                LabeledField("", claudeKey, { claudeKey = it; message = null; touched = true },
-                    helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
-            else if (harness) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LabeledField("", harnessIp, { harnessIp = it; message = null; touched = true },
-                        helper = "", enabled = true, placeholder = t("IP address"),
-                        modifier = Modifier.weight(2f))
-                    LabeledField("", harnessPort, { harnessPort = it.filter(Char::isDigit); message = null; touched = true },
-                        helper = "", enabled = true, placeholder = t("Port"),
-                        modifier = Modifier.weight(1f))
-                }
-                LabeledField("", harnessToken, { harnessToken = it; message = null; touched = true },
-                    helper = "", enabled = true, placeholder = t("Token or password"), secret = true)
+        // As wide as reads well: on a wide window the table's values stay near
+        // their names.
+        Column(Modifier.widthIn(max = 720.dp)) {
+            ScreenHeader(t("Settings"))
+            // The everyday settings as one table without frames: what each is on the
+            // left, what it is set to on the right; a row opens its choices.
+            val newDue by vm.newDue.collectAsState()
+            val language by vm.language.collectAsState()
+            val theme by vm.theme.collectAsState()
+            // The phones this computer keeps in step with. In the list each has
+            // when it last synced, a tick once it has, and a button on its right
+            // that unpairs it; New device pairs another.
+            val labelWidth = labelColumnWidth(listOf(t("Due date for new tasks"), t("Language"), t("Theme"), t("Devices")), max = 260.dp)
+            Column(Modifier.padding(horizontal = edge)) {
+                // The date every new task and note gets: tomorrow brings it back on
+                // Incoming the next day.
+                SettingRow(t("Due date for new tasks"), t(NewItemDue.OPTIONS.first { it.first == newDue }.second),
+                    NewItemDue.OPTIONS.map { (id, label) -> DropdownItem(t(label), id == newDue) { vm.setNewDue(id) } },
+                    labelWidth)
+                // The app's own language, each named in itself.
+                SettingRow(t("Language"), language.label,
+                    Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } }, labelWidth)
+                // Sand follows the system's light or dark, the others are always one
+                // of them, said on the right of each in the list.
+                SettingRow(t("Theme"), t(theme.label), ColorTheme.entries.map {
+                    DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }
+                }, labelWidth)
+                SettingRow(t("Devices"), state.peers.joinToString(", ") { it.name }.ifEmpty { t("No phone paired yet") },
+                    state.peers.map { p ->
+                        DropdownItem(p.name, detail = syncedAt(p.lastSync), done = p.lastSync != null,
+                            onRemove = { vm.unpair(p.id) }, removeLabel = t("Unpair %s", p.name)) {}
+                    } + DropdownItem(t("New device")) { pairing = true }, labelWidth, last = true)
             }
-            else
-                LabeledField("", endpoint, { endpoint = it; message = null; touched = true },
-                    helper = "",
-                    enabled = true, placeholder = t("Server address"))
+            // Under the table, as before: which AI answers reviews, under its own
+            // heading, and only what that one needs to be reached.
+            SectionLabel(t("AI Agent"))
 
-            // Only SelfHostedAI is told which of its models to use; the others choose
-            // their own (Claude the app's, an OpenAI-shaped server its first).
-            if (selfhosted)
-                LabeledField("", model, { model = it; message = null; touched = true },
-                    helper = "",
-                    enabled = true, placeholder = "${t("Model")}: $defaultModel")
+            Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Dropdown(t(PROTOCOLS.first { it.first == protocol }.second),
+                    PROTOCOLS.map { (id, label) -> DropdownItem(t(label), id == protocol) { protocol = id; message = null; touched = true } })
 
-            // No Save: a change is kept on its own a moment after the last
-            // keystroke or choice, then checked, and the line under says what
-            // was found. Nothing is kept before anything was changed here.
-            LaunchedEffect(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken) {
-                val inputs = listOf(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken)
-                if (!touched || inputs == kept) return@LaunchedEffect
-                delay(800)
-                kept = inputs
-                message = null
-                if (harness) {
-                    if (harnessIp.isBlank()) return@LaunchedEffect
-                    // Which agent listens there is found, not asked: the address is enough.
-                    message = t("Saved — checking…")
-                    val found = vm.plugAgent(harnessIp, harnessPort, harnessToken)
-                    val h = vm.checkInference()
-                    message = when (found) {
-                        is com.hubidubitask.core.agent.AgentProbe.Result.Found -> {
-                            harnessPort = com.hubidubitask.core.agent.AgentLink.split(found.endpoint).second
-                            kept = listOf(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken)
-                            if (h.connected) t("Connected to %s", found.label)
-                            else t("Saved, but the agent at %s did not answer: %s", found.label,
-                                h.error ?: t("no reply"))
-                        }
-                        is com.hubidubitask.core.agent.AgentProbe.Result.NeedsToken ->
-                            if (found.refused) t("%s refused the token", found.label)
-                            else t("%s needs its token", found.label)
-                        com.hubidubitask.core.agent.AgentProbe.Result.NotFound ->
-                            t("Saved, but the agent at %s did not answer: %s", harnessIp.trim(), t("no reply"))
+                if (claude)
+                    LabeledField("", claudeKey, { claudeKey = it; message = null; touched = true },
+                        helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
+                else if (harness) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        LabeledField("", harnessIp, { harnessIp = it; message = null; touched = true },
+                            helper = "", enabled = true, placeholder = t("IP address"),
+                            modifier = Modifier.weight(2f))
+                        LabeledField("", harnessPort, { harnessPort = it.filter(Char::isDigit); message = null; touched = true },
+                            helper = "", enabled = true, placeholder = t("Port"),
+                            modifier = Modifier.weight(1f))
                     }
-                    connected = found is com.hubidubitask.core.agent.AgentProbe.Result.Found && h.connected
-                    return@LaunchedEffect
+                    LabeledField("", harnessToken, { harnessToken = it; message = null; touched = true },
+                        helper = "", enabled = true, placeholder = t("Token or password"), secret = true)
                 }
-                vm.setAgentConfig(saved.copy(
-                    endpoint = endpoint.trim(), protocol = protocol,
-                    model = if (selfhosted) model.ifBlank { defaultModel } else defaultModel,
-                    apiKey = if (claude) claudeKey.trim() else null))
-                // A choice with nothing to reach it by yet is kept, not checked.
-                if ((claude && claudeKey.isBlank()) || (!claude && endpoint.isBlank())) return@LaunchedEffect
-                // Saving is not the same as working. An address nothing answers
-                // on looks identical to a good one until a question fails, so
-                // probe it now and say plainly which happened.
-                message = t("Saved — checking…")
-                val h = vm.checkInference()
-                message = if (h.connected) t("Connected to %s", h.server ?: endpoint)
-                    else if (claude) t("Saved, but Claude did not answer: %s", h.error ?: t("no reply"))
-                    else t("Saved, but nothing answered at %s — check the address and that the server is running there.", endpoint)
-                connected = h.connected
-            }
+                else
+                    LabeledField("", endpoint, { endpoint = it; message = null; touched = true },
+                        helper = "",
+                        enabled = true, placeholder = t("Server address"))
 
-            // What the last Save found, and nothing before: an address under the
-            // fields only repeated one, or named a choice not made yet.
-            message?.let {
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Dot(if (connected) c.ok else c.muted)
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
+                // Only SelfHostedAI is told which of its models to use; the others choose
+                // their own (Claude the app's, an OpenAI-shaped server its first).
+                if (selfhosted)
+                    LabeledField("", model, { model = it; message = null; touched = true },
+                        helper = "",
+                        enabled = true, placeholder = "${t("Model")}: $defaultModel")
+
+                // No Save: a change is kept on its own a moment after the last
+                // keystroke or choice, then checked, and the line under says what
+                // was found. Nothing is kept before anything was changed here.
+                LaunchedEffect(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken) {
+                    val inputs = listOf(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken)
+                    if (!touched || inputs == kept) return@LaunchedEffect
+                    delay(800)
+                    kept = inputs
+                    message = null
+                    if (harness) {
+                        if (harnessIp.isBlank()) return@LaunchedEffect
+                        // Which agent listens there is found, not asked: the address is enough.
+                        message = t("Saved — checking…")
+                        val found = vm.plugAgent(harnessIp, harnessPort, harnessToken)
+                        val h = vm.checkInference()
+                        message = when (found) {
+                            is com.hubidubitask.core.agent.AgentProbe.Result.Found -> {
+                                harnessPort = com.hubidubitask.core.agent.AgentLink.split(found.endpoint).second
+                                kept = listOf(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken)
+                                if (h.connected) t("Connected to %s", found.label)
+                                else t("Saved, but the agent at %s did not answer: %s", found.label,
+                                    h.error ?: t("no reply"))
+                            }
+                            is com.hubidubitask.core.agent.AgentProbe.Result.NeedsToken ->
+                                if (found.refused) t("%s refused the token", found.label)
+                                else t("%s needs its token", found.label)
+                            com.hubidubitask.core.agent.AgentProbe.Result.NotFound ->
+                                t("Saved, but the agent at %s did not answer: %s", harnessIp.trim(), t("no reply"))
+                        }
+                        connected = found is com.hubidubitask.core.agent.AgentProbe.Result.Found && h.connected
+                        return@LaunchedEffect
+                    }
+                    vm.setAgentConfig(saved.copy(
+                        endpoint = endpoint.trim(), protocol = protocol,
+                        model = if (selfhosted) model.ifBlank { defaultModel } else defaultModel,
+                        apiKey = if (claude) claudeKey.trim() else null))
+                    // A choice with nothing to reach it by yet is kept, not checked.
+                    if ((claude && claudeKey.isBlank()) || (!claude && endpoint.isBlank())) return@LaunchedEffect
+                    // Saving is not the same as working. An address nothing answers
+                    // on looks identical to a good one until a question fails, so
+                    // probe it now and say plainly which happened.
+                    message = t("Saved — checking…")
+                    val h = vm.checkInference()
+                    message = if (h.connected) t("Connected to %s", h.server ?: endpoint)
+                        else if (claude) t("Saved, but Claude did not answer: %s", h.error ?: t("no reply"))
+                        else t("Saved, but nothing answered at %s — check the address and that the server is running there.", endpoint)
+                    connected = h.connected
+                }
+
+                // What the last Save found, and nothing before: an address under the
+                // fields only repeated one, or named a choice not made yet.
+                message?.let {
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Dot(if (connected) c.ok else c.muted)
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    }
                 }
             }
-        }
-        // The app's own language, each named in itself.
-        SectionLabel(t("Language"))
-        val language by vm.language.collectAsState()
-        Dropdown(language.label, Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } },
-            Modifier.padding(horizontal = edge))
-        // The colours: Sand follows the system's light or dark, the others are
-        // always one of them, said on the right of each in the list.
-        SectionLabel(t("Color theme"))
-        val theme by vm.theme.collectAsState()
-        Dropdown(t(theme.label), ColorTheme.entries.map {
-            DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }
-        }, Modifier.padding(horizontal = edge))
-        // The phones this computer keeps in step with: a list of them, and New
-        // device in it to pair another.
-        SectionLabel(t("Paired devices"))
-        // The one chosen in the list: Unpair under it.
-        var chosenPhone by remember { mutableStateOf<String?>(null) }
-        val phone = state.peers.firstOrNull { it.id == chosenPhone } ?: state.peers.firstOrNull()
-        Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Dropdown(phone?.name ?: t("No phone paired yet"),
-                state.peers.map { p ->
-                    DropdownItem(p.name, p.id == phone?.id, detail = syncedAt(p.lastSync)) { chosenPhone = p.id }
-                } + DropdownItem(t("New device")) { pairing = true })
-            if (phone != null) {
-                SecondaryButton(t("Unpair"), { chosenPhone = null; vm.unpair(phone.id) }, Modifier.fillMaxWidth())
+            // Kept quiet at the very end: things done once in a while, not settings
+            // anyone looks for day to day. Export and Import side by side: a copy of everything as one
+            // file sealed with a password, the way to keep it outside the app;
+            // Import reads it back, among the other places it reads from.
+            var exported by remember { mutableStateOf<String?>(null) }
+            var askingPassword by remember { mutableStateOf(false) }
+            BackupPasswordSheet(askingPassword, { askingPassword = false }) { typed ->
+                askingPassword = false
+                val dialog = java.awt.FileDialog(null as java.awt.Frame?, t("Export"), java.awt.FileDialog.SAVE)
+                    .apply { file = Backup.fileName(); isVisible = true }
+                val name = dialog.file ?: return@BackupPasswordSheet
+                val target = java.io.File(dialog.directory, name)
+                val password = typed.toCharArray()
+                scope.launch {
+                    exported = t("Exporting…")
+                    exported = runCatching { vm.exportTo(target, password) }.fold(
+                        { (items, media) -> t("Exported %d items and %d attachments.", items, media) },
+                        { t("The export failed: %s", it.message ?: it.toString()) })
+                    password.fill(' ')
+                }
             }
-        }
-        // Kept quiet at the very end: things done once in a while, not settings
-        // anyone looks for day to day. Export first: a copy of everything as one
-        // file sealed with a password, the way to keep it outside the app;
-        // Import reads it back, among the other places it reads from.
-        var exported by remember { mutableStateOf<String?>(null) }
-        var askingPassword by remember { mutableStateOf(false) }
-        BackupPasswordSheet(askingPassword, { askingPassword = false }) { typed ->
-            askingPassword = false
-            val dialog = java.awt.FileDialog(null as java.awt.Frame?, t("Export"), java.awt.FileDialog.SAVE)
-                .apply { file = Backup.fileName(); isVisible = true }
-            val name = dialog.file ?: return@BackupPasswordSheet
-            val target = java.io.File(dialog.directory, name)
-            val password = typed.toCharArray()
-            scope.launch {
-                exported = t("Exporting…")
-                exported = runCatching { vm.exportTo(target, password) }.fold(
-                    { (items, media) -> t("Exported %d items and %d attachments.", items, media) },
-                    { t("The export failed: %s", it.message ?: it.toString()) })
-                password.fill(' ')
+            Row(Modifier.padding(start = edge, end = edge, top = 28.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton(t("Export"), { exported = null; askingPassword = true }, Modifier.weight(1f),
+                    icon = Icons.Outlined.FileUpload)
+                SecondaryButton(t("Import"), onImport, Modifier.weight(1f), icon = Icons.Outlined.FileDownload)
             }
+            exported?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
+                    modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
+            }
+            // Last: what is not here yet.
+            ProSection(vm, edge)
+            Spacer(Modifier.height(16.dp))
         }
-        SecondaryButton(t("Export"), { exported = null; askingPassword = true },
-            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 28.dp),
-            icon = Icons.Outlined.FileUpload)
-        exported?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
-                modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
-        }
-        SecondaryButton(t("Import"), onImport,
-            Modifier.fillMaxWidth().padding(start = edge, end = edge, top = 10.dp),
-            icon = Icons.Outlined.FileDownload)
-        // Last: what is not here yet.
-        ProSection(vm, edge)
-        Spacer(Modifier.height(16.dp))
     }
 }
 

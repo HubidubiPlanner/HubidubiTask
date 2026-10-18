@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Settings as a table.** Due date for new tasks, Language, Theme and
+  Devices are one table without frames: each name on the left, what it is
+  set to on the right, a thin line between rows; a row opens its list. The
+  AI Agent stays under the table as before, with its heading, list and
+  fields. Then Export and Import side by side, and the Pro button. On the
+  computer the column keeps to a readable width.
+- **Unpair from the list.** In Devices each entry has its name, when it last
+  synced, a tick once it has, and an unpair button on its right, in columns
+  that line up. Nothing is left under the table: on the phone **Sync now**
+  is an entry of the list too.
+
 ## 2.3.0 — 19 October 2026
 
 - **Paired devices last.** Settings runs Due date for new tasks and notes,

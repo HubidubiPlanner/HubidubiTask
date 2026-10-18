@@ -26,10 +26,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ButtonDefaults
@@ -54,6 +57,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -348,13 +352,17 @@ data class DropdownItem(
     val danger: Boolean = false,
     /** Shown on the right of the entry, quieter: when a device last synced. */
     val detail: String? = null,
+    /** A tick in the "done" colour: a device that has synced. */
+    val done: Boolean = false,
+    /** A button at the entry's right end that removes it (unpairs a device), named [removeLabel]. */
+    val onRemove: (() -> Unit)? = null,
+    val removeLabel: String = "",
     val onClick: () -> Unit,
 )
 
 /**
- * A setting's current value with an arrow; a tap opens its choices right under
- * it, the current one ticked. Settings is a list of these, each under its
- * heading, so every setting reads as what it is and what it is set to.
+ * A setting's current value with an arrow, in a box; a tap opens its choices
+ * right under it, the current one ticked. The AI Agent's choice is one.
  */
 @Composable
 fun Dropdown(value: String, items: List<DropdownItem>, modifier: Modifier = Modifier) {
@@ -375,33 +383,7 @@ fun Dropdown(value: String, items: List<DropdownItem>, modifier: Modifier = Modi
             Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = c.accent,
                 modifier = Modifier.size(26.dp))
         }
-        DropdownMenu(
-            expanded = open, onDismissRequest = { open = false },
-            modifier = Modifier.width(with(LocalDensity.current) { width.toDp() }),
-            shape = RectangleShape, containerColor = c.raised,
-            border = androidx.compose.foundation.BorderStroke(1.dp, c.glyph),
-        ) {
-            items.forEach { item ->
-                DropdownMenuItem(
-                    text = {
-                        Text(item.label, style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (item.selected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (item.danger) c.danger else c.ink)
-                    },
-                    trailingIcon = if (item.selected || item.detail != null) ({
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            item.detail?.let {
-                                Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
-                            }
-                            if (item.selected) Icon(Icons.Filled.Check, contentDescription = null, tint = c.accent,
-                                modifier = Modifier.size(20.dp))
-                        }
-                    }) else null,
-                    onClick = { open = false; item.onClick() },
-                )
-            }
-        }
+        ChoicesMenu(open, { open = false }, items, width)
     }
 }
 
@@ -412,3 +394,108 @@ fun syncedAt(iso: String?): String = iso?.let {
         shortDate(local.toLocalDate().toString()) + " " + "%02d:%02d".format(local.hour, local.minute)
     }.getOrNull()
 } ?: t("not synced yet")
+
+/**
+ * A setting's choices, opened under it at its width. An entry's extras sit on
+ * its right in columns that line up from entry to entry: a quiet detail (when
+ * a device last synced), a tick (the current choice, or synced), and a button
+ * that removes it (unpairs a device).
+ */
+@Composable
+private fun ChoicesMenu(open: Boolean, onDismiss: () -> Unit, items: List<DropdownItem>, width: Int) {
+    val c = HubidubiTaskTheme.colors
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer()
+    val detailStyle = MaterialTheme.typography.bodySmall
+    val detailWidth = items.mapNotNull { it.detail }.maxOfOrNull { measurer.measure(it, detailStyle).size.width }
+        ?.let { with(density) { it.toDp() } + 2.dp }
+    val ticks = items.any { it.selected || it.done }
+    val removes = items.any { it.onRemove != null }
+    DropdownMenu(
+        expanded = open, onDismissRequest = onDismiss,
+        modifier = Modifier.width(with(density) { width.toDp() }),
+        shape = RectangleShape, containerColor = c.raised,
+        border = androidx.compose.foundation.BorderStroke(1.dp, c.glyph),
+    ) {
+        items.forEach { item ->
+            val extras = item.detail != null || item.selected || item.done || item.onRemove != null
+            DropdownMenuItem(
+                text = {
+                    Text(item.label, style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (item.selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (item.danger) c.danger else c.ink,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                trailingIcon = if (extras) ({
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (detailWidth != null)
+                            Text(item.detail.orEmpty(), style = detailStyle, color = c.muted, maxLines = 1,
+                                textAlign = TextAlign.End, modifier = Modifier.width(detailWidth))
+                        if (ticks)
+                            Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                                if (item.selected || item.done)
+                                    Icon(Icons.Filled.Check, contentDescription = if (item.done) t("Synced") else null,
+                                        tint = if (item.done) c.ok else c.accent, modifier = Modifier.size(20.dp))
+                            }
+                        if (removes) {
+                            val remove = item.onRemove
+                            if (remove != null)
+                                IconButton({ onDismiss(); remove() }, Modifier.size(40.dp)) {
+                                    Icon(Icons.Outlined.LinkOff, contentDescription = item.removeLabel,
+                                        tint = c.danger, modifier = Modifier.size(20.dp))
+                                }
+                            else Spacer(Modifier.size(40.dp))
+                        }
+                    }
+                }) else null,
+                onClick = { onDismiss(); item.onClick() },
+            )
+        }
+    }
+}
+
+/**
+ * One row of Settings' table, no frames: what the setting is on the left, at
+ * [labelWidth], what it is set to on the right with a chevron. The whole row
+ * opens its choices; a thin line under it, except under the last.
+ */
+@Composable
+fun SettingRow(label: String, value: String, items: List<DropdownItem>, labelWidth: Dp, last: Boolean = false) {
+    val c = HubidubiTaskTheme.colors
+    var open by remember { mutableStateOf(false) }
+    var width by remember { mutableStateOf(0) }
+    Box(Modifier.fillMaxWidth().onSizeChanged { width = it.width }) {
+        Column {
+            Row(
+                Modifier.fillMaxWidth().defaultMinSize(minHeight = 54.dp)
+                    .clickable(role = Role.DropdownList) { open = true }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                    color = c.ink, modifier = Modifier.width(labelWidth))
+                Text(value, style = MaterialTheme.typography.bodyMedium, color = c.muted, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = c.accent,
+                    modifier = Modifier.size(22.dp))
+            }
+            if (!last) HorizontalDivider(color = c.line, thickness = 1.dp)
+        }
+        ChoicesMenu(open, { open = false }, items, width)
+    }
+}
+
+/**
+ * The table's first column: as wide as the widest of [labels] in a row's
+ * type, so every value starts at one line, and at most [max].
+ */
+@Composable
+fun labelColumnWidth(labels: List<String>, max: Dp): Dp {
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+    val px = labels.maxOfOrNull { measurer.measure(it, style).size.width } ?: 0
+    // A little air after the longest name, so it doesn't run into its value.
+    return (with(LocalDensity.current) { px.toDp() } + 16.dp).coerceAtMost(max)
+}

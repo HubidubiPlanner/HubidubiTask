@@ -18,14 +18,14 @@ each other current over your own Wi-Fi.
 
 ## Pair the phone with the computer
 
-Both on the same Wi-Fi. On either one: **Settings → Paired devices → New device**,
+Both on the same Wi-Fi. On either one: **Settings → Devices → New device**,
 then the same on the other. One of them shows a code, you type it on
 the other. From then on they sync every minute while the app is open, and the
 phone also hourly in the background. Pair as many as you like: a phone with
 several computers, a computer with several phones. Each is synced in turn, so
-what is written on one reaches all of them. **Paired devices** lists them, each
-with when it last synced on its right; the one chosen has Sync now (on the
-phone) and Unpair under the list.
+what is written on one reaches all of them. **Devices** lists them, each
+with when it last synced, a tick once it has, and a button on its right that
+unpairs it; on the phone, **Sync now** is in the list too.
 
 ## Pro
 
@@ -50,8 +50,8 @@ included, stays free.
   opens the note over the home screen, the cursor in it; Done saves it and the
   app never opens.
 - **Nothing asks for a date.** Every new task and note is due tomorrow, so it
-  comes back on Incoming the next day; **Settings → Due date for new tasks and
-  notes** switches that to **No date**, kept on that device. The widget and
+  comes back on Incoming the next day; **Settings → Due date for new
+  tasks** switches that to **No date**, kept on that device. The widget and
   the share menu follow it too. To date one differently, long-press it and
   choose **Date**.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
@@ -85,9 +85,9 @@ system's language if it is one of these, and English otherwise. Reviews with
 AI answer in the chosen language; a feed's task is written in the language of
 its page.
 
-## Color theme
+## Theme
 
-**Settings → Color theme:** Sand, the app's own, follows the system's light or
+**Settings → Theme:** Sand, the app's own, follows the system's light or
 dark mode; Paper and Forest are always light, Night and Ocean always dark. Each
 keeps text and borders in high contrast. The choice is kept on that device. On
 the Mac, the title bar takes a new theme's light or dark the next time the app
