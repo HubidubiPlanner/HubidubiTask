@@ -1,0 +1,4 @@
+What's new in 2.4.0
+• Settings as a clean table: due date, language, theme and devices, each name on the left and its value on the right.
+• The AI agent sits under the table, then Export and Import side by side, and Pro.
+• Devices: each with its last sync, a tick once synced, and an unpair button right in the list.

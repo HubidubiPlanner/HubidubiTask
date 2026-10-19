@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.4.0 — 19 October 2026
 
 - **Settings as a table.** Due date for new tasks, Language, Theme and
   Devices are one table without frames: each name on the left, what it is

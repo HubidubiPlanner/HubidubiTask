@@ -1,0 +1,4 @@
+Nowości w 2.4.0
+• Ustawienia jako przejrzysta tabela: termin, język, motyw i urządzenia, nazwa po lewej, wartość po prawej.
+• Agent AI pod tabelą, potem Eksport i Import obok siebie oraz Pro.
+• Urządzenia: każde z czasem ostatniej synchronizacji, ptaszkiem po synchronizacji i przyciskiem rozłączenia na liście.
