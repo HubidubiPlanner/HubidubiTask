@@ -37,6 +37,8 @@ object ProInterest {
     val FORM = Form(
         url = "https://docs.google.com/forms/d/e/FORM_ID/formResponse",
         platform = "entry.FIELD",
+        version = "entry.FIELD",
+        language = "entry.FIELD",
     )
 
     private val http by lazy {

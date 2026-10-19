@@ -1,0 +1,3 @@
+What's new in 2.4.1
+• Sign up for Pro now works: one tap counts you (only the platform, app version and language are sent), and it no longer claims you're offline.
+• From 2.4.0: Settings as a clean table, the AI agent under it, and devices unpaired right from their list.

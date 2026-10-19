@@ -1,0 +1,3 @@
+Nowości w 2.4.1
+• Zapis do wersji Pro działa: jedno dotknięcie Cię liczy (wysyłane są tylko platforma, wersja aplikacji i język) i nie twierdzi już, że jesteś offline.
+• Z 2.4.0: Ustawienia jako przejrzysta tabela, Agent AI pod nią i rozłączanie urządzeń prosto z listy.

@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## 2.4.1 — 19 October 2026
 
-- **Sign up for Pro says what really happened.** With no form to send to
-  yet, it says sign-ups for Pro aren't open yet, instead of blaming the
-  connection; a real failure says to try again in a moment.
+- **Sign up for Pro is counted.** The press now reaches the developer's
+  "HubidubiTask Pro" form (platform, app version, language; nothing else),
+  and says what really happened: thanks once counted, "try again in a
+  moment" when it didn't go through, never a false "you're offline".
 
 ## 2.4.0 — 19 October 2026
 
