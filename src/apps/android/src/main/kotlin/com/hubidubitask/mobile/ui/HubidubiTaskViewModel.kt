@@ -154,11 +154,11 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     /** Whether this phone has already said it wants Pro. */
     fun proWanted(): Boolean = proPrefs().getBoolean("wanted", false)
 
-    /** Say so, once: true when the answer went through. */
-    suspend fun wantPro(): Boolean = withContext(Dispatchers.IO) {
+    /** Say so, once: kept as said when the answer went through. */
+    suspend fun wantPro(): com.hubidubitask.core.pro.ProInterest.Result = withContext(Dispatchers.IO) {
         com.hubidubitask.core.pro.ProInterest.send("android",
             com.hubidubitask.mobile.BuildConfig.VERSION_NAME, language.value.code)
-    }.also { if (it) proPrefs().edit().putBoolean("wanted", true).apply() }
+    }.also { if (it == com.hubidubitask.core.pro.ProInterest.Result.SENT) proPrefs().edit().putBoolean("wanted", true).apply() }
 
     private fun proPrefs() = getApplication<Application>()
         .getSharedPreferences("pro", android.content.Context.MODE_PRIVATE)

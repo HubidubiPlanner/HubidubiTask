@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit
  */
 object ProInterest {
 
+    /** What a press came to: counted, sign-ups not open (no form yet), or not sent. */
+    enum class Result { SENT, NOT_OPEN, FAILED }
+
     /** The form's address (up to `/formResponse`) and its three questions' entry names. */
     data class Form(val url: String, val platform: String, val version: String, val language: String) {
         val ready get() = listOf(url, platform, version, language).all { it.isNotBlank() }
@@ -28,17 +31,22 @@ object ProInterest {
         OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build()
     }
 
-    /** One answer; true when the form took it. Throws nothing: offline is just false. */
+    /**
+     * One answer. [Result.NOT_OPEN] while there is no form, so the app never
+     * blames the connection for it; [Result.FAILED] when the form didn't take
+     * it or couldn't be reached. Throws nothing.
+     */
     fun send(platform: String, version: String, language: String, form: Form = FORM,
-             client: OkHttpClient = http): Boolean {
-        if (!form.ready) return false
+             client: OkHttpClient = http): Result {
+        if (!form.ready) return Result.NOT_OPEN
         val body = FormBody.Builder()
             .add(form.platform, platform)
             .add(form.version, version)
             .add(form.language, language)
             .build()
-        return runCatching {
+        val took = runCatching {
             client.newCall(Request.Builder().url(form.url).post(body).build()).execute().use { it.isSuccessful }
         }.getOrDefault(false)
+        return if (took) Result.SENT else Result.FAILED
     }
 }

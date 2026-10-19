@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Sign up for Pro says what really happened.** With no form to send to
+  yet, it says sign-ups for Pro aren't open yet, instead of blaming the
+  connection; a real failure says to try again in a moment.
+
 ## 2.4.0 — 19 October 2026
 
 - **Settings as a table.** Due date for new tasks, Language, Theme and

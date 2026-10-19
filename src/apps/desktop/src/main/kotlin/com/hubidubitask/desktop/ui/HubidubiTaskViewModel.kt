@@ -526,13 +526,13 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     /** Whether this computer has already said it wants Pro. */
     fun proWanted(): Boolean = store.kv("pro_wanted") != null
 
-    /** Say so, once: true when the answer went through. */
-    suspend fun wantPro(): Boolean = withContext(Dispatchers.IO) {
+    /** Say so, once: kept as said when the answer went through. */
+    suspend fun wantPro(): com.hubidubitask.core.pro.ProInterest.Result = withContext(Dispatchers.IO) {
         com.hubidubitask.core.pro.ProInterest.send(
             if (com.hubidubitask.desktop.Platform.isMac) "mac" else "linux",
             // jpackage names the version to the app it launches; a run from Gradle has none.
             System.getProperty("jpackage.app-version") ?: "dev", language.value.code, proForm)
-    }.also { if (it) store.setKv("pro_wanted", nowUtc()) }
+    }.also { if (it == com.hubidubitask.core.pro.ProInterest.Result.SENT) store.setKv("pro_wanted", nowUtc()) }
 
     // ---- pairing
 

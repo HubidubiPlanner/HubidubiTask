@@ -13,6 +13,7 @@ import java.net.InetSocketAddress
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** Settings › Pro: one click sends one answer, once; then the card says thanks. */
@@ -56,5 +57,18 @@ class ProWantTest {
         waitForIdle()
         onNodeWithText("Thanks, you're signed up for Pro", substring = true).assertExists()
         assertEquals(0, onAllNodes(hasText("Sign up for Pro", substring = true)).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `without a form it says sign-ups aren't open, not that the connection failed`() = runComposeUiTest {
+        val store = Store(Files.createTempDirectory("hubi").toFile())
+        val vm = HubidubiTaskViewModel(store, PeerServer(store, "Test Mac") {})
+            .apply { proForm = ProInterest.Form("", "", "", "") }
+        setContent { App(vm, "settings", dark = false) }
+        onNodeWithText("Sign up for Pro: sync this computer with your phone").performScrollTo().performClick()
+        waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("Sign-ups for Pro aren't open yet.")).fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(0, onAllNodes(hasText("That didn't go through", substring = true)).fetchSemanticsNodes().size)
+        assertEquals(1, onAllNodes(hasText("Sign up for Pro", substring = true)).fetchSemanticsNodes().size)
+        assertFalse(vm.proWanted())
     }
 }

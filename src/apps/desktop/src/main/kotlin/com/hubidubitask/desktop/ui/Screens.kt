@@ -896,7 +896,8 @@ private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
     val scope = rememberCoroutineScope()
     var wanted by remember { mutableStateOf(vm.proWanted()) }
     var sending by remember { mutableStateOf(false) }
-    var failed by remember { mutableStateOf(false) }
+    // What the last press came to, said under the button until it is pressed again.
+    var outcome by remember { mutableStateOf<com.hubidubitask.core.pro.ProInterest.Result?>(null) }
     Column(Modifier.padding(start = edge, end = edge, top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (wanted)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -907,16 +908,24 @@ private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
             }
         else {
             PrimaryButton(if (sending) t("Sending…") else t("Sign up for Pro: sync this computer with your phone"), {
-                sending = true; failed = false
+                sending = true; outcome = null
                 scope.launch {
-                    val ok = vm.wantPro()
+                    val result = vm.wantPro()
                     sending = false
-                    if (ok) wanted = true else failed = true
+                    outcome = result
+                    if (result == com.hubidubitask.core.pro.ProInterest.Result.SENT) wanted = true
                 }
             }, Modifier.fillMaxWidth(), enabled = !sending)
-            if (failed)
-                Text(t("That didn't go through. Try again when you're online."),
-                    style = MaterialTheme.typography.bodySmall, color = c.danger)
+            when (outcome) {
+                // No form yet: nothing to send to, and nothing wrong with the connection.
+                com.hubidubitask.core.pro.ProInterest.Result.NOT_OPEN ->
+                    Text(t("Sign-ups for Pro aren't open yet."),
+                        style = MaterialTheme.typography.bodySmall, color = c.muted)
+                com.hubidubitask.core.pro.ProInterest.Result.FAILED ->
+                    Text(t("That didn't go through. Try again in a moment."),
+                        style = MaterialTheme.typography.bodySmall, color = c.danger)
+                else -> {}
+            }
         }
     }
 }
