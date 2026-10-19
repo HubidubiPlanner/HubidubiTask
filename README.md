@@ -16,7 +16,7 @@ The whole picture: [`docs/ecosystem.html`](docs/ecosystem.html).
 | [`distribution/arch/`](distribution/arch) | The Linux package for Arch and Omarchy, built in containers by `build.sh`. |
 | [`distribution/appimage/`](distribution/appimage) | The AppImage for any x86_64 Linux, from the same Linux build (`distribution/linux/app-image.sh`). |
 | [`site/`](site) | The public website. |
-| [`docs/`](docs) | The ecosystem page and the manual. |
+| [`docs/`](docs) | The ecosystem page, the manual, the changelog, and how the Pro sign-up is counted (`PRO.md`). |
 
 ## AI
 

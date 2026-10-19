@@ -30,11 +30,22 @@ unpairs it; on the phone, **Sync now** is in the list too.
 ## Pro
 
 Pro isn't sold yet. It would be syncing with your Mac and Linux computers.
-The last button in **Settings**, **Sign up for Pro**, says you would want it:
-the app sends one answer (the platform, the app's version and its language,
-nothing else; no name, no email) so the people who want Pro can be counted.
-Once sent, the button goes and a line says thanks. Everything else, syncing
-included, stays free.
+The last button in **Settings**, **Sign up for Pro: …**, says you would want
+it: the app sends one answer to the developer's Google Form with the platform
+(Android, macOS or Linux), the app's version and its language, and nothing
+else: no name, no email, nothing about your items. It is sent only when you
+press it, and once per device. Everything else, syncing included, stays free.
+
+What you see under the button:
+
+- **Thanks, you're signed up for Pro.** It was counted; the button goes, and
+  the device won't send again.
+- **That didn't go through. Try again in a moment.** The form couldn't be
+  reached or didn't take it; the button stays, press it again later.
+- **Sign-ups for Pro aren't open yet.** This copy of the app has no form to
+  send to; nothing was sent.
+
+How the count works, for the developer: [PRO.md](PRO.md).
 
 ## Everyday use
 
