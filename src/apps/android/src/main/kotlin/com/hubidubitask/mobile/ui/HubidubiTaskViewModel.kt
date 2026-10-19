@@ -156,7 +156,7 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Say so, once: kept as said when the answer went through. */
     suspend fun wantPro(): com.hubidubitask.core.pro.ProInterest.Result = withContext(Dispatchers.IO) {
-        com.hubidubitask.core.pro.ProInterest.send("android",
+        com.hubidubitask.core.pro.ProInterest.send(com.hubidubitask.core.pro.ProInterest.ANDROID,
             com.hubidubitask.mobile.BuildConfig.VERSION_NAME, language.value.code)
     }.also { if (it == com.hubidubitask.core.pro.ProInterest.Result.SENT) proPrefs().edit().putBoolean("wanted", true).apply() }
 

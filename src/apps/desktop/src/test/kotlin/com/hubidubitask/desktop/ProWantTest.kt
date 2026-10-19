@@ -47,7 +47,7 @@ class ProWantTest {
             waitUntil(timeoutMillis = 5_000) { onAllNodes(hasText("Thanks, you're signed up for Pro", substring = true)).fetchSemanticsNodes().isNotEmpty() }
             assertEquals(0, onAllNodes(hasText("Sign up for Pro", substring = true)).fetchSemanticsNodes().size)
             val sent = f.bodies.last().split('&').associate { it.substringBefore('=') to it.substringAfter('=') }
-            assertTrue(sent["entry.1"] in setOf("mac", "linux"))
+            assertTrue(sent["entry.1"] in setOf("macOS", "Linux"))
             assertEquals("dev", sent["entry.2"]); assertEquals("en", sent["entry.3"])
             assertEquals(setOf("entry.1", "entry.2", "entry.3"), sent.keys)
         }

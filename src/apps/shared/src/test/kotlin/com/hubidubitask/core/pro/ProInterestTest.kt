@@ -36,8 +36,23 @@ class ProInterestTest {
     fun `no form set up, nothing sent`() {
         Stub { 200 to "" }.use { stub ->
             assertEquals(ProInterest.Result.NOT_OPEN, ProInterest.send("linux", "1.2.0", "de", ProInterest.Form("", "", "", "")))
-            assertEquals(ProInterest.Result.NOT_OPEN, ProInterest.send("linux", "1.2.0", "de", form(stub.base).copy(language = "")))
+            assertEquals(ProInterest.Result.NOT_OPEN, ProInterest.send("linux", "1.2.0", "de", form(stub.base).copy(platform = "")))
             assertTrue(stub.calls.isEmpty())
         }
+    }
+
+    @Test
+    fun `a form without version and language questions gets the platform alone`() {
+        Stub { 200 to "" }.use { stub ->
+            val platformOnly = ProInterest.Form("${stub.base}/forms/d/e/FORM/formResponse", "entry.11")
+            assertEquals(ProInterest.Result.SENT, ProInterest.send(ProInterest.ANDROID, "2.4.0", "pl", platformOnly))
+            assertEquals("entry.11=Android", stub.calls.single().body)
+        }
+    }
+
+    @Test
+    fun `the owner's form is set up, and asks the platform`() {
+        assertTrue(ProInterest.FORM.ready)
+        assertTrue(ProInterest.FORM.url.endsWith("/formResponse"))
     }
 }

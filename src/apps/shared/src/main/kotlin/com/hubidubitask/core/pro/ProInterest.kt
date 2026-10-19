@@ -16,16 +16,28 @@ object ProInterest {
     /** What a press came to: counted, sign-ups not open (no form yet), or not sent. */
     enum class Result { SENT, NOT_OPEN, FAILED }
 
-    /** The form's address (up to `/formResponse`) and its three questions' entry names. */
-    data class Form(val url: String, val platform: String, val version: String, val language: String) {
-        val ready get() = listOf(url, platform, version, language).all { it.isNotBlank() }
+    /**
+     * The form's address (up to `/formResponse`) and its questions' entry
+     * names. It needs the platform question; version and language go only
+     * when the form asks them (blank: not sent).
+     */
+    data class Form(val url: String, val platform: String, val version: String = "", val language: String = "") {
+        val ready get() = url.isNotBlank() && platform.isNotBlank()
     }
 
+    /** The platforms as the form's Platform question names its choices: an answer must match one exactly. */
+    const val ANDROID = "Android"
+    const val MAC = "macOS"
+    const val LINUX = "Linux"
+
     /**
-     * The owner's form, taken from its "Get pre-filled link". Blank until it
-     * exists: the button is there, and nothing is sent.
+     * The owner's form, "HubidubiTask Pro": its entry names are read from the
+     * form's page (FB_PUBLIC_LOAD_DATA_), each question's first number.
      */
-    val FORM = Form(url = "", platform = "", version = "", language = "")
+    val FORM = Form(
+        url = "https://docs.google.com/forms/d/e/FORM_ID/formResponse",
+        platform = "entry.FIELD",
+    )
 
     private val http by lazy {
         OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build()
@@ -39,10 +51,9 @@ object ProInterest {
     fun send(platform: String, version: String, language: String, form: Form = FORM,
              client: OkHttpClient = http): Result {
         if (!form.ready) return Result.NOT_OPEN
-        val body = FormBody.Builder()
-            .add(form.platform, platform)
-            .add(form.version, version)
-            .add(form.language, language)
+        val body = FormBody.Builder().add(form.platform, platform)
+            .apply { if (form.version.isNotBlank()) add(form.version, version) }
+            .apply { if (form.language.isNotBlank()) add(form.language, language) }
             .build()
         val took = runCatching {
             client.newCall(Request.Builder().url(form.url).post(body).build()).execute().use { it.isSuccessful }

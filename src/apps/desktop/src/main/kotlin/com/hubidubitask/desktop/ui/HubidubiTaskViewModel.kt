@@ -529,7 +529,8 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     /** Say so, once: kept as said when the answer went through. */
     suspend fun wantPro(): com.hubidubitask.core.pro.ProInterest.Result = withContext(Dispatchers.IO) {
         com.hubidubitask.core.pro.ProInterest.send(
-            if (com.hubidubitask.desktop.Platform.isMac) "mac" else "linux",
+            if (com.hubidubitask.desktop.Platform.isMac) com.hubidubitask.core.pro.ProInterest.MAC
+            else com.hubidubitask.core.pro.ProInterest.LINUX,
             // jpackage names the version to the app it launches; a run from Gradle has none.
             System.getProperty("jpackage.app-version") ?: "dev", language.value.code, proForm)
     }.also { if (it == com.hubidubitask.core.pro.ProInterest.Result.SENT) store.setKv("pro_wanted", nowUtc()) }
