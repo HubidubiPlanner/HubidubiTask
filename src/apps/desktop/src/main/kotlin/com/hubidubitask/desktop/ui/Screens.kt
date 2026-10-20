@@ -1004,7 +1004,7 @@ fun SettingsScreen(
                 // The app's own language, each named in itself.
                 SettingRow(t("Language"), language.label,
                     Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } }, labelWidth)
-                // Sand follows the system's light or dark, the others are always one
+                // Claude and Sand follow the system's light or dark, the others are always one
                 // of them, said on the right of each in the list.
                 SettingRow(t("Theme"), t(theme.label), ColorTheme.entries.map {
                     DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }

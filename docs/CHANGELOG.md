@@ -28,6 +28,9 @@
   asked for over HTTPS, redirects never go back to plain HTTP, and nothing
   is fetched from your home network.
 - **Backup passwords: at least 12 characters.** Older backups still open.
+- **Claude theme, the new default.** Claude's own colours: ivory paper,
+  near-black words, terracotta links and buttons, light or dark as the system
+  is. A theme chosen before stays; Sand is still in **Settings → Theme**.
 
 ## 2.4.1 — 19 October 2026
 

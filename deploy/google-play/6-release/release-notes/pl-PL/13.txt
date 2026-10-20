@@ -1,5 +1,6 @@
 Nowości
-• Bezpieczniejsze parowanie i synchronizacja: kodu parowania nie da się przechwycić w sieci Wi-Fi, a każda synchronizacja jest szyfrowana nowymi kluczami odpornymi na komputery kwantowe. Po aktualizacji telefonu i komputera sparuj je jeszcze raz (Ustawienia › Urządzenia › Nowe urządzenie).
+• Bezpieczniejsze parowanie i synchronizacja: kodu nie da się przechwycić w Wi-Fi, a każda synchronizacja jest szyfrowana nowymi kluczami odpornymi na komputery kwantowe. Po aktualizacji telefonu i komputera sparuj je ponownie (Ustawienia › Urządzenia › Nowe urządzenie).
 • TLS odporny na komputery kwantowe przy każdym połączeniu.
 • Kanały i linki kalendarzy tylko przez HTTPS.
 • Hasło kopii zapasowej: co najmniej 12 znaków.
+• Nowy domyślny motyw: Claude. Pozostałe: Ustawienia › Motyw.

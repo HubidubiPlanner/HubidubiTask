@@ -26,11 +26,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.hubidubitask.mobile.R
 
-// Five colour themes, chosen in Settings ([ColorTheme]). Sand, the default, is
-// the app's own: five earth tones and their steps (Moss #56594D · Sage #848072 ·
-// Clay #B4997E · Sand #CFC2AB · Cream #D3C9AF), light as "Piasek" and dark as
-// "Mech", as the system is. Paper and Forest are always light, Night and Ocean
-// always dark. In each, body text is 7:1 or better on the page and on cards,
+// Six colour themes, chosen in Settings ([ColorTheme]). Claude, the default,
+// takes Claude's own colours, light or dark as the system is. Sand is the
+// app's earlier look: five earth tones and their steps (Moss #56594D · Sage
+// #848072 · Clay #B4997E · Sand #CFC2AB · Cream #D3C9AF), light as "Piasek" and
+// dark as "Mech", also as the system is. Paper and Forest are always light,
+// Night and Ocean always dark. In each, body text is 7:1 or better on the page and on cards,
 // secondary text and links 4.5:1, borders 3:1 (ThemeContrastTest).
 
 /**
@@ -57,7 +58,47 @@ data class AppColors(
     val ok: Color,         // "connected", "synced"
 )
 
-// Sand, the default and the app's own, light: sand paper, clay accent;
+// Claude, the default: Claude's own look, light or dark as the system is.
+// Ivory paper, white cards, near-black ink, Claude's terracotta, taken a step
+// darker in light (a step lighter in dark) so links keep 4.5:1.
+private val ClaudeLight = AppColors(
+    paper = Color(0xFFF4F3EE),
+    raised = Color(0xFFFFFFFF),
+    line = Color(0xFF87857B),
+    ink = Color(0xFF141413),
+    muted = Color(0xFF3D3D3A),
+    accent = Color(0xFFA84E2E),
+    frame = Color(0xFF3D3D3A),
+    glyph = Color(0xFF73726C),
+    well = Color(0xFFE6E3D8),
+    button = Color(0xFFB0532F),
+    onButton = Color(0xFFFFFFFF),
+    onButtonMuted = Color(0xFFF5DDD3),
+    nav = Color(0xFFE9E7DE),
+    danger = Color(0xFFA1271B),
+    ok = Color(0xFF3D6B35),
+)
+
+// Claude, dark: warm charcoal, ivory ink, the terracotta button with dark text.
+private val ClaudeDark = AppColors(
+    paper = Color(0xFF262624),
+    raised = Color(0xFF30302E),
+    line = Color(0xFF85837A),
+    ink = Color(0xFFFAF9F5),
+    muted = Color(0xFFC2C0B6),
+    accent = Color(0xFFE3896B),
+    frame = Color(0xFFC2C0B6),
+    glyph = Color(0xFF9C9A92),
+    well = Color(0xFF3D3C38),
+    button = Color(0xFFD97757),
+    onButton = Color(0xFF141413),
+    onButtonMuted = Color(0xFF4A2A1E),
+    nav = Color(0xFF1F1E1D),
+    danger = Color(0xFFF2A499),
+    ok = Color(0xFF9CCB8A),
+)
+
+// Sand, light: sand paper, clay accent;
 // darker words and borders than before, cards clearly lighter than the page.
 private val Piasek = AppColors(
     paper = Color(0xFFE7DEC9),
@@ -173,10 +214,12 @@ private val Ocean = AppColors(
 )
 
 /**
- * The colour themes Settings offers, in its order. Sand follows the system's
- * light or dark mode ([dark] null); the others are always the one they are.
+ * The colour themes Settings offers, in its order. Claude and Sand follow the
+ * system's light or dark mode ([dark] null); the others are always the one
+ * they are.
  */
 enum class ColorTheme(val label: String, val dark: Boolean?) {
+    CLAUDE("Claude", null),
     SAND("Sand", null),
     PAPER("Paper", false),
     NIGHT("Night", true),
@@ -190,13 +233,14 @@ enum class ColorTheme(val label: String, val dark: Boolean?) {
     val mode: String get() = when (dark) { null -> "Follows the system"; true -> "Dark"; false -> "Light" }
 
     companion object {
-        /** A kept choice; Sand when none, or one this version doesn't know, was kept. */
-        fun of(id: String?): ColorTheme = entries.firstOrNull { it.id == id } ?: SAND
+        /** A kept choice; Claude when none, or one this version doesn't know, was kept. */
+        fun of(id: String?): ColorTheme = entries.firstOrNull { it.id == id } ?: CLAUDE
     }
 }
 
-/** [theme]'s colours and whether they are dark; [systemDark] matters to Sand alone. */
+/** [theme]'s colours and whether they are dark; [systemDark] matters to Claude and Sand alone. */
 internal fun paletteOf(theme: ColorTheme, systemDark: Boolean): Pair<AppColors, Boolean> = when (theme) {
+    ColorTheme.CLAUDE -> if (systemDark) ClaudeDark to true else ClaudeLight to false
     ColorTheme.SAND -> if (systemDark) Mech to true else Piasek to false
     ColorTheme.PAPER -> Paper to false
     ColorTheme.NIGHT -> Night to true
@@ -283,16 +327,16 @@ private val SquareShapes = Shapes(
     extraLarge = RoundedCornerShape(0.dp),
 )
 
-private val LocalAppColors = staticCompositionLocalOf { Piasek }
+private val LocalAppColors = staticCompositionLocalOf { ClaudeLight }
 
 object HubidubiTaskTheme {
     val colors: AppColors
         @Composable get() = LocalAppColors.current
 }
 
-/** [theme]'s colours, light or dark as it says (Sand as the system is). */
+/** [theme]'s colours, light or dark as it says (Claude and Sand as the system is). */
 @Composable
-fun HubidubiTaskTheme(theme: ColorTheme = ColorTheme.SAND, content: @Composable () -> Unit) {
+fun HubidubiTaskTheme(theme: ColorTheme = ColorTheme.CLAUDE, content: @Composable () -> Unit) {
     val (colors, dark) = paletteOf(theme, isSystemInDarkTheme())
     // The status and navigation bar icons follow the theme, not the system:
     // light icons on Night's page even when the phone is in light mode.

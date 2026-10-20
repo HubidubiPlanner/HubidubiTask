@@ -107,8 +107,10 @@ its page.
 
 ## Theme
 
-**Settings → Theme:** Sand, the app's own, follows the system's light or
-dark mode; Paper and Forest are always light, Night and Ocean always dark. Each
+**Settings → Theme:** Claude, the default, takes Claude's own colours (ivory,
+terracotta) and Sand the app's earlier earth tones; both follow the system's
+light or dark mode. Paper and Forest are always light, Night and Ocean always
+dark. A theme chosen before keeps being used. Each
 keeps text and borders in high contrast. The choice is kept on that device. On
 the Mac, the title bar takes a new theme's light or dark the next time the app
 starts.

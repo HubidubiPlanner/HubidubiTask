@@ -47,7 +47,8 @@ class SettingsDropdownTest {
         assertEquals(1, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)
         assertEquals(0, onAllNodesWithText("Model").fetchSemanticsNodes().size)
         assertEquals(0, onAllNodesWithText("Save").fetchSemanticsNodes().size)
-        onNodeWithText("Claude").performClick()
+        // "Claude" is also the theme, in the table above; the AI's list is the last.
+        onAllNodesWithText("Claude").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
         waitForIdle()
         shot("settings-ai-open")
         // SelfHostedAI: its address and its model, untitled; the model empty, its default as the placeholder.
@@ -94,9 +95,9 @@ class SettingsDropdownTest {
 
         // The colour theme, from its list, each saying whether it is light or dark; kept.
         onNodeWithText("Theme").performScrollTo()
-        onNodeWithText("Sand").performClick()
+        onNodeWithText("Theme").performClick()
         waitForIdle()
-        onNodeWithText("Follows the system").assertExists()
+        assertEquals(2, onAllNodesWithText("Follows the system").fetchSemanticsNodes().size)
         assertEquals(2, onAllNodesWithText("Dark").fetchSemanticsNodes().size)
         shot("settings-theme-open")
         onNodeWithText("Night").performClick()
