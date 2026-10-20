@@ -40,10 +40,12 @@ docker --context "$ctx" run --rm --platform linux/amd64 -v "$work/appimage:/w" -
   -e VERSION="$version" -w /w debian:12-slim bash -c '
     set -e
     apt-get update -qq >/dev/null && apt-get install -y -qq file desktop-file-utils >/dev/null
-    mkdir -p AppDir/usr/lib
-    tar -C AppDir/usr/lib -xzf hubidubitask-linux-x64.tar.gz
-    install -m 755 AppRun AppDir/AppRun
-    cp hubidubitask.desktop AppDir/
+    # Assembled inside the container: tar cannot make the Java runtime'"'"'s
+    # symlinks in the folder shared from the Mac.
+    mkdir -p /build/AppDir/usr/lib && cd /build
+    tar -C AppDir/usr/lib -xzf /w/hubidubitask-linux-x64.tar.gz
+    install -m 755 /w/AppRun AppDir/AppRun
+    cp /w/hubidubitask.desktop AppDir/
     cp AppDir/usr/lib/hubidubitask/lib/HubidubiTask.png AppDir/hubidubitask.png
     ln -s hubidubitask.png AppDir/.DirIcon
     cp /tools/appimagetool-1.9.1-x86_64.AppImage /tmp/appimagetool && chmod +x /tmp/appimagetool
@@ -52,6 +54,7 @@ docker --context "$ctx" run --rm --platform linux/amd64 -v "$work/appimage:/w" -
     # The tool runs fine without the mark; this copy only drops it.
     printf "\0\0\0" | dd of=/tmp/appimagetool bs=1 seek=8 count=3 conv=notrunc 2>/dev/null
     ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run -n \
-      --runtime-file /tools/runtime-20251108-x86_64 AppDir "HubidubiTask-$VERSION-x86_64.AppImage" >/dev/null'
+      --runtime-file /tools/runtime-20251108-x86_64 AppDir "HubidubiTask-$VERSION-x86_64.AppImage" >/dev/null
+    cp "HubidubiTask-$VERSION-x86_64.AppImage" /w/'
 cp "$work/appimage/HubidubiTask-$version-x86_64.AppImage" "$out/"
 ls -1 "$out"
