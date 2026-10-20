@@ -201,11 +201,11 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     <table>
       <thead><tr><th>Between</th><th>How</th><th>Port</th><th>Finding each other</th><th>Trust</th></tr></thead>
       <tbody>
-        <tr><td>Phone and computer</td><td>Peer sync: each sends what the other has not seen, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Self-signed certificate pinned at pairing; a token per phone</td></tr>
-        <tr><td>Apps and your own agent</td><td>OpenClaw, Hermes and others: the OpenAI chat shape, one message with the items as text; opencode and Kilo: a session per question, answered in a JSON schema, then deleted. Changes come back as add_task, capture, mark_done and are checked before the app applies them</td><td>the agent's</td><td>IP in Settings; the port, or each agent's usual one</td><td>Its token or password, in the system's secret store; HTTPS tried first and its certificate pinned; plain HTTP only to home-network addresses</td></tr>
+        <tr><td>Phone and computer</td><td>Peer sync: each sends what the other has not seen, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Pairing by an 8-character code as a PAKE (J-PAKE) mixed with ML-KEM-768; every round in a sealed session with fresh post-quantum keys, inside TLS (X25519MLKEM768 where both ends offer it) with the certificate pinned at pairing; home-network addresses only</td></tr>
+        <tr><td>Apps and your own agent</td><td>OpenClaw, Hermes and others: the OpenAI chat shape, one message with the items as text; opencode and Kilo: a session per question, answered in a JSON schema, then deleted. Changes come back as add_task, capture, mark_done and are checked before the app applies them</td><td>the agent's</td><td>IP in Settings; the port, or each agent's usual one</td><td>Its token or password, in the system's secret store; found without the token, which then goes only to the certificate seen first; HTTPS tried first and its certificate pinned; plain HTTP only to home-network addresses</td></tr>
         <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring (a file only you can read when there is no working keyring)</td></tr>
         <tr><td>Apps and the "Sign up for Pro" form</td><td>One form answer, once per install, only when pressed: platform, version, language</td><td>443</td><td>The developer's Google Form</td><td>HTTPS; no identifier</td></tr>
-        <tr><td>Apps and SelfHostedAI or OpenAI</td><td>An encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>Encryption or a pinned TLS certificate</td></tr>
+        <tr><td>Apps and SelfHostedAI or OpenAI</td><td>An encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>A public server: a certificate an authority vouches for; a home server: its own certificate, pinned on first use</td></tr>
         <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
       </tbody>
     </table>
@@ -249,7 +249,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <section aria-labelledby="status-h">
   <h2 id="status-h">Current state</h2>
   <ul class="status">
-    <li><span class="pill ok">Released</span><span>Version 2.4.1 (tag v2.4.1, versionCode 12): the Android app and its Play bundle, the Mac app, the Arch package and the AppImage, with checksums. New since 2.4.0: Sign up for Pro is counted in the developer's "HubidubiTask Pro" Google Form (platform, version, language) and says what really happened. 2.4.0 brought Settings as a table, the AI Agent under it, and unpairing from the device list.</span></li>
+    <li><span class="pill ok">Released</span><span>Version 3.0.0 (tag v3.0.0, versionCode 13): the Android app and its Play bundle, the Mac app, the Arch package and the AppImage, with checksums. New since 2.4.1: pairing v2 (the same 8-character code as a J-PAKE password, hybridised with ML-KEM-768), every sync round sealed with fresh post-quantum keys, post-quantum TLS on the phone (Conscrypt) and the computer (bundled Java 27), keys in the Keystore and Keychain, the AI connections' certificate checks, feeds over HTTPS only, and 12-character backup passwords. Phone and computer must be paired once more after both are updated.</span></li>
     <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; Incoming first, with its title and the "+" where Projects has it; Feeds; four AI choices; Review with AI; English, Polish, German, French and Spanish, chosen in Settings.</span></li>
     <li><span class="pill ok">Works</span><span>The Agent plugs into the user's own agent (OpenClaw, Hermes, opencode, Kilo, OpenAI-shaped), found by IP; tested against stand-ins of each, not yet against a live one.</span></li>
     <li><span class="pill ok">Works</span><span>The Arch package installs with pacman in a clean Arch system and the app starts and draws its screens.</span></li>
@@ -261,5 +261,5 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   </ul>
 </section>
 
-<footer>Written from the repository as it stands on 16 October 2026.</footer>
+<footer>Written from the repository as it stands on 20 October 2026.</footer>
 </div>

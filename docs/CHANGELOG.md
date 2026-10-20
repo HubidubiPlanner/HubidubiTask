@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.0.0 — 20 October 2026
+
+- **Pair once more.** After updating both the phone and the computer, pair
+  them again (**Settings → Devices → New device**): pairing and sync are new
+  underneath and older pairings no longer work. Nothing is lost; the next
+  sync picks up where the last one stopped.
+- **The pairing code can't be stolen.** The same 8-character code now works
+  as the password of a PAKE (J-PAKE): someone on the Wi-Fi learns nothing
+  from watching or from posing as the computer, and five wrong tries close
+  the code on either device.
+- **Sync is sealed, post-quantum.** Every sync round gets fresh keys from
+  the pairing key and an ML-KEM-768 exchange, so a recording of today's
+  traffic stays closed even to a future quantum computer, and a key stolen
+  later can't open earlier rounds. Photos and files travel the same way, in
+  chunks. The computer answers only addresses on the home network and turns
+  away an unknown phone before reading what it sends.
+- **Post-quantum TLS.** The phone (bundled Conscrypt) and the computer (now
+  on Java 27) offer X25519MLKEM768 on every connection: Claude, feeds,
+  imports and the sync link.
+- **Keys kept where the system keeps secrets.** On the phone each
+  computer's sync key is sealed by the Android Keystore; on the computer the
+  keys of paired phones are in the Keychain (Mac) or the Secret Service
+  (Linux), and saving a key no longer puts it on a command line. The
+  computer's data folder is readable by your user only.
+- **Feeds and calendar links over HTTPS only.** An `http://` address is
+  asked for over HTTPS, redirects never go back to plain HTTP, and nothing
+  is fetched from your home network.
+- **Backup passwords: at least 12 characters.** Older backups still open.
+
 ## 2.4.1 — 19 October 2026
 
 - **Sign up for Pro is counted.** The press now reaches the developer's

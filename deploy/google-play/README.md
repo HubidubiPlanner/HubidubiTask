@@ -2,11 +2,11 @@
 
 Everything Play Console asks for, one folder per step, in the order it asks.
 Package: `com.saferendering.hubidubitask` (permanent once uploaded).
-Version: 2.4.1, versionCode 12 (from `src/apps/gradle.properties`).
+Version: 3.0.0, versionCode 13 (from `src/apps/gradle.properties`).
 
 | Step | Folder | What you do there | State |
 |---|---|---|---|
-| 1 | [`1-app-bundle/`](1-app-bundle) | Build and check the signed `.aab` | Ready: `out/hubidubitask-2.4.1-12.aab` |
+| 1 | [`1-app-bundle/`](1-app-bundle) | Build and check the signed `.aab` | Ready: `out/hubidubitask-3.0.0-13.aab` |
 | 2 | [`2-store-listing/`](2-store-listing) | Paste the name, descriptions, category, contact | Ready, English and Polish |
 | 3 | [`3-graphics/`](3-graphics) | Upload the icon, feature graphic, 8 screenshots | Ready |
 | 4 | [`4-privacy-policy/`](4-privacy-policy) | Put the privacy policy online, paste its URL | Needs the website live (`deploy/website`) |
