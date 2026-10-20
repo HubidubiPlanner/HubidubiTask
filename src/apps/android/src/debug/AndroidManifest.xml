@@ -14,5 +14,13 @@
                 <action android:name="com.hubidubitask.mobile.DEMO_SEED" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name="com.hubidubitask.mobile.demo.TlsCheck"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.hubidubitask.mobile.TLS_CHECK" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

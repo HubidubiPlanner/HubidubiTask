@@ -18,7 +18,8 @@ class ShareCaptureActivity : Activity() {
         val text = intent?.getStringExtra(Intent.EXTRA_TEXT)?.trim()
         if (!text.isNullOrEmpty()) {
             val due = NewDue.date(applicationContext)
-            saveInBackground(this, t("Captured")) { it.capture(text, due) }
+            // Another app's words: marked so for the user's agent.
+            saveInBackground(this, t("Captured")) { it.capture(text, due, origin = "share") }
         }
         finish()
     }

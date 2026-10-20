@@ -3,109 +3,116 @@ package com.hubidubitask.mobile.net
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
-import com.hubidubitask.core.peer.PairRequest
-import com.hubidubitask.core.peer.PairResponse
-import com.hubidubitask.core.peer.PairingClient
-import com.hubidubitask.core.peer.PeerJson
+import com.hubidubitask.core.peer.PeerAddress
+import com.hubidubitask.core.peer.PeerClient
 import com.hubidubitask.core.peer.PeerPairing
 import com.hubidubitask.core.peer.PeerStore
-import com.hubidubitask.core.peer.PeerSyncer
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import com.hubidubitask.mobile.security.Keystore
 import java.io.File
-import java.security.cert.X509Certificate
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 
 /**
- * The phone's link to a paired Mac: finding it on the LAN, pairing by typed
- * code, and one sync round a minute. The phone always calls the Mac; the Mac
- * only listens.
+ * The phone's link to its paired computers: finding them on the LAN and
+ * keeping what pairing gave. The talking itself (pairing, sealed sync
+ * sessions) is [PeerClient] in the shared code. The phone always calls the
+ * computer; the computer only listens.
+ *
+ * Each computer's sync key lives sealed by the Android Keystore; the list in
+ * plain preferences holds only names, addresses and certificate pins.
  */
 object MacLink {
 
     data class Mac(val id: String, val name: String, val host: String, val port: Int,
-                   val fingerprint: String, val token: String, val lastSync: String? = null)
+                   val fingerprint: String, val lastSync: String? = null)
 
     private const val PREFS = "mac_peer"
-    // The Bonjour name from the HubidubiOS days: kept, so phones and computers
-    // on 1.7.0 still find each other.
+    private const val LIST = "macs"
+    // The Bonjour name from the HubidubiOS days: kept, so the computer is found as before.
     private const val SERVICE = "_hubidubios-peer._tcp"
+
+    private fun keyName(id: String) = "mac_key_$id"
 
     // ---- this phone, and the computers it is paired with
 
     fun deviceId(context: Context): String {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         return p.getString("self_id", null) ?: ("phone-" + PeerPairing.nonce().take(12)).also {
-            p.edit().putString("self_id", it).apply()
+            p.edit().putString("self_id", it).commit()
         }
     }
 
     /**
      * Every computer this phone is paired with, in the order they were paired.
-     * Each is a peer of its own with its own cursor, so what comes from one goes
-     * on to the others at their next round.
+     * Pairings from before pairing v2 (a bearer token, no sealed key) are void
+     * and dropped here, with their token: the computer is paired again. An
+     * entry stays as long as its sealed key is there, even if the Keystore
+     * fails to open it for a moment.
      */
     @Synchronized
     fun all(context: Context): List<Mac> {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        p.getString(LIST, null)?.let { s ->
-            val a = runCatching { org.json.JSONArray(s) }.getOrNull() ?: return emptyList()
-            return (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let(::macOf) }
+        val a = p.getString(LIST, null)?.let { runCatching { org.json.JSONArray(it) }.getOrNull() }
+        val entries = (0 until (a?.length() ?: 0)).mapNotNull { a!!.optJSONObject(it) }
+        val macs = entries.mapNotNull { o ->
+            macOf(o)?.takeIf { !o.has("token") && Keystore.hasSecret(context, keyName(it.id)) }
         }
-        // Paired before there could be more than one: that one starts the list.
-        val one = Mac(p.getString("id", null) ?: return emptyList(), p.getString("name", "Computer")!!,
-            p.getString("host", null) ?: return emptyList(), p.getInt("port", 5244),
-            p.getString("fp", null) ?: return emptyList(), p.getString("token", null) ?: return emptyList(),
-            p.getString("last_sync", null))
-        write(context, listOf(one))
-        return listOf(one)
+        val legacy = listOf("id", "name", "host", "port", "fp", "token", "last_sync").any(p::contains)
+        if (legacy || macs.size != entries.size) write(context, macs)
+        return macs
     }
 
-    /** Keep [m]: a new computer joins the list, one paired again replaces itself in it. */
+    /** The sync key pairing gave for computer [id]. */
+    fun key(context: Context, id: String): ByteArray? =
+        runCatching { Keystore.getSecret(context, keyName(id)) }.getOrNull()?.let(::unhex)?.takeIf { it.size == 32 }
+
+    /** Keep [m] (a new computer joins the list, one paired again replaces itself) and, when given, its [key]. */
     @Synchronized
-    fun save(context: Context, m: Mac) {
+    fun save(context: Context, m: Mac, key: ByteArray? = null) {
+        // The key first, written through: a list entry never points at a key that isn't there.
+        if (key != null) Keystore.putSecret(context, keyName(m.id), hex(key), now = true)
         val list = all(context)
         write(context, if (list.any { it.id == m.id }) list.map { if (it.id == m.id) m else it } else list + m)
     }
 
-    /** Let go of one computer; the others stay paired. */
+    /** Let go of one computer and its key; the others stay paired. */
     @Synchronized
-    fun forget(context: Context, id: String) = write(context, all(context).filter { it.id != id })
-
-    private const val LIST = "macs"
+    fun forget(context: Context, id: String) {
+        write(context, all(context).filter { it.id != id })
+        Keystore.removeSecret(context, keyName(id))
+    }
 
     private fun write(context: Context, macs: List<Mac>) {
         val a = org.json.JSONArray()
         macs.forEach { m ->
             a.put(org.json.JSONObject().put("id", m.id).put("name", m.name).put("host", m.host)
-                .put("port", m.port).put("fp", m.fingerprint).put("token", m.token)
+                .put("port", m.port).put("fp", m.fingerprint)
                 .put("last_sync", m.lastSync ?: org.json.JSONObject.NULL))
         }
-        // The single computer's own keys go: the list is the one place now.
+        // The single-computer keys of old versions go, and with them any plain token.
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .remove("id").remove("name").remove("host").remove("port").remove("fp").remove("token")
-            .remove("last_sync").putString(LIST, a.toString()).apply()
+            .remove("last_sync").putString(LIST, a.toString()).commit()
     }
 
     private fun macOf(o: org.json.JSONObject): Mac? {
         fun s(k: String) = o.optString(k).takeIf { it.isNotEmpty() && !o.isNull(k) }
         return Mac(s("id") ?: return null, s("name") ?: "Computer", s("host") ?: return null,
-            o.optInt("port", 5244), s("fp") ?: return null, s("token") ?: return null, s("last_sync"))
+            o.optInt("port", 5244), s("fp") ?: return null, s("last_sync"))
     }
 
-    // ---- finding Macs
+    private fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
+    private fun unhex(s: String): ByteArray? =
+        if (s.length % 2 != 0 || s.any { it !in '0'..'9' && it !in 'a'..'f' }) null
+        else ByteArray(s.length / 2) { s.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
 
-    data class Found(val name: String, val host: String, val port: Int)
+    // ---- finding computers
 
-    /** Macs announcing themselves on the LAN, gathered for [millis]. */
-    fun discover(context: Context, millis: Long = 2500): List<Found> {
+    /** Computers announcing themselves on the LAN, gathered for [millis]. */
+    fun discover(context: Context, millis: Long = 2500): List<PeerAddress> {
         val nsd = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-        val out = java.util.Collections.synchronizedList(ArrayList<Found>())
+        val out = java.util.Collections.synchronizedList(ArrayList<PeerAddress>())
         val l = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(t: String) {}
             override fun onDiscoveryStopped(t: String) {}
@@ -117,7 +124,7 @@ object MacLink {
                     nsd.resolveService(si, object : NsdManager.ResolveListener {
                         override fun onResolveFailed(s: NsdServiceInfo, e: Int) {}
                         override fun onServiceResolved(s: NsdServiceInfo) {
-                            s.host?.hostAddress?.let { out += Found(s.serviceName, it, s.port) }
+                            s.host?.hostAddress?.let { out += PeerAddress(s.serviceName, it, s.port) }
                         }
                     })
                 }
@@ -130,91 +137,39 @@ object MacLink {
     }
 
     /** "192.168.1.62:5244" or "192.168.1.62" typed by hand, when Bonjour is blocked. */
-    fun parseAddress(s: String): Found? {
+    fun parseAddress(s: String): PeerAddress? {
         val t = s.trim().removePrefix("https://").trimEnd('/')
         if (t.isBlank()) return null
         val host = t.substringBefore(':')
         val port = t.substringAfter(':', "5244").toIntOrNull() ?: return null
-        return Found(host, host, port)
+        return PeerAddress(host, host, port)
     }
-
-    // ---- TLS: learn the Mac's certificate once, then pin it
-
-    private class Capture(private val pin: String?) : X509TrustManager {
-        @Volatile var seen: String? = null
-        override fun checkClientTrusted(c: Array<out X509Certificate>?, a: String?) {}
-        override fun checkServerTrusted(chain: Array<out X509Certificate>, a: String?) {
-            val fp = PeerPairing.sha256Hex(chain[0].encoded)
-            seen = fp
-            if (pin != null && fp != pin) throw javax.net.ssl.SSLPeerUnverifiedException("not the paired computer")
-        }
-        override fun getAcceptedIssuers() = arrayOf<X509Certificate>()
-    }
-
-    private fun client(tm: Capture, readSeconds: Long = 30): OkHttpClient {
-        val ssl = SSLContext.getInstance("TLS").apply { init(null, arrayOf(tm), null) }
-        return OkHttpClient.Builder().sslSocketFactory(ssl.socketFactory, tm)
-            .hostnameVerifier { _, _ -> true }
-            .connectTimeout(4, TimeUnit.SECONDS).readTimeout(readSeconds, TimeUnit.SECONDS).build()
-    }
-
-    private val json = "application/json".toMediaType()
 
     // ---- pairing
 
-    sealed interface PairOutcome {
-        data class Paired(val mac: Mac) : PairOutcome
-        /** Reached, but it isn't waiting for a code (yet). */
-        data object NotReady : PairOutcome
-        data object WrongCode : PairOutcome
-        data object Unreachable : PairOutcome
-    }
-
-    /** One attempt against one Mac. Network; off the main thread. */
-    fun pair(context: Context, code: String, at: Found, phoneName: String): PairOutcome {
-        val base = "https://${at.host}:${at.port}"
-        // First contact only to see the certificate; then the same one is pinned
-        // for the pairing request, so it can't be swapped between the two.
-        val probe = Capture(null)
-        runCatching { client(probe).newCall(Request.Builder().url("$base/peer/hello").build()).execute().close() }
-        val fp = probe.seen ?: return PairOutcome.Unreachable
-        val req = PairingClient.request(code, deviceId(context), phoneName, fp)
-        val resp = try {
-            client(Capture(fp)).newCall(Request.Builder().url("$base/peer/pair")
-                .post(req.json().toRequestBody(json)).build()).execute()
-        } catch (e: Exception) { return PairOutcome.Unreachable }
-        resp.use { r ->
-            return when (r.code) {
-                200 -> {
-                    val answer = PairResponse.of(r.body!!.string())
-                    if (!PairingClient.verify(code, req, answer, fp)) PairOutcome.WrongCode
-                    else PairOutcome.Paired(Mac(answer.deviceId, answer.name.ifBlank { at.name },
-                        at.host, at.port, fp, answer.token).also { save(context, it) })
-                }
-                409 -> PairOutcome.NotReady
-                403 -> PairOutcome.WrongCode
-                else -> PairOutcome.Unreachable
-            }
-        }
-    }
+    /** Keeps what a finished pairing gave: the computer, where it was, its pin and its key. */
+    fun keep(context: Context, at: PeerAddress, paired: PeerClient.PairOutcome.Paired): Mac =
+        Mac(paired.computerId, paired.name.ifBlank { at.name }, at.host, at.port, paired.fingerprint)
+            .also { save(context, it, paired.key) }
 
     // ---- sync
 
-    data class Round(val sent: Int, val received: Int)
-
-    /** A photo, recording or file the Mac held and this phone now has too. */
-    data class Fetched(val sha: String, val file: File, val mime: String, val noteId: String)
+    /** One round at a time per computer, whoever asks (the minute timer, Sync now). */
+    private val locks = ConcurrentHashMap<String, Any>()
 
     /**
      * One sync round with each paired computer, in turn. Null when none is
      * paired or none answered; otherwise what went and came, all told.
      */
     fun sync(context: Context, store: PeerStore, blobsDir: File,
-             onFetched: (Fetched) -> Unit = {}): Round? {
-        var total: Round? = null
+             onFetched: (PeerClient.Fetched) -> Unit = {}): PeerClient.Round? {
+        var total: PeerClient.Round? = null
         for (mac in all(context)) {
-            val r = syncWith(context, mac, store, blobsDir, onFetched) ?: continue
-            total = Round((total?.sent ?: 0) + r.sent, (total?.received ?: 0) + r.received)
+            val key = key(context, mac.id) ?: continue
+            val r = synchronized(locks.computeIfAbsent(mac.id) { Any() }) {
+                syncWith(context, mac, key, store, blobsDir, onFetched)
+            } ?: continue
+            total = PeerClient.Round((total?.sent ?: 0) + r.sent, (total?.received ?: 0) + r.received)
         }
         return total
     }
@@ -223,17 +178,18 @@ object MacLink {
      * One round with one computer. If it isn't where it was, look for it on the
      * LAN by its certificate (its address may have changed) and try again.
      */
-    private fun syncWith(context: Context, paired: Mac, store: PeerStore, blobsDir: File,
-                         onFetched: (Fetched) -> Unit): Round? {
+    private fun syncWith(context: Context, paired: Mac, key: ByteArray, store: PeerStore, blobsDir: File,
+                         onFetched: (PeerClient.Fetched) -> Unit): PeerClient.Round? {
         var mac = paired
-        val attempt = { m: Mac -> runCatching { round(context, m, store, blobsDir, onFetched) } }
+        val me = deviceId(context)
+        val attempt = { m: Mac ->
+            runCatching { PeerClient(m.host, m.port, m.fingerprint).round(store, me, m.id, key, blobsDir, onFetched) }
+        }
         var result = attempt(mac)
+        if (result.exceptionOrNull() is PeerClient.NotPaired) return null
         if (result.isFailure) {
             val moved = discover(context).firstOrNull { f ->
-                val probe = Capture(null)
-                runCatching { client(probe).newCall(Request.Builder()
-                    .url("https://${f.host}:${f.port}/peer/hello").build()).execute().close() }
-                probe.seen == mac.fingerprint
+                PeerClient(f.host, f.port, null).let { it.pairingOpen(); it.seen == mac.fingerprint }
             }
             if (moved != null) {
                 mac = mac.copy(host = moved.host, port = moved.port).also { save(context, it) }
@@ -243,65 +199,5 @@ object MacLink {
         return result.getOrNull()?.also {
             save(context, mac.copy(lastSync = com.hubidubitask.core.nowUtc()))
         }
-    }
-
-    private fun round(context: Context, mac: Mac, store: PeerStore, blobsDir: File,
-                      onFetched: (Fetched) -> Unit): Round {
-        val http = client(Capture(mac.fingerprint), readSeconds = 60)
-        val base = "https://${mac.host}:${mac.port}"
-        fun auth(b: Request.Builder) = b.header("Authorization", "Bearer ${mac.token}")
-        // What the Mac sends that names bytes this phone lacks: a photo, memo
-        // or file captured there. Fetched after the round, so the phone holds
-        // what the computer holds.
-        val wanted = LinkedHashMap<String, Pair<String, String>>()   // sha -> (mime, record id)
-        val watching = object : PeerStore by store {
-            override fun applyFromPeer(record: com.hubidubitask.core.EntityRecord, peer: String) {
-                store.applyFromPeer(record, peer)
-                val sha = record.fields["media_sha256"]
-                if (!record.deleted && !sha.isNullOrBlank() && !File(blobsDir, sha).exists())
-                    wanted[sha] = (record.fields["media_mime"] ?: "application/octet-stream") to record.id
-            }
-        }
-        val report = PeerSyncer(
-            watching, peer = mac.id, self = deviceId(context),
-            send = { req ->
-                http.newCall(auth(Request.Builder().url("$base/peer/sync"))
-                    .post(PeerJson.request(req).toRequestBody(json)).build()).execute().use { r ->
-                    if (r.code == 401) throw IllegalStateException("the computer no longer knows this phone")
-                    if (!r.isSuccessful) throw java.io.IOException("the computer answered ${r.code}")
-                    PeerJson.response(r.body!!.string())
-                }
-            },
-            // Offer the photos and voice memos we hold for what we just sent.
-            blobsOf = { changes ->
-                changes.mapNotNull { it.record.fields["media_sha256"] }
-                    .filter { File(blobsDir, it).exists() }.distinct()
-            },
-            upload = { shas ->
-                shas.forEach { sha ->
-                    val f = File(blobsDir, sha)
-                    if (f.exists()) runCatching {
-                        http.newCall(auth(Request.Builder().url("$base/peer/blob/$sha"))
-                            .put(f.readBytes().toRequestBody("application/octet-stream".toMediaType()))
-                            .build()).execute().close()
-                    }
-                }
-            },
-        ).round()
-        wanted.forEach { (sha, meta) ->
-            runCatching {
-                http.newCall(auth(Request.Builder().url("$base/peer/blob/$sha")).build()).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val bytes = r.body!!.bytes()
-                    // Named by its hash, so it must be its hash.
-                    if (PeerPairing.sha256Hex(bytes) != sha) return@use
-                    blobsDir.mkdirs()
-                    val f = File(blobsDir, sha)
-                    f.writeBytes(bytes)
-                    onFetched(Fetched(sha, f, meta.first, meta.second))
-                }
-            }
-        }
-        return Round(report.sent, report.received)
     }
 }

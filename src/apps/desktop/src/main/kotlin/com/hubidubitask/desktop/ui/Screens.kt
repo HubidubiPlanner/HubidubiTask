@@ -1159,7 +1159,7 @@ private fun BackupPasswordSheet(open: Boolean, onDismiss: () -> Unit, onExport: 
     var again by remember { mutableStateOf("") }
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     val problem = when {
-        password.isNotEmpty() && password.length < MIN_BACKUP_PASSWORD -> t("At least 8 characters")
+        password.isNotEmpty() && password.length < MIN_BACKUP_PASSWORD -> t("At least 12 characters")
         again.isNotEmpty() && again != password -> t("The passwords differ.")
         else -> null
     }
@@ -1188,7 +1188,7 @@ private fun BackupPasswordSheet(open: Boolean, onDismiss: () -> Unit, onExport: 
     }
 }
 
-private const val MIN_BACKUP_PASSWORD = 8
+private const val MIN_BACKUP_PASSWORD = 12
 
 /**
  * What the + starts, the same on Next and Projects: what it is (a project, a

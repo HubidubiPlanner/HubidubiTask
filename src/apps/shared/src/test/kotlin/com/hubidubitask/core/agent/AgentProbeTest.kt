@@ -1,6 +1,7 @@
 package com.hubidubitask.core.agent
 
 import com.hubidubitask.core.agent.AgentProbe.Result
+import okhttp3.tls.HeldCertificate
 import java.net.ServerSocket
 import java.util.Base64
 import kotlin.test.AfterTest
@@ -12,9 +13,11 @@ import kotlin.test.assertTrue
 
 /** Which agent listens at an address, found from the address alone. */
 class AgentProbeTest {
-    private val stubs = mutableListOf<Stub>()
+    private val stubs = mutableListOf<AutoCloseable>()
     @AfterTest fun stop() = stubs.forEach { it.close() }
     private fun stub(routes: (Stub.Call) -> Pair<Int, String>?) = Stub(routes).also { stubs += it }
+    private fun dual(certs: List<HeldCertificate>, tls: ((Stub.Call) -> Pair<Int, String>?)?,
+                     plain: (Stub.Call) -> Pair<Int, String>?) = DualStub(certs, tls, plain).also { stubs += it }
 
     private fun bearer(token: String, c: Stub.Call) = c.auth == "Bearer $token"
     private fun basic(user: String, pw: String) = "Basic " + Base64.getEncoder().encodeToString("$user:$pw".toByteArray())
@@ -25,6 +28,14 @@ class AgentProbeTest {
         else -> null } } }
 
     private fun detect(s: Stub, token: String?) = AgentProbe.detect("127.0.0.1", s.port, token)
+
+    /** OpenClaw's answers, its models only for [token]. */
+    private fun openclawRoutes(token: String) = { c: Stub.Call -> when (c.path) {
+        "/health" -> 200 to """{"ok":true,"status":"live"}"""
+        "/v1/models" -> if (bearer(token, c)) 200 to """{"data":[{"id":"openclaw"}]}""" else 401 to "{}"
+        else -> null } }
+    private val certA = HeldCertificate.Builder().build()
+    private val certB = HeldCertificate.Builder().build()
 
     @Test fun `OpenClaw is found by its health, and its token checked`() {
         val s = openclaw("tok")
@@ -85,6 +96,36 @@ class AgentProbeTest {
         val closed = ServerSocket(0).use { it.localPort }
         val found = assertIs<Result.Found>(AgentProbe.detect("127.0.0.1", null, null, ports = listOf(closed, s.port)))
         assertEquals(s.port, AgentLink.split(found.endpoint).second.toInt())
+    }
+
+    @Test fun `the token waits until the agent is found without it`() {
+        val s = openclaw("tok")
+        assertIs<Result.Found>(detect(s, "tok"))
+        assertEquals(listOf("/global/health", "/health", "/v1/models"), s.calls.takeWhile { it.auth == null }.map { it.path })
+        assertEquals(listOf("/v1/models"), s.calls.filter { it.auth != null }.map { it.path })
+    }
+
+    @Test fun `over TLS the token waits too, and the port is never asked in the clear`() {
+        val s = dual(listOf(certA), tls = openclawRoutes("tok"), plain = openclawRoutes("tok"))
+        val found = assertIs<Result.Found>(AgentProbe.detect("127.0.0.1", s.port, "tok"))
+        assertEquals("https://127.0.0.1:${s.port}", found.endpoint)
+        assertEquals(Agent.fingerprint(certA.certificate), found.fingerprint, "pinned from now on")
+        assertTrue(s.hits.all { it.tls }, "${s.hits}")
+        assertEquals(listOf("/global/health", "/health", "/v1/models"), s.hits.takeWhile { it.call.auth == null }.map { it.call.path })
+        assertEquals(listOf("/v1/models"), s.hits.filter { it.call.auth != null }.map { it.call.path })
+    }
+
+    @Test fun `a TLS server that hangs up is not asked again over plain HTTP`() {
+        val s = dual(listOf(certA), tls = null, plain = openclawRoutes("tok"))
+        assertEquals(Result.NotFound, AgentProbe.detect("127.0.0.1", s.port, "tok"))
+        assertTrue(s.hits.isEmpty(), "${s.hits}")
+    }
+
+    @Test fun `only the certificate first seen is trusted for the rest of the probe`() {
+        val s = dual(listOf(certA, certB), tls = openclawRoutes("tok"), plain = openclawRoutes("tok"))
+        assertEquals(Result.NotFound, AgentProbe.detect("127.0.0.1", s.port, "tok"))
+        assertEquals(listOf(DualStub.Hit(true, Stub.Call("GET", "/global/health", null, ""))), s.hits.toList(),
+            "nothing after another certificate showed up, the token least of all")
     }
 
     @Test fun `plain HTTP only inside the home network`() {

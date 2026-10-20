@@ -27,6 +27,13 @@ what is written on one reaches all of them. **Devices** lists them, each
 with when it last synced, a tick once it has, and a button on its right that
 unpairs it; on the phone, **Sync now** is in the list too.
 
+The code works once, for ten minutes, and five wrong tries close it on either
+device. It is never sent: both devices prove they hold it (a PAKE), so someone
+on the Wi-Fi learns nothing from watching or from posing as the computer.
+Everything synced afterwards is sealed with keys that change every round and
+come partly from a post-quantum exchange (ML-KEM-768), inside TLS. The
+computer answers only addresses on the home network.
+
 ## Pro
 
 Pro isn't sold yet. It would be syncing with your Mac and Linux computers.
@@ -68,6 +75,8 @@ How the count works, for the developer: [PRO.md](PRO.md).
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
   project (or none, for the inbox). The first look only remembers the page;
   after that, once per period, a change becomes one task, written by Claude.
+  Pages (and calendar links) are fetched over HTTPS only and never from your
+  home network.
 - **Review:** long-press any item, then **Review with AI**. The AI sums up what
   happened in it: in a project, from all its tasks (done ones too) and notes; in
   a task, from its text and the notes under it; in a note, from its words. The
@@ -80,8 +89,8 @@ How the count works, for the developer: [PRO.md](PRO.md).
 
 **Settings › Export** saves everything in the app as one file: your projects,
 tasks (done ones too), notes, events and feeds, with their reviews, and the
-photos, voice memos and files in them. It asks for a password first, twice,
-and seals the file with it: without the password the file can't be opened, and
+photos, voice memos and files in them. It asks for a password first (at least
+12 characters), twice, and seals the file with it (AES-256): without the password the file can't be opened, and
 no one can get it back for you. Keys, tokens, pairing and settings stay on the
 device. **Settings › Import › HubidubiTask backup** reads such a file back, on
 the phone or the computer: it asks for the password, shows what it would add or
@@ -129,13 +138,20 @@ ours is installed there. The app recognises, from the address alone:
 
 Any other server that speaks OpenAI's chat API works too, with the first model
 it lists. Once the address is typed, **Settings** finds which agent answers and says so; with an
-empty port it tries the usual ones. HTTPS is tried first and its certificate is
-pinned; without HTTPS the app talks only to addresses in your home network.
-The token opens that computer (the agent can run commands there), so keep it
-long and keep it at home.
+empty port it tries the usual ones. It finds the agent without sending the
+token, and sends the token only to the certificate it saw first. HTTPS is tried
+first and its certificate is pinned; without HTTPS the app talks only to
+addresses in your home network, and the token then crosses that network
+unencrypted, so prefer an agent with HTTPS. The token opens that computer (the
+agent can run commands there), so keep it long and keep it at home.
+
+The same rule holds for every AI choice: a server on the internet must have a
+certificate a known authority vouches for; a server in your home network may
+have its own, which is remembered the first time and must stay the same.
 
 With a review, the app sends the question with a text copy of your projects,
-open tasks, notes and calendar. The agent answers with whatever model and
+open tasks, notes and calendar, marked as data, never instructions; lines whose
+words came from a web page, another app or a calendar say so. The agent answers with whatever model and
 tools it has. If you ask it to add a task, capture something or mark a task
 done, it says so in its answer and the app makes those changes itself, after
 checking each one fits your items. opencode and Kilo answer in a fixed JSON
@@ -146,7 +162,12 @@ write their task with Claude.
 
 ## Where your data lives
 
-- **Phone:** in the app's own encrypted database.
+- **Phone:** in the app's own encrypted database. API keys, the agent's token
+  and each computer's sync key are sealed by the Android Keystore.
 - **Computer:** `~/.local/share/hubidubitask/` (Linux, the AppImage too) or
-  `~/Library/Application Support/HubidubiTask/` (Mac): an SQLite database,
-  attachments by hash, and the TLS identity phones pin.
+  `~/Library/Application Support/HubidubiTask/` (Mac), readable by your user
+  only: an SQLite database, attachments by hash, and the TLS identity phones
+  pin. API keys, the agent's token and the sync keys of paired phones are in
+  the Keychain (Mac) or the Secret Service (Linux; with no keyring running,
+  in files only your user can read, inside that folder). Turn on FileVault (Mac) or
+  disk encryption (Linux) so the folder is encrypted when the computer is off.

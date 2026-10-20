@@ -177,35 +177,34 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Keep trying to pair until a Mac takes [code] or ten minutes pass: the code
-     * may be typed on the Mac after it is shown here, and the Mac may be found by
-     * Bonjour or at a typed [address]. Returns a line to show.
+     * Keep trying to pair until a computer takes [code], ten minutes pass, or
+     * five tries fail: the code may be typed on the computer after it is shown
+     * here, and the computer may be found by Bonjour or at a typed [address].
+     * Returns a line to show.
      */
     suspend fun pairMac(code: String, address: String?, shownHere: Boolean): Pair<Boolean, String> =
         withContext(Dispatchers.IO) {
             val ctx = getApplication<Application>()
             val name = android.os.Build.MODEL ?: t("Phone")
-            val until = System.currentTimeMillis() + com.hubidubitask.core.peer.PeerPairing.CODE_TTL_MS
-            while (System.currentTimeMillis() < until) {
-                val candidates = listOfNotNull(address?.let(com.hubidubitask.mobile.net.MacLink::parseAddress)) +
-                    com.hubidubitask.mobile.net.MacLink.discover(ctx)
-                for (at in candidates) {
-                    when (val out = com.hubidubitask.mobile.net.MacLink.pair(ctx, code, at, name)) {
-                        is com.hubidubitask.mobile.net.MacLink.PairOutcome.Paired -> {
-                            runCatching { Sync.syncMac(ctx) }
-                            withContext(Dispatchers.Main) { refresh() }
-                            return@withContext true to t("Paired with %s.", out.mac.name)
-                        }
-                        // Typed on this phone and the Mac refused it: wrong code.
-                        com.hubidubitask.mobile.net.MacLink.PairOutcome.WrongCode ->
-                            if (!shownHere) return@withContext false to t("The computer didn't accept that code.")
-                        else -> {}
-                    }
+            val link = com.hubidubitask.mobile.net.MacLink
+            val scope = kotlinx.coroutines.currentCoroutineContext()
+            val run = com.hubidubitask.core.peer.PhonePairing(code, link.deviceId(ctx), name, shownHere)
+            when (val out = run.run({ listOfNotNull(address?.let(link::parseAddress)) + link.discover(ctx) },
+                                    { scope.isActiveSafe() })) {
+                is com.hubidubitask.core.peer.PhonePairing.Result.Paired -> {
+                    val mac = link.keep(ctx, out.at, out.outcome)
+                    runCatching { Sync.syncMac(ctx) }
+                    withContext(Dispatchers.Main) { refresh() }
+                    true to t("Paired with %s.", mac.name)
                 }
-                if (!kotlinx.coroutines.currentCoroutineContext().isActiveSafe()) break
-                Thread.sleep(2500)
+                // Typed on this phone and the computer refused it: wrong code.
+                com.hubidubitask.core.peer.PhonePairing.Result.WrongCode ->
+                    false to t("The computer didn't accept that code.")
+                com.hubidubitask.core.peer.PhonePairing.Result.GaveUp ->
+                    false to t("Stopped after 5 failed tries. Start again with a new code.")
+                com.hubidubitask.core.peer.PhonePairing.Result.TimedOut ->
+                    false to t("No computer took the code in time.")
             }
-            false to t("No computer took the code in time.")
         }
 
     private fun kotlin.coroutines.CoroutineContext.isActiveSafe() =
@@ -290,10 +289,10 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         val (cfg, client) = agent()
         return client.health().also { h ->
             lastHealth = now to h
-            // The agent's certificate is its own: the first one answering after
-            // Save is trusted, and only it after that.
-            if (cfg.protocol == "harness" && h.connected && cfg.tlsFingerprint == null)
-                h.fingerprint?.let { AgentSettings.pinHarness(getApplication(), it) }
+            // A server's certificate in the home network is its own: the first one
+            // answering after Save is trusted, and only it after that. Any agent.
+            if (h.connected && cfg.tlsFingerprint == null)
+                h.fingerprint?.let { AgentSettings.pin(getApplication(), cfg, it) }
         }
     }
 

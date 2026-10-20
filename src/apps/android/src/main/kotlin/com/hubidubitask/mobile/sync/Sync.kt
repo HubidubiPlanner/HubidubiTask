@@ -17,7 +17,8 @@ class Sync private constructor(
     val store: RoomLocalStore,
     private val blobsDir: File,
 ) {
-    fun capture(text: String, due: String? = null): String {
+    /** [origin] says who wrote [text] when it was not the user: "share" for text shared in from another app. */
+    fun capture(text: String, due: String? = null, origin: String? = null): String {
         // The never-fail path: append to the outbox, no network, no validation.
         val id = "i_" + randomSuffix()
         val record = EntityRecord(
@@ -25,6 +26,7 @@ class Sync private constructor(
             fields = buildMap {
                 put("text", text); put("time", time()); put("date", date())
                 if (!due.isNullOrBlank()) put("due", due)
+                if (!origin.isNullOrBlank()) put("origin", origin)
             },
         )
         store.put(record)
@@ -248,9 +250,13 @@ class Sync private constructor(
         return true
     }
 
-    /** A next action filed under a project (or loose when [parentId] is null). */
+    /**
+     * A next action filed under a project (or loose when [parentId] is null).
+     * [origin] says who wrote it when it was not the user: "feed" for a feed's task.
+     */
     fun addNextAction(text: String, parentId: String?, projectSlug: String?, due: String?,
-                      body: String? = null, id: String = "t_" + randomSuffix()): String {
+                      body: String? = null, id: String = "t_" + randomSuffix(),
+                      origin: String? = null): String {
         val f = HashMap<String, String?>()
         // No "done": absent means open. An explicit "false" is a truthy string
         // to a workstation that predates the fix for it.
@@ -262,6 +268,7 @@ class Sync private constructor(
         if (due != null) f["due"] = due
         // Longer than a line: the workstation keeps it in details/<id>.md.
         if (body != null) f["body"] = body
+        if (origin != null) f["origin"] = origin
         upsert("next_action", id, f, com.hubidubitask.core.nowUtc())
         return id
     }
@@ -317,7 +324,7 @@ class Sync private constructor(
             Sync(RoomLocalStore(Database.get(context)), File(context.filesDir, "blobs"))
 
         /** One round with each paired computer, if there is any. */
-        fun syncMac(context: Context): com.hubidubitask.mobile.net.MacLink.Round? {
+        fun syncMac(context: Context): com.hubidubitask.core.peer.PeerClient.Round? {
             val db = Database.get(context)
             val peers = com.hubidubitask.mobile.data.PhonePeerStore(db, RoomLocalStore(db))
             return com.hubidubitask.mobile.net.MacLink.sync(context, peers, File(context.filesDir, "blobs"))

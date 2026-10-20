@@ -77,8 +77,8 @@ class SettingsDropdownTest {
         waitForIdle()
         // Devices: each with when it last synced and a tick once it has, and a
         // button on its right that unpairs it; New device after them.
-        store.addPeer(Store.Peer("phone-1", "Pixel", "token", "2026-10-18T09:00:00Z", null))
-        store.addPeer(Store.Peer("phone-2", "Phone", "token", "2026-10-18T09:00:00Z", "2026-10-18T10:00:00Z"))
+        store.addPeer(Store.Peer("phone-1", "Pixel", "2026-10-18T09:00:00Z", null))
+        store.addPeer(Store.Peer("phone-2", "Phone", "2026-10-18T09:00:00Z", "2026-10-18T10:00:00Z"))
         vm.refresh()
         waitUntil(timeoutMillis = 5_000) { vm.state.value.peers.size == 2 }
         onNodeWithText("Devices").performScrollTo()

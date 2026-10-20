@@ -1,11 +1,21 @@
 package com.hubidubitask.core.agent
 
+import com.hubidubitask.core.i18n.t
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.internal.tls.OkHostnameVerifier
+import java.security.KeyStore
 import java.security.MessageDigest
 import java.time.LocalDate
+import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
+import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
 /**
@@ -18,8 +28,9 @@ import javax.net.ssl.X509TrustManager
  * "Agent"; the id stays because settings store it) is an agent the user
  * already runs on a computer at home, at the IP and port they typed, of the
  * [kind] found there (see [AgentKind], [AgentProbe]); [apiKey] is its token.
- * [tlsFingerprint], when set, pins a self-signed certificate (sha256 hex of
- * the DER).
+ * [tlsFingerprint], when set, pins the certificate of a server in the home
+ * network (sha256 hex of the DER); a public one is held to the system's
+ * certificate authorities instead (see [Agent.http]).
  */
 data class AgentConfig(
     val endpoint: String,
@@ -155,32 +166,95 @@ object Agent {
             "twice (${raw.length} characters of it). Try again."
     }
 
-    /** An HTTP client for a LAN server with a self-signed certificate: any
-     *  certificate is accepted unless [fingerprint] pins one. [seen] hears the
-     *  sha256 of each certificate the server shows (OkHttp's own handshake
-     *  record drops a self-signed one it cannot chain to a known root). */
-    internal fun http(fingerprint: String?, readTimeoutSeconds: Long, connectTimeoutSeconds: Long = 10,
-                      seen: (String) -> Unit = {}): OkHttpClient {
-        val pin = fingerprint?.removePrefix("sha256:")?.lowercase()?.replace(":", "")
-            ?.takeIf { it.isNotBlank() }
-        val trust = object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String?) {
-                val got = MessageDigest.getInstance("SHA-256").digest(chain[0].encoded)
-                    .joinToString("") { "%02x".format(it) }
-                seen(got)
-                if (pin != null && got != pin) throw java.security.cert.CertificateException(
-                    "the agent's certificate does not match the pinned fingerprint")
-            }
-            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-        }
+    /**
+     * An HTTP client for the agent at [endpoint], under one TLS policy for
+     * every protocol. A public host gets standard TLS: the system's
+     * certificate authorities and the host's name, any pin ignored. A host in
+     * the home network ([isPrivate]) is trusted the same way, or else only by
+     * [fingerprint] (sha256 hex of the leaf's DER) when one is pinned, or else
+     * on first use. [seen] hears the sha256 of each certificate trusted there
+     * (OkHttp's own handshake record drops a self-signed one it cannot chain
+     * to a known root). [pinOnly] trusts the pinned certificate alone, even
+     * over one an authority vouches for. Plain http:// goes only to a host in
+     * the home network: anything else throws [AgentError] before connecting.
+     */
+    internal fun http(endpoint: String, fingerprint: String?, readTimeoutSeconds: Long,
+                      connectTimeoutSeconds: Long = 10, seen: (String) -> Unit = {},
+                      pinOnly: Boolean = false,
+                      isPrivate: (String) -> Boolean = AgentLink::isPrivate): OkHttpClient {
+        val trust = AgentTrust(endpoint.trim().toHttpUrlOrNull()?.host, fingerprint, pinOnly, seen, isPrivate)
         val ssl = SSLContext.getInstance("TLS").apply { init(null, arrayOf(trust), null) }
+        // Checked before connecting, and again for each redirect.
+        val homeOnly = Interceptor { chain ->
+            val url = chain.request().url
+            if (!url.isHttps && !isPrivate(url.host))
+                throw AgentError(t("Plain HTTP is only for your home network. Use an https:// address."))
+            chain.proceed(chain.request())
+        }
         return OkHttpClient.Builder()
             .sslSocketFactory(ssl.socketFactory, trust)
-            .hostnameVerifier { _, _ -> true }   // a LAN IP has no name to verify
+            .hostnameVerifier(trust)
+            .addInterceptor(homeOnly)
+            .addNetworkInterceptor(homeOnly)
             .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .build()
+    }
+
+    /** The sha256 of a certificate's DER, in hex: what a pin holds. */
+    internal fun fingerprint(cert: X509Certificate): String =
+        MessageDigest.getInstance("SHA-256").digest(cert.encoded).joinToString("") { "%02x".format(it) }
+}
+
+/**
+ * The TLS half of [Agent.http]: which certificates are trusted at [home].
+ * The system's authorities first, with the host's name checked; then, only
+ * at a host in the home network, the pin, or the first certificate when
+ * there is none. Decided on each handshake: a name may resolve elsewhere
+ * later.
+ */
+private class AgentTrust(
+    private val home: String?, fingerprint: String?, private val pinOnly: Boolean,
+    private val seen: (String) -> Unit, private val isPrivate: (String) -> Boolean,
+) : X509TrustManager, HostnameVerifier {
+    private val pin = fingerprint?.removePrefix("sha256:")?.lowercase()?.replace(":", "")
+        ?.takeIf { it.isNotBlank() }
+    /** Leaves an authority vouched for during a handshake, for [verify] after it. */
+    private val vouched = ConcurrentHashMap.newKeySet<String>()
+
+    override fun checkClientTrusted(chain: Array<out X509Certificate>, authType: String?) =
+        SYSTEM.checkClientTrusted(chain, authType)
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String?) {
+        try {
+            SYSTEM.checkServerTrusted(chain, authType)
+            vouched += Agent.fingerprint(chain[0])
+        } catch (e: CertificateException) {
+            // A public host has the system's answer; a home one, a pin it does not match.
+            if (home == null || !isPrivate(home) || (pin != null && Agent.fingerprint(chain[0]) != pin)) throw e
+        }
+    }
+
+    override fun getAcceptedIssuers(): Array<X509Certificate> = SYSTEM.acceptedIssuers
+
+    override fun verify(host: String, session: SSLSession): Boolean {
+        val leaf = runCatching { session.peerCertificates.firstOrNull() as? X509Certificate }.getOrNull()
+            ?.let(Agent::fingerprint) ?: return false
+        val named = leaf in vouched && OkHostnameVerifier.verify(host, session)
+        // Anywhere but the home host typed, a redirect elsewhere too: standard TLS only.
+        if (host != home || !isPrivate(host)) return named
+        val trusted = (named && !pinOnly) || pin == null || leaf == pin
+        if (trusted) seen(leaf)
+        return trusted
+    }
+
+    private companion object {
+        /** The system's certificate authorities. */
+        val SYSTEM: X509TrustManager by lazy {
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                .apply { init(null as KeyStore?) }
+                .trustManagers.filterIsInstance<X509TrustManager>().first()
+        }
     }
 }
 

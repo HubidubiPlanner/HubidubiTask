@@ -96,12 +96,15 @@ class PeerTest {
     }
 
     @Test
-    fun `pairing proofs need the same code and see the same certificate`() {
+    fun `codes are eight characters of the code alphabet`() {
         val code = PeerPairing.newCode()
         assertTrue(Regex("^[A-Z2-9]{4}-[A-Z2-9]{4}$").matches(code))
-        val p1 = PeerPairing.proof(code, "phone", "n1", "fp")
-        assertTrue(PeerPairing.same(p1, PeerPairing.proof(code.lowercase().replace("-", " "), "phone", "n1", "fp")))
-        assertFalse(PeerPairing.same(p1, PeerPairing.proof(code, "phone", "n1", "other-fp")))
-        assertFalse(PeerPairing.same(p1, PeerPairing.proof("AAAA-AAAA", "phone", "n1", "fp")))
+        assertTrue(PeerPairing.isValidCode(code))
+        assertTrue(PeerPairing.isValidCode(code.lowercase().replace("-", " ")))
+        assertFalse(PeerPairing.isValidCode("ABCD-EFG"))         // too short
+        assertFalse(PeerPairing.isValidCode("ABCD-EFGHJ"))       // too long
+        assertFalse(PeerPairing.isValidCode("ABCD-EFG0"))        // 0 is not in the alphabet
+        assertFalse(PeerPairing.isValidCode("ABCD-EFGĄ"))        // nor is any other letter
+        assertFalse(PeerPairing.isValidCode("ABCD_EFGH"))
     }
 }

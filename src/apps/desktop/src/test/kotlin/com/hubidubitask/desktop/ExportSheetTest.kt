@@ -40,8 +40,11 @@ class ExportSheetTest {
 
         exportButton().assertIsNotEnabled()
         fields[0].performTextInput("short")
-        onNodeWithText("At least 8 characters").assertExists()
-        fields[0].performTextInput(" but long now")
+        onNodeWithText("At least 12 characters").assertExists()
+        fields[0].performTextInput(" but")   // 9: long enough before, not now
+        onNodeWithText("At least 12 characters").assertExists()
+        exportButton().assertIsNotEnabled()
+        fields[0].performTextInput(" long now")
         fields[1].performTextInput("short but long no")
         onNodeWithText("The passwords differ.").assertExists()
         exportButton().assertIsNotEnabled()

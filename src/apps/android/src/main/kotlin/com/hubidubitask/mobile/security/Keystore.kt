@@ -10,9 +10,10 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Secrets at rest. The database passphrase and the paired device token are
- * random values, encrypted with an AES key that never leaves the Android
- * Keystore (hardware-backed where available). Only ciphertext touches disk.
+ * Secrets at rest: the database passphrase, each paired computer's sync key,
+ * API keys and the agent's token, encrypted with an AES key that never leaves
+ * the Android Keystore (hardware-backed where available). Only ciphertext
+ * touches disk.
  */
 object Keystore {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
@@ -41,13 +42,23 @@ object Keystore {
         return secret
     }
 
-    fun putSecret(context: Context, name: String, value: String) {
+    /** Seals [value] under [name]; [now] writes it through before returning (else in the background). */
+    fun putSecret(context: Context, name: String, value: String, now: Boolean = false) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val (ct, iv) = encrypt(value.toByteArray(Charsets.UTF_8))
-        prefs.edit()
+        val edit = prefs.edit()
             .putString("$name.ct", android.util.Base64.encodeToString(ct, android.util.Base64.NO_WRAP))
             .putString("$name.iv", android.util.Base64.encodeToString(iv, android.util.Base64.NO_WRAP))
-            .apply()
+        if (now) edit.commit() else edit.apply()
+    }
+
+    /** Whether anything is sealed under [name], without opening it. */
+    fun hasSecret(context: Context, name: String): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains("$name.ct")
+
+    fun removeSecret(context: Context, name: String) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .remove("$name.ct").remove("$name.iv").commit()
     }
 
     fun getSecret(context: Context, name: String): String? {

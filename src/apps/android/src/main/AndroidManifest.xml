@@ -15,6 +15,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
+        android:name=".HubidubiTaskApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -62,10 +63,11 @@
                 android:resource="@xml/capture_widget_info" />
         </receiver>
 
+        <!-- Not exported: only the capture widget's own PendingIntent opens it. -->
         <activity
             android:name=".capture.WidgetCaptureActivity"
             android:screenOrientation="portrait"
-            android:exported="true"
+            android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true" />
 

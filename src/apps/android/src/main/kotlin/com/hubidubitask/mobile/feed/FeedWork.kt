@@ -34,9 +34,10 @@ object FeedWork {
             sync.putFeed(result.feed)
             result.task?.takeIf { !sync.exists(it.id) }?.let { t ->
                 val project = t.project?.let(sync::get)?.takeIf { !it.deleted }
+                // Written from a stranger's web page: marked so for the user's agent.
                 sync.addNextAction(t.text, project?.id,
                     project?.let { ProjectTree.slugOf(it.fields["title"] ?: it.id) },
-                    t.due, t.body, id = t.id)
+                    t.due, t.body, id = t.id, origin = "feed")
             }
             out[feed.id] = result.message
         }

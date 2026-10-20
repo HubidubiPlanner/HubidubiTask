@@ -38,4 +38,19 @@ class BackupRoundTripTest {
         // Restoring the same file again changes nothing.
         assertEquals(0, vm.planBackup(file, "a long secret".toCharArray()).incoming.size)
     }
+
+    @Test
+    fun `a backup sealed with a shorter password from before still opens`() = runBlocking {
+        val home = Store(Files.createTempDirectory("hubi").toFile())
+        home.put(EntityRecord("t_1", "next_action", "2026-10-02T10:00:00Z", mapOf("text" to "Order the worktop")))
+        val file = Files.createTempFile("backup", ".hubidubitask").toFile()
+        // Export asks for 12 characters now; files sealed when 8 were enough must still come back.
+        HubidubiTaskViewModel(home, PeerServer(home, "Mac") {}).exportTo(file, "8 chars!".toCharArray())
+
+        val fresh = Store(Files.createTempDirectory("hubi").toFile())
+        val vm = HubidubiTaskViewModel(fresh, PeerServer(fresh, "Mac") {})
+        val plan = vm.planBackup(file, "8 chars!".toCharArray())
+        assertEquals(1, vm.restoreBackup(file, plan, "8 chars!".toCharArray()))
+        assertEquals("Order the worktop", fresh.get("t_1")!!.fields["text"])
+    }
 }

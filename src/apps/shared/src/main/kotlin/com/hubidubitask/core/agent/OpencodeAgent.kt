@@ -19,8 +19,8 @@ class OpencodeAgent(private val config: AgentConfig) : HomeAgentClient {
     private val base = config.endpoint.trim().trimEnd('/')
     private val auth = kind.authorization(config.apiKey)
     @Volatile private var certificate: String? = null
-    private val probe = Agent.http(config.tlsFingerprint, 15) { certificate = it }
-    private val patient = Agent.http(config.tlsFingerprint, 600)
+    private val probe = Agent.http(base, config.tlsFingerprint, 15, seen = { certificate = it })
+    private val patient = Agent.http(base, config.tlsFingerprint, 600)
 
     private fun request(path: String) = Request.Builder().url(base + path)
         .apply { auth?.let { header("Authorization", it) } }

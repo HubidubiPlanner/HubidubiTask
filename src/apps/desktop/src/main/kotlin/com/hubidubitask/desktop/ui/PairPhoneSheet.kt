@@ -41,15 +41,35 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiTaskViewModel, state: HubidubiTask
     var code by remember { mutableStateOf("") }
     var shown by remember { mutableStateOf<String?>(null) }
     var waiting by remember { mutableStateOf(false) }
+    /** Why the code stopped working, once it has. */
+    var problem by remember { mutableStateOf<String?>(null) }
     val before = remember { state.peers.map { it.id }.toSet() }
     val newcomer = state.peers.firstOrNull { it.id !in before }
 
     fun close() { vm.stopPairing(); onDismiss() }
 
     LaunchedEffect(newcomer) { if (newcomer != null) waiting = false }
+    // A code stops working after five wrong tries or ten minutes: say so rather than wait on.
+    LaunchedEffect(waiting) {
+        while (waiting) {
+            kotlinx.coroutines.delay(1000)
+            when (vm.pairingState()) {
+                com.hubidubitask.core.peer.PairDesk.State.TOO_MANY_TRIES -> {
+                    problem = t("Stopped after 5 failed tries. Start again with a new code."); waiting = false }
+                com.hubidubitask.core.peer.PairDesk.State.RAN_OUT -> {
+                    problem = t("The code ran out. Start again with a new code."); waiting = false }
+                else -> {}
+            }
+        }
+    }
 
     AppSheet(::close) {
         when {
+            newcomer == null && problem != null -> {
+                SheetTitle(t("Not paired"), overline = t("Phone"))
+                Text(problem!!, style = MaterialTheme.typography.bodyMedium)
+                PrimaryButton(t("Done"), ::close, Modifier.fillMaxWidth().padding(top = 18.dp))
+            }
             newcomer != null -> {
                 SheetTitle(t("Paired"), overline = t("Phone"))
                 Text(t("%s and this computer now keep each other up to date — every minute while the app is open on the phone, on the same Wi-Fi.", newcomer.name),
@@ -79,9 +99,12 @@ fun PairPhoneSheet(open: Boolean, vm: HubidubiTaskViewModel, state: HubidubiTask
                     singleLine = true, enabled = !waiting, placeholder = { Text("ABCD-EFGH") },
                     textStyle = MaterialTheme.typography.titleMedium,
                     colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-                if (!waiting) PrimaryButton(t("Pair"), { vm.acceptCode(code); waiting = true },
+                if (!waiting) PrimaryButton(t("Pair"), {
+                        waiting = vm.acceptCode(code)
+                        if (!waiting) problem = t("That code can't be used again. Start again with a new code.")
+                    },
                     Modifier.fillMaxWidth().padding(top = 14.dp),
-                    enabled = code.filter { it.isLetterOrDigit() }.length == 8)
+                    enabled = com.hubidubitask.core.peer.PeerPairing.isValidCode(code))
                 else Waiting(vm)
             }
         }

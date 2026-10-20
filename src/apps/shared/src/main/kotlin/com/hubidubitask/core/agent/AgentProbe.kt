@@ -11,7 +11,10 @@ import java.net.NoRouteToHostException
  * alone: each answers on a path of its own (opencode and Kilo /global/health,
  * OpenClaw and Hermes /health, any OpenAI-shaped server /v1/models). Without
  * a port, each kind's usual one is tried. HTTPS first, with its certificate
- * remembered for pinning; plain HTTP only inside the home network.
+ * remembered for pinning; plain HTTP only inside the home network, and never
+ * on a port where a TLS handshake went through. The token is sent only once
+ * the agent and its scheme are known without it, and over TLS only to the
+ * certificate first seen there.
  */
 object AgentProbe {
 
@@ -33,64 +36,95 @@ object AgentProbe {
                plainAllowed: Boolean = AgentLink.isPrivate(host)): Result {
         var best: Result = Result.NotFound
         for (p in port?.let(::listOf) ?: ports) {
-            for (scheme in if (plainAllowed) listOf("https", "http") else listOf("https")) {
-                val r = try { at(AgentLink.endpoint(scheme, host, p), token) } catch (e: Exception) {
-                    // Nothing listening, or no route: this port is done. Anything else (a
-                    // plain-HTTP server fails or ignores the TLS handshake): try it plainly.
-                    if (e is ConnectException || e is NoRouteToHostException) break
-                    continue
-                }
-                when (r) {
-                    is Result.Found -> return r
-                    is Result.NeedsToken -> if (best == Result.NotFound) best = r
-                    Result.NotFound -> {}
-                }
-                break
+            when (val r = on(host, p, token, plainAllowed)) {
+                is Result.Found -> return r
+                is Result.NeedsToken -> if (best == Result.NotFound) best = r
+                Result.NotFound -> {}
             }
         }
         return best
     }
 
-    private class Reply(val code: Int, val body: String) {
-        val json: JSONObject? get() = runCatching { JSONObject(body) }.getOrNull()
+    /** What listens on one port: HTTPS first, plain HTTP only if no TLS handshake went through. */
+    private fun on(host: String, port: Int, token: String?, plainAllowed: Boolean): Result {
+        val tls = Site(AgentLink.endpoint("https", host, port))
+        try {
+            return at(tls, token)
+        } catch (e: Exception) {
+            // Nothing listening, or no route: this port is done. A TLS server that
+            // answered and then failed is never asked again in the clear.
+            if (e is ConnectException || e is NoRouteToHostException || tls.cert != null || !plainAllowed)
+                return Result.NotFound
+        }
+        // A plain-HTTP server fails or ignores the TLS handshake: ask it plainly.
+        return try { at(Site(AgentLink.endpoint("http", host, port)), token) } catch (e: Exception) { Result.NotFound }
     }
 
-    /** What listens at [base]: throws when nothing answers there at all. */
-    private fun at(base: String, token: String?): Result {
-        var cert: String? = null
-        val http = Agent.http(null, 3, connectTimeoutSeconds = 3) { cert = it }
-        fun get(path: String, auth: String? = null): Reply =
-            http.newCall(Request.Builder().url(base + path).apply { auth?.let { header("Authorization", it) } }.build())
-                .execute().use { Reply(it.code, it.body?.string().orEmpty()) }
-        val pin = { if (base.startsWith("https")) cert else null }
+    private class Reply(val code: Int, val body: String) {
+        val json: JSONObject? get() = runCatching { JSONObject(body) }.getOrNull()
+        val ok get() = code in 200..299
+        val refused get() = code == 401 || code == 403
+    }
 
+    /**
+     * One address being asked. Over TLS, the first certificate it shows is the
+     * only one trusted for the rest of the probe, so the token reaches no other.
+     */
+    private class Site(val base: String) {
+        @Volatile var cert: String? = null
+            private set
+        private val first = Agent.http(base, null, 3, connectTimeoutSeconds = 3,
+            seen = { if (cert == null) cert = it })
+        private var pinned: OkHttpClient? = null
+
+        private fun client(): OkHttpClient = pinned
+            ?: cert?.let { Agent.http(base, it, 3, connectTimeoutSeconds = 3, pinOnly = true).also { c -> pinned = c } }
+            ?: first
+
+        fun get(path: String, auth: String? = null): Reply =
+            client().newCall(Request.Builder().url(base + path).apply { auth?.let { header("Authorization", it) } }.build())
+                .execute().use { Reply(it.code, it.body?.string().orEmpty()) }
+
+        /** Kilo answers /indexing/status; opencode does not. */
+        fun kindOf(auth: String?): AgentKind = runCatching {
+            if (get("/indexing/status", auth).ok) AgentKind.KILO else AgentKind.OPENCODE
+        }.getOrDefault(AgentKind.OPENCODE)
+    }
+
+    /**
+     * What listens at [s]: throws when nothing answers there at all. Each path
+     * is asked without the token first; the token only checks an agent found.
+     */
+    private fun at(s: Site, token: String?): Result {
         // opencode or Kilo: /global/health, with the password as Basic auth.
-        get("/global/health").let { r ->
-            if (r.code == 401 || r.json?.has("healthy") == true) {
-                if (r.code != 401) return Result.Found(kindOf(base, null, http), base, "", pin())
-                if (token.isNullOrBlank()) return Result.NeedsToken(AgentKind.OPENCODE, base, false)
-                for (k in listOf(AgentKind.OPENCODE, AgentKind.KILO)) {
-                    val auth = k.authorization(token)
-                    if (get("/global/health", auth).code in 200..299)
-                        return Result.Found(kindOf(base, auth, http).takeIf { it != AgentKind.OPENCODE } ?: k, base, "", pin())
-                }
-                return Result.NeedsToken(AgentKind.OPENCODE, base, true)
+        val global = s.get("/global/health")
+        if (global.code == 401 || global.json?.has("healthy") == true) {
+            if (global.code != 401) return Result.Found(s.kindOf(null), s.base, "", s.cert)
+            if (token.isNullOrBlank()) return Result.NeedsToken(AgentKind.OPENCODE, s.base, false)
+            for (k in listOf(AgentKind.OPENCODE, AgentKind.KILO)) {
+                val auth = k.authorization(token)
+                if (s.get("/global/health", auth).ok)
+                    return Result.Found(s.kindOf(auth).takeIf { it != AgentKind.OPENCODE } ?: k, s.base, "", s.cert)
             }
+            return Result.NeedsToken(AgentKind.OPENCODE, s.base, true)
         }
-        // OpenClaw or Hermes: /health, then the token checked on /v1/models.
-        val health = get("/health")
+        // OpenClaw or Hermes: /health. Then /v1/models, with the token only if it asks for one.
+        val health = s.get("/health")
         val kind = health.json?.let { j ->
             when {
                 j.optBoolean("ok", false) -> AgentKind.OPENCLAW
                 j.optString("status") == "ok" -> AgentKind.HERMES
                 else -> null
             }
-        }.takeIf { health.code in 200..299 }
-        val auth = (kind ?: AgentKind.OPENAI).authorization(token)
-        val models = get("/v1/models", auth)
-        if (models.code == 401 || models.code == 403)
-            return Result.NeedsToken(kind ?: AgentKind.OPENAI, base, !token.isNullOrBlank())
-        if (models.code in 200..299) {
+        }.takeIf { health.ok }
+        var models = s.get("/v1/models")
+        if (models.refused) {
+            val auth = (kind ?: AgentKind.OPENAI).authorization(token)
+                ?: return Result.NeedsToken(kind ?: AgentKind.OPENAI, s.base, false)
+            models = s.get("/v1/models", auth)
+            if (models.refused) return Result.NeedsToken(kind ?: AgentKind.OPENAI, s.base, true)
+        }
+        if (models.ok) {
             val ids = models.json?.optJSONArray("data")?.let { d ->
                 (0 until d.length()).mapNotNull { d.optJSONObject(it)?.optString("id")?.takeIf(String::isNotBlank) }
             }.orEmpty()
@@ -99,17 +133,11 @@ object AgentProbe {
                 AgentKind.HERMES -> ids.firstOrNull() ?: "hermes-agent"
                 else -> ids.firstOrNull() ?: return Result.NotFound
             }
-            return Result.Found(kind ?: AgentKind.OPENAI, base, model, pin())
+            return Result.Found(kind ?: AgentKind.OPENAI, s.base, model, s.cert)
         }
         // OpenClaw keeps its chat endpoint off unless turned on: it is still the one
         // found, and the check after saving says what it answered.
-        if (kind != null) return Result.Found(kind, base, if (kind == AgentKind.OPENCLAW) "openclaw" else "hermes-agent", pin())
+        if (kind != null) return Result.Found(kind, s.base, if (kind == AgentKind.OPENCLAW) "openclaw" else "hermes-agent", s.cert)
         return Result.NotFound
     }
-
-    /** Kilo answers /indexing/status; opencode does not. */
-    private fun kindOf(base: String, auth: String?, http: OkHttpClient): AgentKind = runCatching {
-        http.newCall(Request.Builder().url("$base/indexing/status").apply { auth?.let { header("Authorization", it) } }.build())
-            .execute().use { if (it.code in 200..299) AgentKind.KILO else AgentKind.OPENCODE }
-    }.getOrDefault(AgentKind.OPENCODE)
 }

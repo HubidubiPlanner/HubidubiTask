@@ -93,7 +93,7 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
                 if (mode == "enter" && job == null) {
                     PrimaryButton(t("Pair"), { start(code, here = false) },
                         Modifier.fillMaxWidth().padding(top = 14.dp),
-                        enabled = code.filter { it.isLetterOrDigit() }.length == 8)
+                        enabled = PeerPairing.isValidCode(code))
                 } else {
                     Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Dot(c.accent)

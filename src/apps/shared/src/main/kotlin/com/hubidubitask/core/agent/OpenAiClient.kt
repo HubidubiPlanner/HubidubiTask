@@ -12,8 +12,8 @@ class OpenAiClient(private val config: AgentConfig) : ModelClient {
     private val base = config.endpoint.trim().trimEnd('/')
         .removeSuffix("/chat/completions").trimEnd('/').let { if (it.endsWith("/v1")) it else "$it/v1" }
     @Volatile private var certificate: String? = null
-    private val probe = Agent.http(config.tlsFingerprint, 15) { certificate = it }
-    private val patient = Agent.http(config.tlsFingerprint, 600)
+    private val probe = Agent.http(base, config.tlsFingerprint, 15, seen = { certificate = it })
+    private val patient = Agent.http(base, config.tlsFingerprint, 600)
 
     private fun Request.Builder.auth() = apply {
         config.apiKey?.takeIf { it.isNotBlank() }?.let { header("Authorization", "Bearer $it") }

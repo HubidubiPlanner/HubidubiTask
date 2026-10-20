@@ -101,6 +101,8 @@ dependencies {
 
     // Transport with certificate pinning.
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // TLS with post-quantum key exchange (X25519MLKEM768 by default), see HubidubiTaskApplication.
+    implementation("org.conscrypt:conscrypt-android:2.7.0")
 
     // Background sync.
     implementation("androidx.work:work-runtime-ktx:2.9.1")

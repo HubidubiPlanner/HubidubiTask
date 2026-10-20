@@ -76,4 +76,47 @@ class SecretsTest {
         assertNull(store(k).get("claude")); assertNull(store(k).get("agent"))
         assertTrue(k.keys.isEmpty())
     }
+
+    /** A pretend `security`: the login Keychain, holding what `-X` gives it. */
+    private class Keychain {
+        val items = HashMap<String, ByteArray>()
+        val commands = mutableListOf<List<String>>()
+        fun run(cmd: List<String>, input: String?): String? {
+            commands += cmd
+            if (cmd == listOf("security", "-i")) {
+                val words = input!!.trim().split(" ")
+                val key = words[words.indexOf("-s") + 1] + "/" + words[words.indexOf("-a") + 1]
+                val hex = words[words.indexOf("-X") + 1]
+                items[key] = ByteArray(hex.length / 2) { hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+                return ""
+            }
+            val key = cmd[cmd.indexOf("-s") + 1] + "/" + cmd[cmd.indexOf("-a") + 1]
+            return when (cmd[1]) {
+                // Like the real tool, plain ASCII is printed as it is and anything else as hex.
+                "find-generic-password" -> items[key]?.let { b ->
+                    if (b.all { it in 32..126 }) String(b, Charsets.US_ASCII)
+                    else b.joinToString("") { "%02x".format(it) }
+                }
+                "delete-generic-password" -> { items.remove(key); "" }
+                else -> null
+            }
+        }
+    }
+
+    @Test
+    fun `on the Mac the secret goes in on stdin, never on the command line, and comes back whole`() {
+        val k = Keychain()
+        val mac = SecretStore(true, { false }, k::run, { dir })
+        val secret = "sk-ant zażółć \"quoted\" \$x"
+        mac.put("claude_api_key", secret)
+        assertTrue(k.commands.none { cmd -> cmd.any { secret in it || "sk-ant" in it } })
+        assertEquals(secret, mac.get("claude_api_key"))
+    }
+
+    @Test
+    fun `an item saved by an older version still reads as it was`() {
+        val k = Keychain()
+        k.items["HubidubiTask/claude_api_key"] = "sk-old".toByteArray()
+        assertEquals("sk-old", SecretStore(true, { false }, k::run, { dir }).get("claude_api_key"))
+    }
 }

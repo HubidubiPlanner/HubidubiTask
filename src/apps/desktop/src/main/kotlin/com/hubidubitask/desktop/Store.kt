@@ -25,6 +25,11 @@ class Store(val dir: File = defaultDir()) : PeerStore {
 
     init {
         dir.mkdirs()
+        // Only this user may read the folder: the items, media and the TLS identity live here.
+        runCatching {
+            java.nio.file.Files.setPosixFilePermissions(dir.toPath(),
+                java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"))
+        }
         // The file keeps its HubidubiOS-era name, so the data folder moved over from
         // that version still opens with everything in it.
         db = DriverManager.getConnection("jdbc:sqlite:" + File(dir, "hubidubios.db").path)
@@ -42,6 +47,10 @@ class Store(val dir: File = defaultDir()) : PeerStore {
                 id TEXT PRIMARY KEY, name TEXT NOT NULL, token TEXT NOT NULL,
                 paired_at TEXT NOT NULL, last_sync TEXT)""")
             s.executeUpdate("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)")
+            // Phones paired before pairing v2 held a bearer token here; their pairing is
+            // void and they pair again. Their cursors stay, so the next pairing resumes.
+            // (The column stays, empty, for the schema's NOT NULL.)
+            s.executeUpdate("DELETE FROM peers WHERE token <> ''")
         }
     }
 
@@ -124,26 +133,23 @@ class Store(val dir: File = defaultDir()) : PeerStore {
 
     // ---- paired phones
 
-    data class Peer(val id: String, val name: String, val token: String, val pairedAt: String,
-                    val lastSync: String?)
+    /** A paired phone. Its sync key is not here but in the system's secret store ([PeerKeys]). */
+    data class Peer(val id: String, val name: String, val pairedAt: String, val lastSync: String?)
 
     @Synchronized
     fun peers(): List<Peer> = db.createStatement().use { s ->
-        s.executeQuery("SELECT id, name, token, paired_at, last_sync FROM peers ORDER BY paired_at").use { r ->
-            buildList { while (r.next()) add(Peer(r.getString(1), r.getString(2), r.getString(3),
-                r.getString(4), r.getString(5))) }
+        s.executeQuery("SELECT id, name, paired_at, last_sync FROM peers ORDER BY paired_at").use { r ->
+            buildList { while (r.next()) add(Peer(r.getString(1), r.getString(2), r.getString(3), r.getString(4))) }
         }
     }
 
-    fun peerByToken(token: String) = peers().firstOrNull {
-        com.hubidubitask.core.peer.PeerPairing.same(it.token, token)
-    }
+    fun peer(id: String): Peer? = peers().firstOrNull { it.id == id }
 
     @Synchronized
     fun addPeer(p: Peer) {
-        db.prepareStatement("INSERT OR REPLACE INTO peers (id, name, token, paired_at, last_sync) VALUES (?,?,?,?,?)").use { s ->
-            s.setString(1, p.id); s.setString(2, p.name); s.setString(3, p.token)
-            s.setString(4, p.pairedAt); s.setString(5, p.lastSync); s.executeUpdate()
+        db.prepareStatement("INSERT OR REPLACE INTO peers (id, name, token, paired_at, last_sync) VALUES (?,?,'',?,?)").use { s ->
+            s.setString(1, p.id); s.setString(2, p.name)
+            s.setString(3, p.pairedAt); s.setString(4, p.lastSync); s.executeUpdate()
         }
     }
 

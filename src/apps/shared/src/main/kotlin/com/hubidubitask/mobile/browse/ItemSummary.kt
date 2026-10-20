@@ -1,6 +1,7 @@
 package com.hubidubitask.mobile.browse
 
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.agent.ItemsContext
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.mobile.tree.ProjectTree
@@ -78,7 +79,10 @@ object ItemSummary {
             if (size + l.length > LIMIT) { lines += "- … ${under.size - i} more not shown"; break }
             lines += l; size += l.length
         }
-        return "$ask$shape$inLanguage\n\n" + lines.joinToString("\n")
+        // The items' words are data, fenced: a feed's task or a shared text was
+        // written by someone else, and the user's own agent can run commands.
+        return "$ask$shape$inLanguage\n\n" +
+            ItemsContext.fence(lines.joinToString("\n"), "The item and what is filed under it")
     }
 
     private const val LIMIT = 16_000
@@ -95,7 +99,7 @@ object ItemSummary {
             else -> "task"
         }
         val due = r.fields["due"]?.takeIf { it.isNotBlank() }?.let { " · due $it" }.orEmpty()
-        val head = "[$kind] ${ReviewBrowse.labelOf(r)}$due"
+        val head = "[$kind] ${ReviewBrowse.labelOf(r)}$due" + ItemsContext.origin(r)?.let { " $it" }.orEmpty()
         val body = r.fields["body"]?.trim()?.takeIf { it.isNotEmpty() }
             ?.let { if (it.length > BODY) it.take(BODY) + "…" else it }
         if (depth == 0) return if (body == null) head else "$head\n$body"

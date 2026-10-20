@@ -268,7 +268,12 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         when (c.protocol) {
             "claude" -> c.apiKey?.let { Secrets.put(CLAUDE_KEY, it) }
             "harness" -> {}
-            else -> { store.setKv("agent_endpoint", c.endpoint); store.setKv("agent_fp", c.tlsFingerprint) }
+            else -> {
+                // A pin belongs to the address it was taken from: a new address starts
+                // without one, and only a check that reaches it pins it (see pin).
+                if (store.kv("agent_endpoint") != c.endpoint) store.setKv("agent_fp", null)
+                store.setKv("agent_endpoint", c.endpoint)
+            }
         }
         store.setKv("agent_protocol", c.protocol)
         if (c.protocol != "harness") store.setKv("agent_model", c.model)
@@ -339,9 +344,10 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
             store.put(result.feed)
             result.task?.takeIf { store.get(it.id) == null }?.let { t ->
                 val project = t.project?.let(store::get)?.takeIf { !it.deleted }
+                // Written from a stranger's web page: marked so for the user's agent.
                 write("next_action", t.id, mapOf("text" to t.text, "parent" to project?.id,
                     "project" to (project?.let { ProjectTree.slugOf(it.fields["title"] ?: it.id) } ?: "inbox"),
-                    "due" to t.due, "body" to t.body))
+                    "due" to t.due, "body" to t.body, "origin" to "feed"))
             }
             out[feed.id] = result.message
         }
@@ -386,11 +392,23 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         val (cfg, client) = agent()
         return client.health().also { h ->
             lastHealth = now to h
-            // The agent's certificate is its own: the first one answering after
-            // Save is trusted, and only it after that.
-            if (cfg.protocol == "harness" && h.connected && cfg.tlsFingerprint == null)
-                h.fingerprint?.let { store.setKv(HARNESS_FP, it) }
+            // A server's certificate in the home network is its own: the first one
+            // answering after Save is trusted, and only it after that. Any agent.
+            if (h.connected && cfg.tlsFingerprint == null) h.fingerprint?.let { pin(cfg, it) }
         }
+    }
+
+    /**
+     * Trust on first answer: keep [fingerprint] as the pin for [cfg]'s address.
+     * Only while [cfg] is still the setting and holds no pin, and only in the
+     * home network; a public address is held to the system's certificate
+     * authorities instead. Resolves the host, so call it off the main thread.
+     */
+    private fun pin(cfg: AgentConfig, fingerprint: String) {
+        val now = agentConfig()
+        if (now.protocol != cfg.protocol || now.endpoint != cfg.endpoint || now.tlsFingerprint != null) return
+        if (cfg.protocol == "claude" || !AgentLink.isPrivate(AgentLink.split(cfg.endpoint).first)) return
+        store.setKv(if (cfg.protocol == "harness") HARNESS_FP else "agent_fp", fingerprint)
     }
 
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(true) }
@@ -540,10 +558,14 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     /** "Pair a phone": show a code here and wait for it to be typed on the phone. */
     fun startPairing(): String = PeerPairing.newCode().also { server.desk.open(it) }
 
-    /** The phone showed a code: take it, and wait for the phone to connect. */
-    fun acceptCode(code: String) = server.desk.open(code)
+    /** The phone showed a code: take it (false when it isn't a valid code), and wait for the phone. */
+    fun acceptCode(code: String): Boolean = server.desk.open(code)
 
     fun stopPairing() = server.desk.close()
 
-    fun unpair(id: String) = io { store.removePeer(id) }
+    /** Whether the code is still open, or why it isn't. */
+    fun pairingState() = server.desk.state()
+
+    /** Unpairs a phone: its sync key goes from the Keychain too. */
+    fun unpair(id: String) = io { server.forget(id) }
 }

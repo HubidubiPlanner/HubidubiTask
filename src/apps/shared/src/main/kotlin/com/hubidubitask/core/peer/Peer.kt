@@ -5,8 +5,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.security.SecureRandom
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 
 /**
  * Device-to-device sync: the phone and the Mac keep each other up to date
@@ -124,7 +122,8 @@ class PeerSyncer(
         do {
             val cur = store.cursor(peer)
             val mine = store.changesSince(cur.mine, exclude = peer, limit = PeerResponder.BATCH)
-            val resp = send(SyncRequest(self, cur.theirs, mine, blobsOf(mine)))
+            val offered = blobsOf(mine)
+            val resp = send(SyncRequest(self, cur.theirs, mine, offered))
             var theirs = cur.theirs
             for (c in resp.changes) {
                 if (Lww.incomingWins(c.record, store.get(c.record.id))) store.applyFromPeer(c.record, peer)
@@ -133,7 +132,9 @@ class PeerSyncer(
             // The peer applied everything we sent before answering, so our
             // cursor moves to the last change in this batch.
             store.setCursor(peer, Cursor(theirs = theirs, mine = mine.lastOrNull()?.seq ?: cur.mine))
-            if (resp.want.isNotEmpty()) upload(resp.want)
+            // Only what was offered: the peer can't name other files to have sent.
+            val wanted = resp.want.filter(offered::contains)
+            if (wanted.isNotEmpty()) upload(wanted)
             sent += mine.size; received += resp.changes.size
             // Keep going while either side still has a full batch waiting.
         } while ((resp.more || mine.size == PeerResponder.BATCH) && ++rounds < 50)
@@ -142,34 +143,37 @@ class PeerSyncer(
 }
 
 /**
- * Pairing by a typed code. Whichever device starts pairing shows the code;
- * it is typed on the other. Both then hold the same secret, and each proves it
- * over the certificate fingerprint the phone actually sees — so a machine in
- * the middle, which can't present the Mac's certificate, can't pass.
+ * The typed pairing code and small helpers around it. Whichever device starts
+ * pairing shows the code; it is typed on the other. What the code does is in
+ * [PairV2]: it is a PAKE password, so it can't be guessed offline.
  */
 object PeerPairing {
     // No 0/O, 1/I/L: a code read off one screen and typed on another.
     private const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    private const val LENGTH = 8
     private val random = SecureRandom()
 
     const val CODE_TTL_MS = 10 * 60 * 1000L
+    /** Wrong tries a code survives, on the computer and on the phone alike. */
     const val MAX_ATTEMPTS = 5
 
-    fun newCode(): String = (1..8).map { ALPHABET[random.nextInt(ALPHABET.length)] }
+    fun newCode(): String = (1..LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }
         .joinToString("").let { it.take(4) + "-" + it.drop(4) }
 
     /** "abcd efgh", "ABCD-EFGH" and "abcdefgh" are the same code. */
-    fun normalize(code: String) = code.uppercase().filter { it.isLetterOrDigit() }
+    fun normalize(code: String) = code.uppercase().filter { it in 'A'..'Z' || it in '0'..'9' }
+
+    /** Exactly eight characters of the code alphabet, spaces and dashes aside. */
+    fun isValidCode(code: String): Boolean {
+        if (code.any { !(it.isLetterOrDigit() || it == ' ' || it == '-') }) return false
+        val n = normalize(code)
+        return n.length == LENGTH && n.all { it in ALPHABET } && code.count { it.isLetterOrDigit() } == LENGTH
+    }
 
     fun nonce(): String = ByteArray(16).also(random::nextBytes).hex()
 
-    fun token(): String = ByteArray(32).also(random::nextBytes).hex()
-
-    fun proof(code: String, vararg parts: String): String {
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(normalize(code).toByteArray(), "HmacSHA256"))
-        return mac.doFinal(parts.joinToString("|").toByteArray()).hex()
-    }
+    /** Device ids are "phone-…" / "mac-…" with hex; anything else is refused at the door. */
+    fun isDeviceId(s: String) = s.length in 1..64 && s.all { it.isLetterOrDigit() && it.code < 128 || it in "._-" }
 
     /** Constant-time comparison, so a wrong guess can't be timed toward a right one. */
     fun same(a: String, b: String) = MessageDigest.isEqual(a.toByteArray(), b.toByteArray())
