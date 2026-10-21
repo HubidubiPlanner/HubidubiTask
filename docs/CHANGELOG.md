@@ -18,6 +18,8 @@
 - **Feeds can watch an RSS or Atom feed**, not only a web page: **Feeds → +
   → An RSS or Atom feed** and its address. When new entries appear, the
   period's one task says what's new; new dates alone are not a change.
+- **Just after midnight, Incoming shows the new day.** For an hour or two it
+  showed the day before, by UTC's clock.
 
 ## 3.0.1 — 20 October 2026
 
