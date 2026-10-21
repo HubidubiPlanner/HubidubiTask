@@ -1,0 +1,14 @@
+(A) 2026-10-01 Call the plumber about the boiler +Home @phone due:2026-10-24
+Plant tulip bulbs +Garden due:2026-11-02
+(B) Pick up seeds +Garden +Shopping @store
+x 2026-10-15 2026-10-10 Mow the lawn +Garden
+Water the plants +garden rec:1w due:2026-10-22
+2026-09-30 Renew library card
+Buy stamps @errands
+
+xylophone lesson
+X 2026-01-01 Make resolutions
+(A) x Find ticket prices
+Read the boiler manual https://example.com/manual.pdf +Home
+due:2026-13-45 Check the date
++Garden

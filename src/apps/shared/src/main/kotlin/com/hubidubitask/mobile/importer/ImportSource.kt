@@ -5,6 +5,7 @@ import com.hubidubitask.core.ItemWriter
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.core.net.SafeFetch
 import com.hubidubitask.mobile.importer.sources.GoogleCalendarSource
+import com.hubidubitask.mobile.importer.sources.TodoTxtSource
 import com.hubidubitask.mobile.importer.sources.TodoistSource
 import com.hubidubitask.mobile.tree.ProjectTree
 import java.time.LocalDate
@@ -208,7 +209,7 @@ object ImportText {
 
 /** Every source Import offers, in its order. The HubidubiTask backup follows them in each app. */
 object ImportSources {
-    val all: List<ImportSource> = listOf(TodoistSource, GoogleCalendarSource)
+    val all: List<ImportSource> = listOf(TodoistSource, GoogleCalendarSource, TodoTxtSource)
 
     fun of(id: String): ImportSource? = all.firstOrNull { it.id == id }
 }

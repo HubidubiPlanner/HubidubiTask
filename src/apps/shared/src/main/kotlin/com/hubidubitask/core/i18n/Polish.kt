@@ -3,6 +3,7 @@ package com.hubidubitask.core.i18n
 /** Polski: what the apps say, keyed by the English. Kept in step by I18nTest. */
 internal val POLISH: Map<String, String> = mapOf(
     "%d already in the app — skipped" to "Już w aplikacji, pominięte: %d",
+    "%d done — skipped" to "Zrobione, pominięte: %d",
     "%d events in the next 12 months" to "Wydarzenia w najbliższych 12 miesiącach: %d",
     "%d items new to this device" to "Nowe na tym urządzeniu: %d",
     "%d more this week" to "Jeszcze w tym tygodniu: %d",
@@ -13,7 +14,11 @@ internal val POLISH: Map<String, String> = mapOf(
     "%d repeating events use a rule this can't expand — only their first date comes in" to "Wydarzenia cykliczne z regułą, której nie da się rozwinąć: %d — przyjdzie tylko ich pierwsza data",
     "%d repeats (the next date is kept)" to "Powtórzenia: %d (zostaje najbliższa data)",
     "%d tasks" to "Zadania: %d",
+    "%d tasks in more than one project — each comes in under its first" to "Zadania w więcej niż jednym projekcie: %d — każde trafi do pierwszego z nich",
+    "%d tasks' contexts" to "Konteksty zadań: %d",
+    "%d tasks' creation dates" to "Daty utworzenia zadań: %d",
     "%d tasks' labels" to "Etykiety zadań: %d",
+    "%d tasks' priorities" to "Priorytety zadań: %d",
     "%d tasks' sections" to "Sekcje zadań: %d",
     "%d with a description" to "Z opisem: %d",
     "%s and this computer now keep each other up to date — every minute while the app is open on the phone, on the same Wi-Fi." to "%s i ten komputer są teraz na bieżąco — co minutę, gdy aplikacja jest otwarta na telefonie, w tej samej sieci Wi-Fi.",
@@ -223,6 +228,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "That code can't be used again. Start again with a new code." to "Tego kodu nie można użyć ponownie. Zacznij od nowa z nowym kodem.",
     "That file is too large." to "Ten plik jest za duży.",
     "That file isn't a HubidubiTask backup." to "Ten plik nie jest kopią zapasową HubidubiTask.",
+    "That isn't a text file." to "To nie jest plik tekstowy.",
     "The backup is damaged or incomplete." to "Kopia jest uszkodzona albo niepełna.",
     "The calendar address was not accepted (%d)." to "Adres kalendarza nie został przyjęty (%d).",
     "The calendar server answered %d." to "Serwer kalendarza odpowiedział kodem %d.",

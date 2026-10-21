@@ -78,6 +78,13 @@ device. **Settings › Import › HubidubiTask backup** reads such a file back, 
 the phone or the computer: it asks for the password, shows what it would add or
 replace, and takes only what is newer than what is there.
 
+**Settings › Import › todo.txt** reads the file Simpletask, Markor and other
+todo.txt apps keep. Each open line becomes a task, in its first `+project`
+and due on its `due:` date; done lines (`x` first) are left out, and so is a
+task already in the app. Priorities, `@contexts`, `rec:` repeats, further
+projects and creation dates have no place here: the summary counts them
+before you import.
+
 ## Language
 
 **Settings → Language:** English, Polski, Deutsch, Français or Español. The

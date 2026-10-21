@@ -3,6 +3,7 @@ package com.hubidubitask.core.i18n
 /** Español: what the apps say, keyed by the English. Kept in step by I18nTest. */
 internal val SPANISH: Map<String, String> = mapOf(
     "%d already in the app — skipped" to "Ya en la app, omitidos: %d",
+    "%d done — skipped" to "Hechas, omitidas: %d",
     "%d events in the next 12 months" to "Eventos en los próximos 12 meses: %d",
     "%d items new to this device" to "Nuevos en este dispositivo: %d",
     "%d more this week" to "Más esta semana: %d",
@@ -13,7 +14,11 @@ internal val SPANISH: Map<String, String> = mapOf(
     "%d repeating events use a rule this can't expand — only their first date comes in" to "Eventos recurrentes con una regla que no se puede expandir: %d — solo llega su primera fecha",
     "%d repeats (the next date is kept)" to "Repeticiones: %d (se conserva la próxima fecha)",
     "%d tasks" to "Tareas: %d",
+    "%d tasks in more than one project — each comes in under its first" to "Tareas en más de un proyecto: %d — cada una llega al primero",
+    "%d tasks' contexts" to "Contextos de tareas: %d",
+    "%d tasks' creation dates" to "Fechas de creación de tareas: %d",
     "%d tasks' labels" to "Etiquetas de tareas: %d",
+    "%d tasks' priorities" to "Prioridades de tareas: %d",
     "%d tasks' sections" to "Secciones de tareas: %d",
     "%d with a description" to "Con descripción: %d",
     "%s and this computer now keep each other up to date — every minute while the app is open on the phone, on the same Wi-Fi." to "%s y este ordenador se mantienen ahora al día — cada minuto mientras la app está abierta en el teléfono, en la misma Wi-Fi.",
@@ -223,6 +228,7 @@ internal val SPANISH: Map<String, String> = mapOf(
     "That code can't be used again. Start again with a new code." to "Ese código no se puede volver a usar. Empieza de nuevo con un código nuevo.",
     "That file is too large." to "Ese archivo es demasiado grande.",
     "That file isn't a HubidubiTask backup." to "Ese archivo no es una copia de seguridad de HubidubiTask.",
+    "That isn't a text file." to "Eso no es un archivo de texto.",
     "The backup is damaged or incomplete." to "La copia está dañada o incompleta.",
     "The calendar address was not accepted (%d)." to "La dirección del calendario no fue aceptada (%d).",
     "The calendar server answered %d." to "El servidor del calendario respondió %d.",

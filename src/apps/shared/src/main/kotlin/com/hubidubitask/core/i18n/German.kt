@@ -3,6 +3,7 @@ package com.hubidubitask.core.i18n
 /** Deutsch: what the apps say, keyed by the English. Kept in step by I18nTest. */
 internal val GERMAN: Map<String, String> = mapOf(
     "%d already in the app — skipped" to "Schon in der App, übersprungen: %d",
+    "%d done — skipped" to "Erledigt, übersprungen: %d",
     "%d events in the next 12 months" to "Termine in den nächsten 12 Monaten: %d",
     "%d items new to this device" to "Neu auf diesem Gerät: %d",
     "%d more this week" to "Diese Woche noch: %d",
@@ -13,7 +14,11 @@ internal val GERMAN: Map<String, String> = mapOf(
     "%d repeating events use a rule this can't expand — only their first date comes in" to "Wiederkehrende Termine mit einer Regel, die sich nicht auflösen lässt: %d — nur ihr erstes Datum kommt mit",
     "%d repeats (the next date is kept)" to "Wiederholungen: %d (das nächste Datum bleibt)",
     "%d tasks" to "Aufgaben: %d",
+    "%d tasks in more than one project — each comes in under its first" to "Aufgaben in mehr als einem Projekt: %d — jede kommt in ihr erstes",
+    "%d tasks' contexts" to "Kontexte von Aufgaben: %d",
+    "%d tasks' creation dates" to "Erstellungsdaten von Aufgaben: %d",
     "%d tasks' labels" to "Labels von Aufgaben: %d",
+    "%d tasks' priorities" to "Prioritäten von Aufgaben: %d",
     "%d tasks' sections" to "Abschnitte von Aufgaben: %d",
     "%d with a description" to "Mit Beschreibung: %d",
     "%s and this computer now keep each other up to date — every minute while the app is open on the phone, on the same Wi-Fi." to "%s und dieser Computer halten sich jetzt gegenseitig aktuell — jede Minute, solange die App auf dem Telefon offen ist, im selben WLAN.",
@@ -223,6 +228,7 @@ internal val GERMAN: Map<String, String> = mapOf(
     "That code can't be used again. Start again with a new code." to "Dieser Code kann nicht noch einmal verwendet werden. Beginne neu mit einem neuen Code.",
     "That file is too large." to "Diese Datei ist zu groß.",
     "That file isn't a HubidubiTask backup." to "Diese Datei ist keine HubidubiTask-Sicherung.",
+    "That isn't a text file." to "Das ist keine Textdatei.",
     "The backup is damaged or incomplete." to "Die Sicherung ist beschädigt oder unvollständig.",
     "The calendar address was not accepted (%d)." to "Die Kalenderadresse wurde nicht akzeptiert (%d).",
     "The calendar server answered %d." to "Der Kalenderserver antwortete mit %d.",

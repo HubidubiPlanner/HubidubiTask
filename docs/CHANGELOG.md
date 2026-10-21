@@ -12,6 +12,9 @@
   **Settings → AI Agent → Agent** and leave the port empty: the app finds it
   on 11434 and reviews are answered by the first model it lists. Start Ollama
   with `OLLAMA_HOST=0.0.0.0` so other devices can reach it.
+- **Import from todo.txt** (Simpletask, Markor): **Settings › Import ›
+  todo.txt**, then pick the file. Open tasks come in with their project and
+  due date; the file never leaves the device.
 
 ## 3.0.1 — 20 October 2026
 
