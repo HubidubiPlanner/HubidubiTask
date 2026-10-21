@@ -45,6 +45,8 @@ internal fun AgentSection(vm: HubidubiTaskViewModel, edge: Dp) {
     var message by remember { mutableStateOf<String?>(null) }
     // Whether the last check found the AI answering; the message says it in words.
     var connected by remember { mutableStateOf(false) }
+    // What the check of [kept] said, shown again when the fields come back to it.
+    var keptOutcome by remember { mutableStateOf<Pair<String?, Boolean>?>(null) }
 
     @Composable
     fun Field(f: AgentField, modifier: Modifier = Modifier) =
@@ -68,7 +70,11 @@ internal fun AgentSection(vm: HubidubiTaskViewModel, edge: Dp) {
 
         LaunchedEffect(typeId, values) {
             val inputs = typeId to values
-            if (!touched || inputs == kept) return@LaunchedEffect
+            if (!touched) return@LaunchedEffect
+            if (inputs == kept) {
+                keptOutcome?.let { (m, ok) -> message = m; connected = ok }
+                return@LaunchedEffect
+            }
             delay(800)
             kept = inputs
             message = null
@@ -78,6 +84,7 @@ internal fun AgentSection(vm: HubidubiTaskViewModel, edge: Dp) {
             out.values?.let { found -> forms[typeId] = found; kept = typeId to found }
             message = out.message
             connected = out.connected
+            keptOutcome = out.message to out.connected
         }
 
         // What the last change found, and nothing before.
