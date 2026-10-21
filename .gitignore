@@ -30,3 +30,6 @@ id_ed25519*
 .env
 .env.*
 local.properties
+
+# Claude Code agent worktrees
+.claude/worktrees/
