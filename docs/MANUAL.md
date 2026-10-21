@@ -59,6 +59,9 @@ computer answers only addresses on the home network.
   after that, once per period, a change becomes one task, written by Claude.
   Pages (and calendar links) are fetched over HTTPS only and never from your
   home network.
+  **+ → An RSS or Atom feed** watches a feed's address instead: each entry is
+  one line, its title and link, so new entries become the period's task and a
+  feed that only changed its dates is no change.
 - **Review:** long-press any item, then **Review with AI**. The AI sums up what
   happened in it: in a project, from all its tasks (done ones too) and notes; in
   a task, from its text and the notes under it; in a note, from its words. The

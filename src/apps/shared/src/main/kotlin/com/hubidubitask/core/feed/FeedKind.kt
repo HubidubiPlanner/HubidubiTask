@@ -1,6 +1,7 @@
 package com.hubidubitask.core.feed
 
 import com.hubidubitask.core.EntityRecord
+import com.hubidubitask.core.feed.kinds.RssFeed
 import com.hubidubitask.core.feed.kinds.WebPage
 import com.hubidubitask.core.net.SafeFetch
 
@@ -54,7 +55,7 @@ enum class FeedIcon { WEB, NEWS }
 
 /** Every kind of feed, in the order the + lists them. */
 object FeedKinds {
-    val all: List<FeedKind> = listOf(WebPage)
+    val all: List<FeedKind> = listOf(WebPage, RssFeed)
 
     /** The kind stored on a feed: none means a web page (the first kind); one this version doesn't know, null. */
     fun of(id: String?): FeedKind? = if (id.isNullOrBlank()) WebPage else all.firstOrNull { it.id == id }
