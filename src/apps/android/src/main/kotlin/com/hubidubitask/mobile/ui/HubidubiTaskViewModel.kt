@@ -19,10 +19,11 @@ import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.browse.ItemSummary
 import com.hubidubitask.mobile.net.AgentSettings
 import com.hubidubitask.mobile.sync.Sync
-import com.hubidubitask.mobile.importer.Ics
-import com.hubidubitask.mobile.importer.Todoist
-import com.hubidubitask.mobile.importer.fetchCalendarText
-import com.hubidubitask.mobile.sync.eventId
+import com.hubidubitask.mobile.importer.ImportContext
+import com.hubidubitask.mobile.importer.ImportPlan
+import com.hubidubitask.mobile.importer.ImportSource
+import com.hubidubitask.mobile.importer.ImportValue
+import com.hubidubitask.mobile.importer.ImportWriter
 import com.hubidubitask.mobile.tree.ProjectTree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -515,64 +516,31 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     // address live only as long as the call that uses them.
 
     /** Read Todoist and work out what an import would add. Throws on failure. */
-    suspend fun planTodoist(token: String): Todoist.Plan = withContext(Dispatchers.IO) {
-        val (projects, tasks) = Todoist.fetch(token.trim())
-        val s = _state.value
-        val titleOf = s.projects.associate { it.id to (it.fields["title"] ?: it.id) }
-        val idBySlug = s.projects.associate { ProjectTree.slugOf(it.fields["title"] ?: it.id) to it.id }
-        val existing = (s.nextActions + s.inbox + s.notes).associate { rec ->
-            (ProjectTree.parentOf(rec, idBySlug)?.let { titleOf[it] ?: parentProject(it, s) } to
-                (rec.fields["text"] ?: rec.fields["title"] ?: "")) to rec.id
-        }
-        Todoist.plan(projects, tasks, titleOf.values, existing)
+    /** What an import from [source] would add. Network or file reading; off the main thread. */
+    suspend fun planImport(source: ImportSource, value: ImportValue): ImportPlan = withContext(Dispatchers.IO) {
+        source.read(value, ImportContext(sync().store))
     }
 
-    /** The project a sub-task's parent sits in, by name. */
-    private fun parentProject(parentId: String, s: UiState): String? {
-        val parent = (s.nextActions + s.inbox).firstOrNull { it.id == parentId } ?: return null
-        return parent.fields["parent"]?.let { pid -> s.projects.firstOrNull { it.id == pid } }
-            ?.let { it.fields["title"] ?: it.id }
-    }
-
-    /** Write a plan's projects and tasks, then sync them out. Returns tasks written. */
-    suspend fun importTodoist(plan: Todoist.Plan): Int = withContext(Dispatchers.IO) {
-        val sync = sync()
-        val idByName = HashMap<String, String>()
-        sync.projects().forEach { idByName[(it.fields["title"] ?: it.id).trim().lowercase()] = it.id }
-        plan.newProjects.forEach { idByName[it.trim().lowercase()] = sync.createProject(it) }
-        val idByKey = HashMap<String, String>()   // todoist id -> the id it got here
-        plan.tasks.forEach { t ->   // parents come first
-            val projectId = t.project?.let { idByName[it.trim().lowercase()] }
-            val task = t.parentKey?.let { idByKey[it] ?: t.existingParent }
-            idByKey[t.key] = if (t.parentKey != null && task != null) {
-                // A Todoist sub-task is a note under its task here.
-                sync.noteText(t.text, t.body.orEmpty(), t.due, parent = task)
-            } else {
-                sync.addNextAction(t.text, projectId,
-                    t.project?.let(ProjectTree::slugOf), t.due, t.body)
+    /** [planImport] for a file the user picked, read here (at most [ImportValue.FILE_LIMIT]). */
+    suspend fun planImport(source: ImportSource, uri: android.net.Uri): ImportPlan = withContext(Dispatchers.IO) {
+        val app = getApplication<Application>()
+        val bytes = app.contentResolver.openInputStream(uri)?.use { input ->
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buf); if (n < 0) break
+                out.write(buf, 0, n)
+                if (out.size() > ImportValue.FILE_LIMIT) throw java.io.IOException(t("That file is too large."))
             }
-        }
-        plan.tasks.size
-    }.also { refresh(); syncNow() }
-
-    data class CalendarPlan(
-        val events: List<Ics.Occurrence>,
-        val alreadyHere: Int,
-        val unsupportedRules: Int,
-    )
-
-    /** Read a calendar feed: occurrences from today through the next twelve months. */
-    suspend fun planCalendar(url: String): CalendarPlan = withContext(Dispatchers.IO) {
-        val zone = java.time.ZoneId.systemDefault()
-        val today = java.time.LocalDate.now(zone)
-        val res = Ics.parse(fetchCalendarText(url), today, today.plusMonths(12), zone)
-        val known = sync().events().map { it.id }.toHashSet()
-        val (here, fresh) = res.occurrences.partition { eventId(it.uid) in known }
-        CalendarPlan(fresh, here.size, res.unsupportedRules)
+            out.toByteArray()
+        } ?: throw java.io.IOException(t("Couldn't read it."))
+        val name = app.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+            null, null, null)?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: "file"
+        source.read(ImportValue.File(name, bytes), ImportContext(sync().store))
     }
 
-    suspend fun importCalendar(plan: CalendarPlan): Int = withContext(Dispatchers.IO) {
-        val sync = sync()
-        plan.events.count { sync.addEvent(it, "google") }
+    /** Write [plan], every item marked as imported, then sync it out. */
+    suspend fun applyImport(plan: ImportPlan): ImportWriter.Result = withContext(Dispatchers.IO) {
+        ImportWriter.apply(plan, sync().store)
     }.also { refresh(); syncNow() }
 }

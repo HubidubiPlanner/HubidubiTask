@@ -41,17 +41,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.outlined.Description
 import com.hubidubitask.core.Backup
 import com.hubidubitask.core.i18n.t
-import com.hubidubitask.mobile.importer.Todoist
+import com.hubidubitask.mobile.importer.ImportIcon
+import com.hubidubitask.mobile.importer.ImportInput
+import com.hubidubitask.mobile.importer.ImportPlan
+import com.hubidubitask.mobile.importer.ImportSource
+import com.hubidubitask.mobile.importer.ImportSources
+import com.hubidubitask.mobile.importer.ImportText
+import com.hubidubitask.mobile.importer.ImportValue
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-private enum class Source { TODOIST, GOOGLE, BACKUP }
+import kotlinx.coroutines.withContext
 
 /**
  * One-time import from another app, reached from the bottom of Settings.
  *
- * Choose a source, type what it needs, see what would come in, confirm.
+ * Choose a source ([ImportSources], then the HubidubiTask backup), type or
+ * pick what it needs, see what would come in, confirm.
  * Nothing is kept: the token or address is held only by this screen until the
  * source has been read, then dropped; there is no ongoing sync and no record
  * of the import beyond the items it created.
@@ -62,12 +70,12 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     // Plain remember, not rememberSaveable: a saved-state bundle would outlive
     // the screen, and the secret must not.
-    var source by remember { mutableStateOf<Source?>(null) }
+    var source by remember { mutableStateOf<ImportSource?>(null) }
+    var restoring by remember { mutableStateOf(false) }
     var secret by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var todo by remember { mutableStateOf<Todoist.Plan?>(null) }
-    var cal by remember { mutableStateOf<HubidubiTaskViewModel.CalendarPlan?>(null) }
+    var plan by remember { mutableStateOf<ImportPlan?>(null) }
     var backup by remember { mutableStateOf<Pair<java.io.File, Backup.Plan>?>(null) }
     // A sealed backup waits here for its password; the password lives as long as the screen.
     var sealedFile by remember { mutableStateOf<java.io.File?>(null) }
@@ -75,7 +83,7 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
     var done by remember { mutableStateOf<String?>(null) }
 
     fun reset() {
-        source = null; secret = ""; error = null; todo = null; cal = null; backup = null
+        source = null; restoring = false; secret = ""; error = null; plan = null; backup = null
         sealedFile = null; backupPassword = ""; busy = false
     }
     // A backup is a file, not a token: the system's file picker, then what it holds.
@@ -111,14 +119,40 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
         opened(java.io.File(dialog.directory, name))
     }
 
+    // What a source would bring in, from what was typed or picked.
+    fun read(src: ImportSource, value: ImportValue) {
+        busy = true; error = null
+        scope.launch {
+            runCatching { vm.planImport(src, value) }
+                .onSuccess { plan = it; secret = "" }   // read once; not needed any more
+                .onFailure { error = ImportText.error(src, it) }
+            busy = false
+        }
+    }
+    // A source that reads a file: the system's file dialog, then its bytes.
+    fun pickFor(src: ImportSource, input: ImportInput.File) {
+        val dialog = java.awt.FileDialog(null as java.awt.Frame?, src.title, java.awt.FileDialog.LOAD).apply {
+            if (input.extensions.isNotEmpty())
+                setFilenameFilter { _, name -> input.extensions.any { name.lowercase().endsWith(".$it") } }
+            isVisible = true
+        }
+        val name = dialog.file ?: return
+        val file = java.io.File(dialog.directory, name)
+        scope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                if (file.length() > ImportValue.FILE_LIMIT) null else file.readBytes()
+            }
+            if (bytes == null) error = t("That file is too large.") else read(src, ImportValue.File(name, bytes))
+        }
+    }
+
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
-        IconButton(onClick = { if (source != null && done == null) reset() else onBack() },
+        IconButton(onClick = { if ((source != null || restoring) && done == null) reset() else onBack() },
             modifier = Modifier.padding(start = 8.dp, top = 8.dp).size(48.dp)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"), tint = c.ink)
         }
         ScreenHeader(
-            when (source) { null -> t("Import"); Source.TODOIST -> "Todoist"; Source.GOOGLE -> "Google Calendar"
-                            Source.BACKUP -> t("HubidubiTask backup") },
+            when { restoring -> t("HubidubiTask backup"); else -> source?.title ?: t("Import") },
             t("One time. Nothing is kept afterwards — not the token, not the address."),
         )
 
@@ -129,65 +163,28 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                 PrimaryButton(t("Done"), onBack, Modifier.fillMaxWidth())
             }
 
-            source == null -> {
+            source == null && !restoring -> {
                 SectionLabel(t("Import from"), modifier = Modifier.padding(top = 0.dp))
                 CardGroup {
-                    SourceRow(Icons.Outlined.TaskAlt, "Todoist", t("Projects and open tasks")) {
-                        source = Source.TODOIST
+                    ImportSources.all.forEach { src ->
+                        SourceRow(src.icon.vector(), src.title, src.subtitle) { source = src }
                     }
-                    SourceRow(Icons.Outlined.CalendarMonth, "Google Calendar",
-                        t("Events from the next 12 months")) { source = Source.GOOGLE }
                     SourceRow(Icons.Outlined.Restore, t("HubidubiTask backup"),
-                        t("Everything, from Export"), last = true) { source = Source.BACKUP }
+                        t("Everything, from Export"), last = true) { restoring = true }
                 }
             }
 
-            todo != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                val p = todo!!
-                Summary(buildList {
-                    add(Line(t("%d new projects", p.newProjects.size) +
-                        if (p.joinedProjects > 0) t(", %d existing ones get new tasks", p.joinedProjects) else ""))
-                    add(Line(t("%d tasks", p.tasks.size - p.subtasks) + if (p.dated > 0) t(", %d with a date", p.dated) else ""))
-                    if (p.subtasks > 0) add(Line(t("%d of them are sub-tasks — they come in as notes under their task", p.subtasks)))
-                    if (p.withDescription > 0) add(Line(t("%d with a description", p.withDescription)))
-                    if (p.alreadyHere > 0) add(Line(t("%d already in the app — skipped", p.alreadyHere), true))
-                }, buildList {
-                    if (p.recurring > 0) add(t("%d repeats (the next date is kept)", p.recurring))
-                    if (p.withLabels > 0) add(t("%d tasks' labels", p.withLabels))
-                    if (p.inSections > 0) add(t("%d tasks' sections", p.inSections))
-                })
+            plan != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                val p = plan!!
+                Summary(p.lines.map { Line(it.text, it.muted) }, p.lost)
                 error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
-                Confirm(busy, p.tasks.isEmpty() && p.newProjects.isEmpty(), onCancel = ::reset) {
+                Confirm(busy, p.empty, onCancel = ::reset) {
                     busy = true
                     scope.launch {
-                        val n = runCatching { vm.importTodoist(p) }
+                        val n = runCatching { vm.applyImport(p) }
                         busy = false
-                        n.onSuccess {
-                            done = t("Imported %d tasks, %d notes and %d projects. They reach your phone on the next sync.",
-                                it - p.subtasks, p.subtasks, p.newProjects.size)
-                        }.onFailure { error = it.message ?: t("The import failed.") }
-                    }
-                }
-            }
-
-            cal != null -> Column(body, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                val p = cal!!
-                Summary(buildList {
-                    add(Line(t("%d events in the next 12 months", p.events.size)))
-                    if (p.alreadyHere > 0) add(Line(t("%d already in the app — skipped", p.alreadyHere), true))
-                }, buildList {
-                    if (p.unsupportedRules > 0)
-                        add(t("%d repeating events use a rule this can't expand — only their first date comes in", p.unsupportedRules))
-                })
-                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
-                Confirm(busy, p.events.isEmpty(), onCancel = ::reset) {
-                    busy = true
-                    scope.launch {
-                        val n = runCatching { vm.importCalendar(p) }
-                        busy = false
-                        n.onSuccess {
-                            done = t("Imported %d events. They show in Incoming, and reach your phone on the next sync.", it)
-                        }.onFailure { error = it.message ?: t("The import failed.") }
+                        n.onSuccess { done = ImportText.done(it, onComputer = true) }
+                            .onFailure { error = it.message ?: t("The import failed.") }
                     }
                 }
             }
@@ -227,55 +224,48 @@ fun ImportScreen(vm: HubidubiTaskViewModel, onBack: () -> Unit) {
                     Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy && backupPassword.isNotEmpty())
             }
 
-            source == Source.BACKUP -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            restoring -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
                 PrimaryButton(if (busy) t("Reading…") else t("Choose the file"), { pick() },
                     Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy)
             }
 
             else -> Column(body, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                val todoist = source == Source.TODOIST
-                Text(
-                    if (todoist) t("API token") else t("Secret address in iCal format"),
-                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold,
-                )
-                OutlinedTextField(
-                    value = secret, onValueChange = { secret = it; error = null },
-                    singleLine = true, enabled = !busy,
-                    visualTransformation = if (todoist) PasswordVisualTransformation()
-                                           else VisualTransformation.None,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = if (todoist) KeyboardType.Password else KeyboardType.Uri,
-                        autoCorrectEnabled = false),
-                    colors = appFieldColors(), shape = RectangleShape,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    if (todoist) t("In Todoist: Settings → Integrations → Developer → API token.")
-                    else t("In Google Calendar on the web: Settings → your calendar → Integrate calendar → Secret address in iCal format. Treat it like a password."),
-                    style = MaterialTheme.typography.bodySmall, color = c.muted,
-                )
-                error?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger)
-                }
-                PrimaryButton(if (busy) t("Reading…") else t("Continue"), {
-                    busy = true; error = null
-                    scope.launch {
-                        val res = runCatching {
-                            if (todoist) todo = vm.planTodoist(secret)
-                            else cal = vm.planCalendar(secret)
-                        }
-                        busy = false
-                        res.onSuccess { secret = "" }   // read once; not needed any more
-                        res.onFailure {
-                            error = when (it) {
-                                is Todoist.TokenRejected -> t("Todoist didn't accept that token.")
-                                is java.net.UnknownHostException -> t("No internet connection.")
-                                else -> it.message ?: t("Couldn't read it.")
-                            }
-                        }
+                val src = source!!
+                when (val input = src.input) {
+                    is ImportInput.File -> {
+                        error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger) }
+                        PrimaryButton(if (busy) t("Reading…") else t("Choose the file"), { pickFor(src, input) },
+                            Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy)
                     }
-                }, Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy && secret.isNotBlank())
+                    is ImportInput.Secret, is ImportInput.Address -> {
+                        val hidden = input is ImportInput.Secret
+                        val (label, howTo) = when (input) {
+                            is ImportInput.Secret -> input.label to input.howTo
+                            is ImportInput.Address -> input.label to input.howTo
+                            else -> "" to null
+                        }
+                        Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                        OutlinedTextField(
+                            value = secret, onValueChange = { secret = it; error = null },
+                            singleLine = true, enabled = !busy,
+                            visualTransformation = if (hidden) PasswordVisualTransformation()
+                                                   else VisualTransformation.None,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = if (hidden) KeyboardType.Password else KeyboardType.Uri,
+                                autoCorrectEnabled = false),
+                            colors = appFieldColors(), shape = RectangleShape,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        howTo?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted) }
+                        error?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = c.danger)
+                        }
+                        PrimaryButton(if (busy) t("Reading…") else t("Continue"),
+                            { read(src, ImportValue.Text(secret)) },
+                            Modifier.fillMaxWidth().padding(top = 6.dp), enabled = !busy && secret.isNotBlank())
+                    }
+                }
             }
         }
         Spacer(Modifier.height(24.dp))
@@ -330,4 +320,11 @@ private fun SourceRow(icon: ImageVector, title: String, sub: String, last: Boole
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = c.muted,
             modifier = Modifier.size(20.dp).align(Alignment.CenterVertically))
     }
+}
+
+/** How this app draws a source's icon. */
+private fun ImportIcon.vector(): ImageVector = when (this) {
+    ImportIcon.TASKS -> Icons.Outlined.TaskAlt
+    ImportIcon.CALENDAR -> Icons.Outlined.CalendarMonth
+    ImportIcon.FILE -> Icons.Outlined.Description
 }

@@ -18,7 +18,7 @@ import java.sql.DriverManager
  * origin, which is what peer sync reads to find the delta. Media files live
  * beside it, named by their SHA-256, as on the phone.
  */
-class Store(val dir: File = defaultDir()) : PeerStore {
+class Store(val dir: File = defaultDir()) : PeerStore, com.hubidubitask.core.ItemSink {
 
     val blobs = File(dir, "blobs").apply { mkdirs() }
     private val db: Connection
@@ -70,11 +70,11 @@ class Store(val dir: File = defaultDir()) : PeerStore {
         }
     }
 
-    fun byType(type: String) = all().filter { it.type == type }
+    override fun byType(type: String) = all().filter { it.type == type }
 
     /** A change made here, on the Mac. */
     @Synchronized
-    fun put(record: EntityRecord) = write(record, origin = null)
+    override fun put(record: EntityRecord) = write(record, origin = null)
 
     @Synchronized
     override fun applyFromPeer(record: EntityRecord, peer: String) = write(record, origin = peer)

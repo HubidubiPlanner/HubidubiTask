@@ -1,10 +1,8 @@
 package com.hubidubitask.mobile.importer
 
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.hubidubitask.core.net.SafeFetch
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 /**
  * One-time import of active Todoist projects and open tasks.
@@ -40,14 +38,17 @@ object Todoist {
 
     class TokenRejected : Exception("Todoist rejected the token.")
 
-    /** Everything open in the account. Network; call off the main thread. */
-    fun fetch(token: String, client: OkHttpClient = defaultClient()): Pair<List<Project>, List<Task>> {
-        val projects = all(client, token, "/projects").mapNotNull { o ->
+    /**
+     * Everything open in the account, through [web]: https only, never into
+     * the home network. Network; call off the main thread.
+     */
+    fun fetch(token: String, web: SafeFetch): Pair<List<Project>, List<Task>> {
+        val projects = all(web, token, "/projects").mapNotNull { o ->
             if (o.optBoolean("is_archived") || o.optBoolean("is_deleted")) return@mapNotNull null
             Project(o.getString("id"), o.optString("name").trim(),
                 o.optBoolean("inbox_project") || o.optBoolean("is_inbox_project"))
         }
-        val tasks = all(client, token, "/tasks").mapNotNull { o ->
+        val tasks = all(web, token, "/tasks").mapNotNull { o ->
             if (o.optBoolean("checked") || o.optBoolean("is_deleted")) return@mapNotNull null
             val due = o.optJSONObject("due")
             Task(
@@ -65,16 +66,12 @@ object Todoist {
         return projects to tasks
     }
 
-    private fun defaultClient() = OkHttpClient.Builder()
-        .callTimeout(60, TimeUnit.SECONDS).build()
-
-    private fun all(client: OkHttpClient, token: String, path: String): List<JSONObject> {
+    private fun all(web: SafeFetch, token: String, path: String): List<JSONObject> {
         val out = ArrayList<JSONObject>()
         var cursor: String? = null
         do {
             val url = "$API$path?limit=200" + (cursor?.let { "&cursor=" + java.net.URLEncoder.encode(it, "UTF-8") } ?: "")
-            val req = Request.Builder().url(url).header("Authorization", "Bearer $token").build()
-            val body = client.newCall(req).execute().use { r ->
+            val body = web.get(url, mapOf("Authorization" to "Bearer $token")) { r ->
                 if (r.code == 401 || r.code == 403) throw TokenRejected()
                 if (!r.isSuccessful) throw java.io.IOException("Todoist answered ${r.code}")
                 r.body?.string().orEmpty()

@@ -19,9 +19,11 @@ import com.hubidubitask.core.peer.PeerPairing
 import com.hubidubitask.desktop.PeerServer
 import com.hubidubitask.desktop.Store
 import com.hubidubitask.mobile.browse.ItemSummary
-import com.hubidubitask.mobile.importer.Ics
-import com.hubidubitask.mobile.importer.Todoist
-import com.hubidubitask.mobile.importer.fetchCalendarText
+import com.hubidubitask.mobile.importer.ImportContext
+import com.hubidubitask.mobile.importer.ImportPlan
+import com.hubidubitask.mobile.importer.ImportSource
+import com.hubidubitask.mobile.importer.ImportValue
+import com.hubidubitask.mobile.importer.ImportWriter
 import com.hubidubitask.mobile.tree.ProjectTree
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +33,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.security.MessageDigest
 
 /**
  * The Mac's model: the same surface the phone's ViewModel offers its screens,
@@ -154,8 +155,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     // ---- writes
 
-    private fun id(prefix: String) = prefix + "_" + PeerPairing.nonce().take(8)
-        .map { "abcdefghijklmnopqrstuvwxyz234567"[it.code % 32] }.joinToString("")
+    private fun id(prefix: String) = com.hubidubitask.core.Ids.new(prefix)
 
     private fun write(type: String, id: String, fields: Map<String, String?>) =
         store.put(EntityRecord(id, type, nowUtc(), fields.filterValues { it != null }))
@@ -474,68 +474,15 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     // ---- one-time import, the same logic as the phone's
 
-    suspend fun planTodoist(token: String): Todoist.Plan = withContext(Dispatchers.IO) {
-        val (projects, tasks) = Todoist.fetch(token.trim())
-        val s = _state.value
-        val titleOf = s.projects.associate { it.id to (it.fields["title"] ?: it.id) }
-        val idBySlug = s.projects.associate { ProjectTree.slugOf(it.fields["title"] ?: it.id) to it.id }
-        val all = s.nextActions + s.inbox + s.notes
-        val existing = all.associate { rec ->
-            val pid = ProjectTree.parentOf(rec, idBySlug)
-            val project = pid?.let { titleOf[it] ?: all.firstOrNull { r -> r.id == it }
-                ?.fields?.get("parent")?.let(titleOf::get) }
-            (project to (rec.fields["text"] ?: rec.fields["title"] ?: "")) to rec.id
-        }
-        Todoist.plan(projects, tasks, titleOf.values, existing)
+    /** What an import from [source] would add. Network or file reading; off the main thread. */
+    suspend fun planImport(source: ImportSource, value: ImportValue): ImportPlan = withContext(Dispatchers.IO) {
+        source.read(value, ImportContext(store))
     }
 
-    suspend fun importTodoist(plan: Todoist.Plan): Int = withContext(Dispatchers.IO) {
-        val idByName = HashMap<String, String>()
-        store.byType("project").forEach { idByName[(it.fields["title"] ?: it.id).trim().lowercase()] = it.id }
-        plan.newProjects.forEach { name ->
-            val pid = id("p"); write("project", pid, mapOf("title" to name, "status" to "active"))
-            idByName[name.trim().lowercase()] = pid
-        }
-        val idByKey = HashMap<String, String>()
-        plan.tasks.forEach { t ->
-            val task = t.parentKey?.let { idByKey[it] ?: t.existingParent }
-            idByKey[t.key] = if (t.parentKey != null && task != null) {
-                id("n").also { write("note", it, mapOf("title" to t.text, "kind" to "text",
-                    "body" to (t.body ?: ""), "due" to t.due, "parent" to task)) }
-            } else {
-                val pid = t.project?.let { idByName[it.trim().lowercase()] }
-                id("t").also { write("next_action", it, mapOf("text" to t.text, "parent" to pid,
-                    "project" to (t.project?.let(ProjectTree::slugOf) ?: "inbox"),
-                    "due" to t.due, "body" to t.body)) }
-            }
-        }
-        plan.tasks.size
+    /** Write [plan], every item marked as imported. */
+    suspend fun applyImport(plan: ImportPlan): ImportWriter.Result = withContext(Dispatchers.IO) {
+        ImportWriter.apply(plan, store)
     }.also { refresh() }
-
-    data class CalendarPlan(val events: List<Ics.Occurrence>, val alreadyHere: Int, val unsupportedRules: Int)
-
-    suspend fun planCalendar(url: String): CalendarPlan = withContext(Dispatchers.IO) {
-        val zone = java.time.ZoneId.systemDefault()
-        val today = java.time.LocalDate.now(zone)
-        val res = Ics.parse(fetchCalendarText(url), today, today.plusMonths(12), zone)
-        val (here, fresh) = res.occurrences.partition { store.get(eventId(it.uid)) != null }
-        CalendarPlan(fresh, here.size, res.unsupportedRules)
-    }
-
-    suspend fun importCalendar(plan: CalendarPlan): Int = withContext(Dispatchers.IO) {
-        plan.events.count { o ->
-            val eid = eventId(o.uid)
-            if (store.get(eid) != null) return@count false
-            write("event", eid, mapOf("uid" to o.uid, "summary" to o.summary, "dtstart" to o.dtstart,
-                "dtend" to o.dtend, "calendar" to "google", "all_day" to o.allDay.toString(),
-                "location" to o.location))
-            true
-        }
-    }.also { refresh() }
-
-    /** The workstation's rule, so the same event has the same id everywhere. */
-    private fun eventId(uid: String) = "e_" + MessageDigest.getInstance("SHA-256")
-        .digest(uid.toByteArray()).joinToString("") { "%02x".format(it) }.take(16)
 
     // ---- pairing
 

@@ -17,6 +17,9 @@ class Sync private constructor(
     val store: RoomLocalStore,
     private val blobsDir: File,
 ) {
+    /** New items, with the fields both apps write. */
+    private val writer = com.hubidubitask.core.ItemWriter(store)
+
     /** [origin] says who wrote [text] when it was not the user: "share" for text shared in from another app. */
     fun capture(text: String, due: String? = null, origin: String? = null): String {
         // The never-fail path: append to the outbox, no network, no validation.
@@ -60,17 +63,9 @@ class Sync private constructor(
 
     // ---- notes: text / image / audio (attachments travel by hash with peer sync) ----
 
-    /** A plain text note. */
+    /** A plain text note, under the task [parent] when given. */
     fun noteText(title: String, body: String = "", due: String? = null,
-                 parent: String? = null): String {
-        val id = "n_" + randomSuffix()
-        val f = hashMapOf<String, String?>("title" to title, "kind" to "text", "body" to body)
-        if (!due.isNullOrBlank()) f["due"] = due
-        // A note under a task: what the task needs you to know or check.
-        if (!parent.isNullOrBlank()) f["parent"] = parent
-        upsert("note", id, f, com.hubidubitask.core.nowUtc())
-        return id
-    }
+                 parent: String? = null): String = writer.note(title, body, due, parent)
 
     /** An image or audio note. The bytes are cached locally by content hash and
      *  queued for upload; the note entity only references them by SHA-256. */
@@ -208,15 +203,7 @@ class Sync private constructor(
     /** Create a project, optionally nested under [parentId].
      *
      *  Returns its id so the caller can reveal it in the tree. */
-    fun createProject(title: String, parentId: String? = null): String {
-        val id = "p_" + randomSuffix()
-        val fields = HashMap<String, String?>()
-        fields["title"] = title.trim()
-        fields["status"] = "active"
-        if (!parentId.isNullOrBlank()) fields["parent"] = parentId
-        upsert("project", id, fields, com.hubidubitask.core.nowUtc())
-        return id
-    }
+    fun createProject(title: String, parentId: String? = null): String = writer.project(title, parentId)
 
     /** Rename a project. Its items point at it by id, so they stay inside it. */
     fun renameProject(id: String, title: String): Boolean {
@@ -255,23 +242,9 @@ class Sync private constructor(
      * [origin] says who wrote it when it was not the user: "feed" for a feed's task.
      */
     fun addNextAction(text: String, parentId: String?, projectSlug: String?, due: String?,
-                      body: String? = null, id: String = "t_" + randomSuffix(),
-                      origin: String? = null): String {
-        val f = HashMap<String, String?>()
-        // No "done": absent means open. An explicit "false" is a truthy string
-        // to a workstation that predates the fix for it.
-        f["text"] = text
-        // Both: `parent` is what the Projects view nests by; the slug decides
-        // which current/<slug>.md file the workstation writes it into.
-        f["project"] = projectSlug ?: "inbox"
-        if (parentId != null) f["parent"] = parentId
-        if (due != null) f["due"] = due
-        // Longer than a line: the workstation keeps it in details/<id>.md.
-        if (body != null) f["body"] = body
-        if (origin != null) f["origin"] = origin
-        upsert("next_action", id, f, com.hubidubitask.core.nowUtc())
-        return id
-    }
+                      body: String? = null, id: String = com.hubidubitask.core.Ids.new("t"),
+                      origin: String? = null): String =
+        writer.nextAction(text, parentId, projectSlug, due, body, id, origin)
 
     fun events(): List<EntityRecord> = store.byType("event")
 
@@ -296,23 +269,9 @@ class Sync private constructor(
         store.put(rec)
     }
 
-    /**
-     * A calendar event. Its id is derived from the UID exactly as the
-     * workstation's indexer derives it, so the phone's copy and the one read
-     * back from the .ics file are the same record, and importing the same
-     * event twice is a no-op.
-     */
-    fun addEvent(o: com.hubidubitask.mobile.importer.Ics.Occurrence, calendar: String): Boolean {
-        val id = eventId(o.uid)
-        if (store.get(id) != null) return false
-        val f = HashMap<String, String?>()
-        f["uid"] = o.uid; f["summary"] = o.summary; f["dtstart"] = o.dtstart
-        f["calendar"] = calendar; f["all_day"] = o.allDay.toString()
-        o.dtend?.let { f["dtend"] = it }
-        o.location?.let { f["location"] = it }
-        upsert("event", id, f, com.hubidubitask.core.nowUtc())
-        return true
-    }
+    /** A calendar event, once: its id comes from the uid, so the same event is never added twice. */
+    fun addEvent(o: com.hubidubitask.mobile.importer.Ics.Occurrence, calendar: String): Boolean =
+        writer.event(o.uid, o.summary, o.dtstart, o.dtend, o.allDay, o.location, calendar)
 
     private fun upsert(type: String, id: String, fields: Map<String, String?>, now: String) {
         val rec = EntityRecord(id = id, type = type, updated = now, fields = fields)
@@ -344,9 +303,3 @@ private fun time(): String =
     java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(java.util.Date())
 private fun date(): String =
     java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-
-/** "e_" + the first 16 hex of sha256(uid): the workstation's formats/ics.py rule. */
-fun eventId(uid: String): String {
-    val d = java.security.MessageDigest.getInstance("SHA-256").digest(uid.toByteArray(Charsets.UTF_8))
-    return "e_" + d.joinToString("") { "%02x".format(it) }.take(16)
-}

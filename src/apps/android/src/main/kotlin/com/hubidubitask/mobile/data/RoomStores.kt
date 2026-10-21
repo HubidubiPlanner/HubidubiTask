@@ -4,7 +4,7 @@ import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.LocalStore
 
 /** core.LocalStore backed by Room/SQLCipher. */
-class RoomLocalStore(private val db: HubidubiTaskDatabase) : LocalStore {
+class RoomLocalStore(private val db: HubidubiTaskDatabase) : LocalStore, com.hubidubitask.core.ItemSink {
     private val dao = db.entities()
     private val state = db.syncState()
     private val log = db.peerLog()
@@ -62,7 +62,7 @@ class RoomLocalStore(private val db: HubidubiTaskDatabase) : LocalStore {
     override fun cursor(): Long = state.get(KEY_CURSOR)?.toLongOrNull() ?: 0L
     override fun setCursor(value: Long) = state.set(SyncStateRow(KEY_CURSOR, value.toString()))
 
-    fun byType(type: String): List<EntityRecord> = dao.byType(type).map { rowToRecord(it) }
+    override fun byType(type: String): List<EntityRecord> = dao.byType(type).map { rowToRecord(it) }
 
     /** Every live item, of every kind: what a backup holds. */
     fun all(): List<EntityRecord> = dao.all().map { rowToRecord(it) }

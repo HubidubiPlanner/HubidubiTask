@@ -219,6 +219,7 @@ internal val FRENCH: Map<String, String> = mapOf(
     "That address did not return a calendar." to "Cette adresse n’a pas renvoyé de calendrier.",
     "That address is not on the public internet." to "Cette adresse n’est pas une adresse Internet publique.",
     "That code can't be used again. Start again with a new code." to "Ce code ne peut pas être réutilisé. Recommencez avec un nouveau code.",
+    "That file is too large." to "Ce fichier est trop volumineux.",
     "That file isn't a HubidubiTask backup." to "Ce fichier n'est pas une sauvegarde HubidubiTask.",
     "The backup is damaged or incomplete." to "La sauvegarde est endommagée ou incomplète.",
     "The calendar address was not accepted (%d)." to "L’adresse du calendrier n’a pas été acceptée (%d).",
