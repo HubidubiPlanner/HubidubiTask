@@ -9,16 +9,11 @@ import com.hubidubitask.core.feed.PageText
 import com.hubidubitask.core.feed.Snapshot
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.core.net.SafeFetch
+import com.hubidubitask.core.net.SafeXml
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-import org.xml.sax.InputSource
 import org.xml.sax.SAXException
 import java.io.IOException
-import java.io.StringReader
-import javax.xml.XMLConstants
-import javax.xml.parsers.DocumentBuilder
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.parsers.ParserConfigurationException
 
 /**
  * An RSS 2.0 or Atom feed: one line per entry, "title — link", in the feed's
@@ -37,7 +32,6 @@ object RssFeed : FeedKind {
     /** Entries kept from one look: more than a feed shows at once. */
     const val MAX_ENTRIES = 100
     private const val ATOM = "http://www.w3.org/2005/Atom"
-    private val HOSTILE = Regex("(?i)<!(DOCTYPE|ENTITY)")
     private val SPACE = Regex("\\s+")
     private val TRACKING = Regex("(?i)(utm_[a-z_]+|fbclid|gclid|mc_cid|mc_eid)(=.*)?")
 
@@ -107,33 +101,10 @@ object RssFeed : FeedKind {
 
     private fun notAFeed() = IOException(t("Not an RSS or Atom feed."))
 
-    /**
-     * The feed's XML as a document. A feed is a stranger's text: a body that
-     * declares a DOCTYPE or an ENTITY is refused before parsing, so no entity
-     * can be declared and none can reach the user's files (XXE).
-     */
-    internal fun parse(xml: String): Document {
-        if (HOSTILE.containsMatchIn(xml)) throw IOException(t("The feed declares a DOCTYPE or ENTITY, so it isn't read."))
-        val body = xml.trimStart('﻿', ' ', '\t', '\r', '\n')
-        return try { builder().parse(InputSource(StringReader(body))) } catch (e: SAXException) { throw notAFeed() }
-    }
-
-    /**
-     * A parser with DOCTYPEs, entities and XInclude off. The JDK takes every
-     * setting; Android's parser knows none of the last three and throws, so
-     * there the refusal in [parse] is what keeps a DOCTYPE out.
-     */
-    internal fun builder(): DocumentBuilder = DocumentBuilderFactory.newInstance().apply {
-        isNamespaceAware = true
-        isExpandEntityReferences = false
-        whereSupported { setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) }
-        whereSupported { setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true) }
-        whereSupported { isXIncludeAware = false }
-    }.newDocumentBuilder()
-
-    private inline fun whereSupported(set: () -> Unit) {
-        try { set() } catch (_: ParserConfigurationException) {} catch (_: UnsupportedOperationException) {}
-    }
+    /** The feed's XML as a document, through [SafeXml]: a stranger's text can't reach the user's files (XXE). */
+    internal fun parse(xml: String): Document = try { SafeXml.parse(xml) }
+        catch (e: SafeXml.Hostile) { throw IOException(t("The feed declares a DOCTYPE or ENTITY, so it isn't read.")) }
+        catch (e: SAXException) { throw notAFeed() }
 
     /** No namespace is null on the JDK and may be "" elsewhere. */
     private val Element.ns: String? get() = namespaceURI?.ifEmpty { null }

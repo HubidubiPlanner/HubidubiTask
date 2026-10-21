@@ -11,7 +11,10 @@ registry, so adding one is one Kotlin file, one registry line,
 translations and a test. Both the phone and the computer show it, with no
 UI code to touch.
 
-All paths below are under `src/apps/`.
+Kotlin paths below are under `src/apps/`; `docs/` and the rest are from the
+repository root. Work on an up-to-date checkout: if
+`src/apps/shared/src/main/kotlin/com/hubidubitask/mobile/importer/ImportSource.kt`
+isn't there, pull first.
 
 ## How the pieces fit
 
@@ -38,20 +41,23 @@ All paths below are under `src/apps/`.
     - `lines`: the summary
     - `lost`: what has no place in the app, shown as "not carried over"
   - **`ImportSources.all`**: the registry. The order is the order in the list, and the HubidubiTask backup always follows the sources.
-- `sources/TodoistSource.kt` (an API with a token) and `sources/GoogleCalendarSource.kt` (an address) are the two examples to copy from.
+- The examples to copy from, all in `sources/`:
+  - `TodoTxtSource.kt`: a file, with the parsing, caps and counting in one object
+  - `TodoistSource.kt`: an API with a token
+  - `GoogleCalendarSource.kt`: an address
 - `ImportWriter` is the only code that writes. It marks every project, task and note it writes with `origin = "import"`, and the user's AI agent is told those words came from another app (`core/agent/ItemsContext.kt`). That's why a source never writes records itself.
 
 ## Steps
 
 1. **Learn the format before writing code.**
-   - Find the other app's documented export format or API, and get a real sample. Keep it small and invent the content: never put a real person's data in the repo.
+   - Read the other app's documented export format or API. Write a small sample by hand that follows it exactly, with invented content: never put a real person's data in the repo.
    - Decide the mapping into what HubidubiTask holds:
      - projects, by name
      - tasks: text, `due` as `yyyy-MM-dd`, an optional `body`
      - notes under a task: an `ImportItem` with `parentKey`
      - calendar events
-   - Everything else goes in `lost` with a count, e.g. `t("%d tasks' labels", n)`. The user should see what was left out, not lose it silently.
-   - Skip finished items unless the format has nothing else.
+   - What the user would notice missing goes in `lost` with a count, e.g. `t("%d tasks' labels", n)`: priorities, labels, contexts, repeats, attachments. The user should see what was left out, not lose it silently. Words you don't recognise stay in the task's text rather than being dropped.
+   - Skip finished items unless the format has nothing else, and say how many with a muted line (`TodoTxtSource` does: "%d done — skipped").
 
 2. **Choose the input.**
    - A file the user exports from the other app is the most private choice: nothing leaves the device. Prefer it when the app offers an export.
@@ -63,15 +69,18 @@ All paths below are under `src/apps/`.
    - `id` is lowercase, never shown and never changed.
    - `title` is the app's name as it brands itself, a plain string.
    - `subtitle` and every other shown text is a getter through `t("…")`, e.g. `override val subtitle get() = t("Tasks and projects")`. A getter follows the language the user picks later; a plain `val` would freeze it.
-   - Keep parsing in a pure function, so tests need no network: `fun plan(text: String, …): ImportPlan`. Call it from `read`.
+   - Every shown text must be a **literal** `t("…")` call with the English inside. `I18nTest` finds texts by scanning the source for that pattern; `t(someVariable)` hides a text from the check, and it then shows untranslated.
+   - Keep parsing in a pure function in the source object, so tests need no network: `fun plan(text: String, existingProjects, existingItems): ImportPlan`, as `TodoTxtSource` has it. Call it from `read`.
    - **Network only through `here.web`**, e.g. `here.web.get(url, mapOf("Authorization" to "Bearer $token")) { r -> … }`. `SafeFetch` allows https only and never reaches the user's home network. A test fails if a source opens its own `OkHttpClient` or `URL` connection.
    - **Skip what is already here.** Compare case-insensitively and trimmed against `here.existingItems` and `here.projectNames`, as `Todoist.plan` does. Count the skipped ones as a muted line: `ImportLine(t("%d already in the app — skipped", n), muted = true)`. A second import of the same file must add nothing.
-   - Treat the input as hostile:
-     - cap what you read
-     - don't let a huge or malformed file crash the app; throw an `IOException` with a short `t("…")` message instead
-     - an XML parser must have DOCTYPE and external entities off (see the feed skill's notes on XXE)
+   - Treat the input as hostile, as `TodoTxtSource` does:
+     - re-check `ImportValue.FILE_LIMIT` in `read` (the apps stop reading past it, but the source shouldn't rely on that)
+     - refuse what can't be the format: binary content (a NUL byte) in a text format, invalid JSON
+     - cap the count of what you read (`TodoTxtSource` takes at most 20,000 lines)
+     - never crash: throw an `IOException` with a short literal `t("…")` message; the screen shows it
+     - XML: parse only with `SafeXml.parse(text)` (`core/net/SafeXml.kt`). It refuses any DOCTYPE or ENTITY before parsing and hardens the parser as far as each platform allows; Android's parser rejects some of the JDK's settings, so don't set them yourself.
 
-4. **Register it.** Add `<Name>Source` to `ImportSources.all` in `ImportSource.kt`.
+4. **Register it.** Add `<Name>Source` to `ImportSources.all` in `ImportSource.kt`, with its import (the sources live in the `sources` package).
 
 5. **Icon.**
    - Reuse `ImportIcon.TASKS`, `CALENDAR` or `FILE` when one fits.
@@ -85,14 +94,17 @@ All paths below are under `src/apps/`.
    - Brand names stay untranslated and never go through `t()`.
 
 7. **Tests.**
-   - Write `shared/src/test/kotlin/com/hubidubitask/mobile/importer/<Name>SourceTest.kt`, with fixtures in `shared/src/test/resources/import/<id>/`. Cover:
+   - Write `shared/src/test/kotlin/com/hubidubitask/mobile/importer/<Name>SourceTest.kt`, with fixtures in `shared/src/test/resources/import/<id>/`, read from the classpath: `javaClass.getResource("/import/<id>/sample.txt")!!.readText()`. `TodoTxtSourceTest` is the example. Cover:
      - the mapping (projects, tasks, dates, notes under tasks)
      - what lands in `lost`
      - malformed input
      - that a second run against the result of the first adds nothing: apply the plan with `ImportWriter.apply` into `ImportSourcesTest.Sink()`, build a new `ImportContext` on that sink, and read again
    - `ImportSourcesTest` then checks the registry-wide rules on its own: unique ids, only the fetcher it's handed, imported items marked.
 
-8. **Docs.** Add a line to `docs/MANUAL.md` where Import is described, and a bullet under `## Unreleased` in `docs/CHANGELOG.md`.
+8. **Docs.**
+   - In `docs/MANUAL.md`, the import sources are described after the backup paragraph in "## A copy of everything". Add a short paragraph there, like todo.txt's.
+   - Add a bullet under `## Unreleased` in `docs/CHANGELOG.md`.
+   - If the store texts (`fastlane/metadata/android/*/full_description.txt`) or `site/` list the sources, add it there too: `grep -rn "Todoist" README.md site fastlane docs` shows where.
 
 9. **Run the checks** from `src/apps`:
    ```
@@ -107,7 +119,7 @@ All paths below are under `src/apps/`.
 
 - [ ] One new file in `importer/sources/`, one line in `ImportSources.all`, and an icon mapping only if a new icon was needed.
 - [ ] Network only through `here.web`. Nothing written by the source. No token or file kept.
-- [ ] Every shown text through `t()`, with all four translations. Brand names plain.
+- [ ] Every shown text is a literal `t("…")`, with all four translations. Brand names plain.
 - [ ] A second import of the same data adds nothing. What doesn't fit is counted in `lost`.
 - [ ] `./gradlew :shared:test :desktop:test :android:assembleDebug` passes.
 - [ ] MANUAL and CHANGELOG updated. Commits signed off (`git commit -s`).

@@ -14,8 +14,10 @@ one. Pick the right one first.
 | A service on the internet with one address, reached with the user's API key | an **`AgentType`** (a new choice in the dropdown) | Mistral, Gemini, OpenRouter |
 | Something the user runs on a computer at home, found by typing its IP | an **`AgentKind`** (found behind the existing "Agent" choice, no new dropdown entry) | Ollama, LM Studio |
 
-Paths below are under `src/apps/shared/src/main/kotlin/com/hubidubitask/core/agent/`
-unless they start with `src/apps/` or `android/` / `desktop/`.
+Kotlin paths below without a folder are in
+`src/apps/shared/src/main/kotlin/com/hubidubitask/core/agent/`; the others are
+from the repository root. Work on an up-to-date checkout: if `AgentType.kt`
+isn't there, pull first.
 
 ## Rules that never bend
 
@@ -61,17 +63,22 @@ How it fits:
   The token goes only to the kind found, and over TLS only to the certificate first seen there.
 
 1. Find a path the agent answers **without a token**, with something only it says. Ollama, for example, answers `GET /api/tags` with `{"models":[…]}`. That becomes its `Signature(path) { json -> … }`. Match on a field it alone has; a bare 200 is not enough.
-2. Add the entry before `OPENAI`:
+2. Add the entry before `OPENAI`, as `OLLAMA` is:
    ```kotlin
    OLLAMA("ollama", "Ollama", 11434, null, Signature("/api/tags") { it?.optJSONArray("models") != null }),
    ```
+   The order of entries is the order its default ports are tried when no port is typed. A firewall that drops packets makes each closed port cost a few seconds, so a new kind goes after the existing ones unless it is far more common.
    - `user` is non-null only when it takes a password as Basic auth with a fixed user name; otherwise the token goes as Bearer.
    - `port` is its usual port, or null if it has none.
+   - The probe sends a token only after the kind is known. If the kind may sit behind a proxy that asks for one, its signature path must still answer without it, or the kind can't be told apart.
 3. If it speaks the OpenAI chat shape at `/v1`, that's all: `HomeAgent.clientFor` asks it through `OpenAiAgent`, and the probe picks the first model `/v1/models` lists. Otherwise add a `HomeAgentClient` (see `OpencodeAgent.kt`) and a branch in `HomeAgent.clientFor`. Its HTTP client comes from `Agent.http`.
 4. Test in `src/apps/shared/src/test/kotlin/com/hubidubitask/core/agent/AgentProbeTest.kt` with a `stub { c -> when (c.path) { … } }` that answers like the real agent. Cover:
-   - it is found, with its kind, label and model
-   - a plain OpenAI-shaped server is **not** taken for it
-   - it is not taken for OpenClaw or Hermes, and they are not taken for it
+   - it is found, with its kind, label and model, and no token is sent (check `stub.calls`)
+   - a plain OpenAI-shaped server is **not** taken for it, even one that answers 200 on the signature path with something else
+   - it is not taken for OpenClaw or Hermes, and they are not taken for it: assert their stubs were never asked the signature path, because they are found by `/health` first
+   - with no models listed, it is still found (model blank) and its check says it has no model yet
+
+   `AgentProbeTest`'s Ollama tests are the example.
 
    If it can require a token, also check that no token is sent before it is recognised: look at `stub.calls`.
 5. Its default port joins `AgentKind.DEFAULT_PORTS` on its own, which is the list tried when no port is typed. Nothing to do there.
@@ -79,7 +86,13 @@ How it fits:
 ## Both ways
 
 - **Translations.** Every new `t("…")` text needs Polish, German, French and Spanish. Write them to a JSON file, then run `python3 src/apps/tools/i18n_add.py that.json` from the repo root. Brand names stay plain, without `t()`.
-- **Docs.** Add the new choice or kind to the AI section of `docs/MANUAL.md`: the choices table, or the home agent table with its port and how to make it listen on the network (Ollama, for instance, needs `OLLAMA_HOST=0.0.0.0`). Add a bullet under `## Unreleased` in `docs/CHANGELOG.md`.
+- **Docs.** The AI choices and home agents are named in several places; add the new one to each. `grep -rln "OpenClaw" README.md docs site fastlane` lists them:
+  - `docs/MANUAL.md`: the choices table, or the home agent table with its port and how to make it listen on the network (Ollama needs `OLLAMA_HOST=0.0.0.0`)
+  - `README.md`'s AI table
+  - `site/index.html`, `site/agent.html` (a short setup section per agent) and `site/privacy.html`
+  - `docs/ecosystem.html`
+  - `fastlane/metadata/android/{en-US,pl-PL}/full_description.txt`; keep each under 4000 characters
+  - a bullet under `## Unreleased` in `docs/CHANGELOG.md`
 - **Run the checks** from `src/apps`:
   ```
   ./gradlew :shared:test :desktop:test :android:assembleDebug

@@ -25,7 +25,8 @@ need Docker).
 
 ## Sign off your commits
 
-Every commit needs a `Signed-off-by:` line with your name and email:
+Every commit in a pull request needs a `Signed-off-by:` line with your name
+(or the name you publish under) and an email:
 
 ```sh
 git commit -s

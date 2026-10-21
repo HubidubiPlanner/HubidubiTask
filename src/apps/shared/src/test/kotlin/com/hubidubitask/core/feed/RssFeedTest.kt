@@ -119,7 +119,7 @@ class RssFeedTest {
         assertTrue("DOCTYPE" in e.message.orEmpty())
         assertFailsWith<IOException> { RssFeed.snapshot("""<rss version="2.0"><!ENTITY a "aaaa"><channel/></rss>""") }
         // And the parser on its own would not take one either.
-        assertFailsWith<SAXException> { RssFeed.builder().parse(InputSource(StringReader(xxe))) }
+        assertFailsWith<SAXException> { com.hubidubitask.core.net.SafeXml.builder().parse(InputSource(StringReader(xxe))) }
     }
 
     @Test fun `a web page or broken XML is not a feed`() {

@@ -12,8 +12,10 @@ one Kotlin file, one registry line, translations and a test. The + on the
 Feeds tab lists it on the phone and the computer, with no screen code to
 change.
 
-All paths below are under `src/apps/shared/src/main/kotlin/com/hubidubitask/core/feed/`
-unless they start with `src/apps/` or `android/` / `desktop/`.
+Kotlin paths below without a folder are in
+`src/apps/shared/src/main/kotlin/com/hubidubitask/core/feed/`; the others are
+from the repository root. Work on an up-to-date checkout: if `FeedKind.kt`
+isn't there, pull first.
 
 ## How the pieces fit
 
@@ -27,7 +29,7 @@ unless they start with `src/apps/` or `android/` / `desktop/`.
     - `noun`: what the prompt calls one of these
   - **`FeedField(key, label, optional, address)`**, plus `Snapshot(text, title)` and the `FeedIcon` enum.
   - **`FeedKinds.all`**: the registry. A feed with no kind is a web page; a kind this version doesn't know (made on a newer device) is skipped.
-- **`kinds/WebPage.kt`** is the example to copy.
+- **`kinds/WebPage.kt`** (a page) and **`kinds/RssFeed.kt`** (RSS and Atom, parsed XML) are the examples to copy.
 - **`Feeds.kt`** holds the rules every kind shares: one look per period; the first look only remembers; an unchanged snapshot closes the period; a change goes to the model; one task per period, the same id on every device. `Feeds.newFields` stores a new feed's typed values under their field keys.
 - **`FeedRunner.kt`** looks at feeds on both apps. It builds its own Claude client, so a feed's text never reaches the user's own agent, which can run commands. Don't change that, and don't give a kind any say in which model answers.
 - **`PageFetch.get(url, web)`** fetches a body as text, capped at 3 MB, through the `SafeFetch` it is given.
@@ -37,7 +39,8 @@ unless they start with `src/apps/` or `android/` / `desktop/`.
 1. **Decide what a "change" is.**
    - The snapshot is text, one item per line, compared line by line with the last one. The model sees only the lines that disappeared and appeared.
    - Make each line stable: drop timestamps, counters, tracking parameters and anything that changes on every fetch. Otherwise every look looks like a change and the user gets noise.
-   - For a list of entries (RSS items, releases), one line per entry such as `title — link` works well. Keep the source's order, and cap the count; the snapshot is cut at `Feeds.SNAPSHOT_LIMIT` anyway.
+   - For a list of entries (RSS items, releases), one line per entry such as `title — link` works well. Keep the source's order, and cap the count (`RssFeed` keeps 100); the snapshot is cut at `Feeds.SNAPSHOT_LIMIT` anyway.
+   - The snapshot decides *whether* something changed and what the model sees. The task itself is one line the model writes, and every kind shares it. Don't try to put entries in the task from a kind.
 
 2. **Write `kinds/<Name>.kt`**, an `object <Name> : FeedKind`.
    - `id` is lowercase; it's stored on every feed and never changes.
@@ -45,13 +48,8 @@ unless they start with `src/apps/` or `android/` / `desktop/`.
    - **Fields.** The address is always the field with key `"url"` (`address = true` gives it a web keyboard), and a name is `"title"` with `optional = true`. The list and the feed's sheet show those two. Extra fields are allowed; they're stored under their keys and you read them from `feed.fields`.
    - **`valid`** says whether what was typed is enough. Reject anything that isn't `http://` or `https://`.
    - **`read(feed, web)`**: fetch **only** through `web`, the `SafeFetch` you are handed (https only, never the home network, redirects checked). `PageFetch.get(feed.fields["url"].orEmpty(), web)` gives you the body. A test fails if feed code opens its own `OkHttpClient` or `URL` connection.
-   - **Parse safely.** For XML, build a `DocumentBuilderFactory` with `isNamespaceAware = true`, then:
-     - `setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)`
-     - `setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)`
-     - `isExpandEntityReferences = false`
-     - `setXIncludeAware(false)`
-
-     Also refuse a body containing `<!DOCTYPE` or `<!ENTITY` before parsing. A feed is a stranger's text, and an XXE would read the user's files.
+   - **Parse safely.** For XML, use only `SafeXml.parse(text)` (`core/net/SafeXml.kt`). A feed is a stranger's text, and an XXE would read the user's files. It refuses any DOCTYPE or ENTITY before parsing and hardens the parser as far as each platform allows. Don't set parser features yourself: Android's parser throws on some of the JDK's, which would break every look on the phone, and the JVM tests would not notice.
+   - **Errors reach the user.** What `read` throws is shown as "Could not open the page: <message>". Throw an `IOException` with a short literal `t("…")` message (e.g. `t("Not an RSS or Atom feed.")`), never a raw exception text.
    - Return `Snapshot(lines.joinToString("\n"), title)`, where `title` is the source's own name if it has one.
    - **`system`** is the model's instruction, in English. Start from `WebPage.system`:
      - say what the material is, and that the user gets one task, a line starting with a verb, under 100 characters
@@ -87,7 +85,8 @@ unless they start with `src/apps/` or `android/` / `desktop/`.
    ```
    ./gradlew :shared:test :desktop:test :android:assembleDebug
    ```
-   If an Android emulator is running, install
+   Feeds also run on the phone, on Android's own libraries, which the JVM
+   tests don't cover. If an Android emulator is running, install
    `android/build/outputs/apk/debug/android-debug.apk`, tap + on Feeds and
    add one.
 
