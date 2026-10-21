@@ -69,6 +69,8 @@ as [`SECURITY.md`](SECURITY.md) says.
 
 ## Licence
 
+Copyright (C) 2026 HubidubiPlanner.
+
 HubidubiTask is free software: you can redistribute it and modify it under
 the terms of the GNU General Public License, version 3 or (at your option)
 any later version. See [`LICENSE`](LICENSE). The IBM Plex Sans fonts it ships
