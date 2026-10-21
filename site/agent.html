@@ -73,6 +73,11 @@ opencode serve --hostname 0.0.0.0</code>
 kilo serve --hostname 0.0.0.0 --port 4097</code>
         <p>Kilo picks a random port unless you give one; type it in the app.</p>
       </li>
+      <li class="card">
+        <h3>Ollama</h3>
+        <code class="cmd">OLLAMA_HOST=0.0.0.0 ollama serve</code>
+        <p>Port 11434. It takes no token: anyone on your network can use it. Reviews use the first model it lists.</p>
+      </li>
     </ul>
     <p class="small muted" style="margin-top: 16px">Any other server that speaks the OpenAI chat API works too, with the first model it lists.</p>
   </section>
@@ -94,7 +99,7 @@ kilo serve --hostname 0.0.0.0 --port 4097</code>
       </li>
       <li>
         <h3>Choose it in the app</h3>
-        <p>Settings, AI Agent, Agent. Type the computer's IP and the token; it is kept as you type. The port can stay empty for OpenClaw, Hermes and opencode. It says Connected and names the agent it found.</p>
+        <p>Settings, AI Agent, Agent. Type the computer's IP and the token; it is kept as you type. The port can stay empty for OpenClaw, Hermes, opencode and Ollama. It says Connected and names the agent it found.</p>
       </li>
       <li>
         <h3>Review something</h3>

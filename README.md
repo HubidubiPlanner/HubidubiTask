@@ -3,7 +3,8 @@
 One app for tasks, notes and feeds, on **Android, macOS and Linux**. A phone
 and a computer pair once and then keep each other current over your own
 Wi-Fi. Any item can be reviewed by an AI you choose, and a feed turns a
-changed web page into one task a day, week or month.
+changed web page or RSS feed into one task a day, week or month. Bring your
+items in once from Todoist, Google Calendar or a todo.txt file.
 
 No account, no cloud, no server of ours. Sync runs over your own Wi-Fi,
 post-quantum encrypted. AI is used only when you ask, with your own key or
@@ -25,7 +26,7 @@ Website: <https://hubidubitask.github.io/HubidubiTask>. How to use it:
 |---|---|
 | Claude | Anthropic's Claude, with your API key. The default. |
 | OpenAI | Any server that speaks OpenAI's API, with a model you run yourself |
-| Agent | The AI agent you already run on a computer at home (OpenClaw, Hermes Agent, opencode, Kilo, or any OpenAI-shaped server), at the IP and token you type. Nothing of ours is installed there. |
+| Agent | The AI agent you already run on a computer at home (OpenClaw, Hermes Agent, opencode, Kilo, Ollama, or any OpenAI-shaped server), at the IP and token you type. Nothing of ours is installed there. |
 
 Feeds always write their task with Claude.
 

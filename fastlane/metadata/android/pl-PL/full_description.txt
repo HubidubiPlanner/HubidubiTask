@@ -18,14 +18,14 @@ JEDEN + DLA WSZYSTKIEGO, CO NOWE
 
 ZROBIONE ZNACZY ZROBIONE
 • Przytrzymanie oznacza zadanie jako zrobione, przenosi je, ustawia datę albo zleca przegląd.
-• Projekty to proste pojemniki na zadania i notatki. Dodaj notatkę pod zadaniem, żeby szczegóły były tam, gdzie praca.
+• Projekty to proste pojemniki na zadania i notatki. Notatka pod zadaniem trzyma szczegóły tam, gdzie praca.
 
 OBSERWUJ STRONĘ
-• Dodaj stronę internetową jako kanał. Raz dziennie, tygodniowo lub miesięcznie jest sprawdzana, a gdy coś się zmieni, Claude (zawsze Claude, nie Twój agent) zamienia zmianę w jedno zadanie w wybranym projekcie.
+• Dodaj stronę internetową lub kanał RSS albo Atom. Aplikacja zagląda tam raz dziennie, tygodniowo lub miesięcznie, a gdy coś się zmieni, Claude (zawsze Claude, nie Twój agent) zamienia zmianę w jedno zadanie w wybranym projekcie.
 
 PRZEGLĄD Z AI (OPCJONALNIE)
 • Przytrzymaj dowolny projekt, zadanie lub notatkę i wybierz Przegląd z AI. Dostaniesz podsumowanie tego, co się w nim wydarzyło, na podstawie zadań i notatek. Podsumowanie zostaje pod tytułem, oznaczone jako „Nieaktualne”, gdy coś się zmieni.
-• Wybierz AI w Ustawieniach: Claude od Anthropic z własnym kluczem API, OpenAI (dowolny zgodny serwer z Twoim modelem) albo Agent, czyli Twój agent AI na komputerze w domu (OpenClaw, Hermes, opencode, Kilo lub inny zgodny z OpenAI), po adresie IP i tokenie. Agent przegląda wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go poprosisz.
+• Wybierz AI w Ustawieniach: Claude od Anthropic z własnym kluczem API, OpenAI (dowolny zgodny serwer z Twoim modelem) albo Agent, czyli Twój agent AI na komputerze w domu (OpenClaw, Hermes, opencode, Kilo, Ollama lub inny zgodny z OpenAI), po adresie IP i tokenie. Agent przegląda wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go poprosisz.
 • Przeglądy idą prosto z telefonu do wybranego AI. Nic nie przechodzi przez nas. Bez AI cała reszta działa tak samo.
 
 SYNCHRONIZACJA BEZ CHMURY
@@ -35,7 +35,7 @@ SYNCHRONIZACJA BEZ CHMURY
 • Kodu parowania nie da się przechwycić w Wi-Fi, a każdą synchronizację szyfrują nowe klucze odporne na komputery kwantowe.
 
 PRZECHODZISZ Z INNEJ APLIKACJI?
-• Jednorazowy import z Todoist (Twoim tokenem API) lub Kalendarza Google (Twoim prywatnym adresem iCal). Token jest użyty raz i nie jest przechowywany.
+• Jednorazowy import z Todoist (Twoim tokenem API), Kalendarza Google (prywatnym adresem iCal) lub pliku todo.txt. Token jest użyty raz i nie jest przechowywany.
 
 PRYWATNOŚĆ
 • Bez konta, bez logowania, bez reklam, bez analityki, bez śledzenia.

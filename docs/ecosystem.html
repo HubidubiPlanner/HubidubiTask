@@ -137,7 +137,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
       <rect class="hub" x="330" y="400" width="300" height="112"/>
       <text class="t" x="350" y="432">Agent: your own, at home</text>
-      <text class="s" x="350" y="456">OpenClaw · Hermes · opencode · Kilo</text>
+      <text class="s" x="350" y="456">OpenClaw · Hermes · opencode · Kilo · Ollama</text>
       <text class="s" x="350" y="478">its own model and tools; IP + token,</text>
       <text class="s" x="350" y="498">found by its health endpoint</text>
 
@@ -187,7 +187,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <h3>Your agent's computer</h3>
       <p class="role">Any computer at home where the user already runs an AI agent with a network mode. Nothing of ours is installed there; the apps need its IP and token.</p>
       <dl>
-        <dt>Agents</dt><dd>OpenClaw (:18789), Hermes Agent (:8642), opencode (:4096), Kilo, or any OpenAI-shaped server</dd>
+        <dt>Agents</dt><dd>OpenClaw (:18789), Hermes Agent (:8642), opencode (:4096), Kilo, Ollama (:11434), or any OpenAI-shaped server</dd>
         <dt>Found by</dt><dd><span class="path">core/agent/AgentProbe.kt</span>: each agent's own health endpoint</dd>
         <dt>Set up</dt><dd>The site's agent page: network mode on, a token, the port open</dd>
       </dl>
@@ -205,7 +205,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>Apps and your own agent</td><td>OpenClaw, Hermes and others: the OpenAI chat shape, one message with the items as text; opencode and Kilo: a session per question, answered in a JSON schema, then deleted. Changes come back as add_task, capture, mark_done and are checked before the app applies them</td><td>the agent's</td><td>IP in Settings; the port, or each agent's usual one</td><td>Its token or password, in the system's secret store; found without the token, which then goes only to the certificate seen first; HTTPS tried first and its certificate pinned; plain HTTP only to home-network addresses</td></tr>
         <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring (a file only you can read when there is no working keyring)</td></tr>
         <tr><td>Apps and an OpenAI server</td><td>The OpenAI chat shape</td><td>yours</td><td>Address in Settings</td><td>A public server: a certificate an authority vouches for; a home server: its own certificate, pinned on first use</td></tr>
-        <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
+        <tr><td>Feeds and web pages</td><td>One fetch of the page or RSS/Atom feed per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
       </tbody>
     </table>
   </div>
@@ -218,7 +218,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     <table>
       <thead><tr><th>A review by your own agent</th><th>What goes</th><th>What comes back</th></tr></thead>
       <tbody>
-        <tr><td>OpenClaw, Hermes, any OpenAI-shaped server</td><td>One message: how to answer, the projects, open tasks, notes and calendar as text (at most 24,000 characters), the question</td><td>The answer, and changes in a fenced JSON block</td></tr>
+        <tr><td>OpenClaw, Hermes, Ollama, any OpenAI-shaped server</td><td>One message: how to answer, the projects, open tasks, notes and calendar as text (at most 24,000 characters), the question</td><td>The answer, and changes in a fenced JSON block</td></tr>
         <tr><td>opencode, Kilo</td><td>A new session with the same, and a JSON schema</td><td>The answer and the changes as schema-held JSON; the session is deleted</td></tr>
       </tbody>
     </table>
@@ -252,7 +252,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   <ul class="status">
     <li><span class="pill ok">Released</span><span>Version 3.0.1 (tag v3.0.1, versionCode 14): the Android app and its Play bundle, the Mac app, the Arch package and the AppImage, with checksums. New since 3.0.0: an ivory and terracotta colour theme, light or dark as the system is, is the default (now called Ivory). 3.0.0 brought pairing v2 (the same 8-character code as a J-PAKE password, hybridised with ML-KEM-768), every sync round sealed with fresh post-quantum keys, post-quantum TLS on the phone (Conscrypt) and the computer (bundled Java 27), keys in the Keystore and Keychain, the AI connections' certificate checks, feeds over HTTPS only, and 12-character backup passwords; phone and computer must be paired once more after both are updated.</span></li>
     <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; Incoming first, with its title and the "+" where Projects has it; Feeds; three AI choices; Review with AI; English, Polish, German, French and Spanish, chosen in Settings.</span></li>
-    <li><span class="pill ok">Works</span><span>The Agent plugs into the user's own agent (OpenClaw, Hermes, opencode, Kilo, OpenAI-shaped), found by IP; tested against stand-ins of each, not yet against a live one.</span></li>
+    <li><span class="pill ok">Works</span><span>The Agent plugs into the user's own agent (OpenClaw, Hermes, opencode, Kilo, Ollama, OpenAI-shaped), found by IP; tested against stand-ins of each, not yet against a live one.</span></li>
     <li><span class="pill ok">Works</span><span>The Arch package installs with pacman in a clean Arch system and the app starts and draws its screens.</span></li>
     <li><span class="pill warn">Open</span><span>Google Play: everything to submit is in deploy/google-play, step by step; the upload itself is done by hand in Play Console.</span></li>
     <li><span class="pill warn">Open</span><span>Free and open source under GPL-3.0-or-later. The GitHub repository is not public yet; once it is, GitHub Actions run the tests and publish the website on GitHub Pages, and the F-Droid recipe (deploy/f-droid) can be submitted.</span></li>
