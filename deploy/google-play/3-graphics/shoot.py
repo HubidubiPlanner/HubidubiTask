@@ -7,8 +7,9 @@ Needs a running emulator (or a phone you are happy to wipe the app on) and a
 debug build: only debug builds carry the demo seeder. It installs the app
 fresh, seeds the made-up demo data, sets the screen to 1080x2160 (2:1, the
 tallest Play accepts), puts the status bar in demo mode, and taps through the
-app by the text on screen. Light-theme shots go to screenshots/ (Play); light
-and dark ones for the website go to ../../../site/assets/screens/.
+app by the text on screen. Light-theme shots go to
+fastlane/metadata/android/en-US/images/phoneScreenshots/ (F-Droid and Play);
+light and dark ones for the website go to site/assets/screens/.
 """
 
 import argparse
@@ -190,7 +191,7 @@ def main():
     p = Phone(a.serial)
     print("preparing %s" % a.serial)
     prepare(p, a.apk)
-    play = os.path.join(HERE, "screenshots")
+    play = os.path.join(REPO, "fastlane", "metadata", "android", "en-US", "images", "phoneScreenshots")
     web = os.path.join(REPO, "site", "assets", "screens")
     os.makedirs(play, exist_ok=True)
     os.makedirs(web, exist_ok=True)

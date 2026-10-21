@@ -1,9 +1,11 @@
 # 6. Release
 
 Release notes go in with each upload, per language:
-[`release-notes/en-US/14.txt`](release-notes/en-US/14.txt) and
-[`release-notes/pl-PL/14.txt`](release-notes/pl-PL/14.txt) for this version
-(versionCode 14; 500 characters at most). Older ones are kept beside them.
+[`en-US/changelogs/14.txt`](../../../fastlane/metadata/android/en-US/changelogs/14.txt) and
+[`pl-PL/changelogs/14.txt`](../../../fastlane/metadata/android/pl-PL/changelogs/14.txt)
+in `fastlane/metadata/android/` for this version (versionCode 14; 500
+characters at most). F-Droid shows the same files. Older ones are kept
+beside them.
 
 1. **Testing › Internal testing**: create a release, upload
    `../1-app-bundle/out/hubidubitask-3.0.1-14.aab`, paste the release notes,
@@ -20,5 +22,7 @@ Release notes go in with each upload, per language:
    there already point at the package.
 
 Next version: raise `hubidubitask.version` and `hubidubitask.versionCode` in
-`src/apps/gradle.properties`, run step 1 again, and add
-`release-notes/<language>/<versionCode>.txt`.
+`src/apps/gradle.properties`, add
+`fastlane/metadata/android/<language>/changelogs/<versionCode>.txt` for both
+languages, tag the commit `v<version>` (F-Droid builds from the tag), and run
+step 1 again.

@@ -7,8 +7,8 @@ Version: 3.0.1, versionCode 14 (from `src/apps/gradle.properties`).
 | Step | Folder | What you do there | State |
 |---|---|---|---|
 | 1 | [`1-app-bundle/`](1-app-bundle) | Build and check the signed `.aab` | Ready: `out/hubidubitask-3.0.1-14.aab` |
-| 2 | [`2-store-listing/`](2-store-listing) | Paste the name, descriptions, category, contact | Ready, English and Polish |
-| 3 | [`3-graphics/`](3-graphics) | Upload the icon, feature graphic, 8 screenshots | Ready |
+| 2 | [`2-store-listing/`](2-store-listing) | Paste the name, descriptions, category, contact (texts in `fastlane/`) | Ready, English and Polish |
+| 3 | [`3-graphics/`](3-graphics) | Upload the icon, feature graphic, 8 screenshots (in `fastlane/`) | Ready |
 | 4 | [`4-privacy-policy/`](4-privacy-policy) | Put the privacy policy online, paste its URL | Needs the website live (`deploy/website`) |
 | 5 | [`5-app-content/`](5-app-content) | Answer the App content forms | Answers written out |
 | 6 | [`6-release/`](6-release) | Internal test, closed test, production | Release notes ready |

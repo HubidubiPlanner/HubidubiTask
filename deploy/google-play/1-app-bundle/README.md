@@ -40,4 +40,4 @@ and `build.sh` stops.
   uploaded.
 - Every upload needs a higher `hubidubitask.versionCode` in
   `src/apps/gradle.properties`, and release notes under
-  `../6-release/release-notes/<language>/<versionCode>.txt`.
+  `fastlane/metadata/android/<language>/changelogs/<versionCode>.txt`.

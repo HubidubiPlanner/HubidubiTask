@@ -1,0 +1,34 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Optional AI through Anthropic's Claude API or an OpenAI-compatible server;
+      feeds use Claude. Optional one-time imports from Todoist and Google Calendar.
+Categories:
+  - Note
+  - Task
+License: GPL-3.0-or-later
+AuthorName: HubidubiPlanner
+WebSite: https://hubidubitask.github.io/HubidubiTask
+SourceCode: https://github.com/hubidubitask/HubidubiTask
+IssueTracker: https://github.com/hubidubitask/HubidubiTask/issues
+Changelog: https://github.com/hubidubitask/HubidubiTask/blob/HEAD/docs/CHANGELOG.md
+
+AutoName: HubidubiTask
+
+RepoType: git
+Repo: https://github.com/hubidubitask/HubidubiTask.git
+
+Builds:
+  - versionName: 3.1.0
+    versionCode: 15
+    commit: v3.1.0
+    subdir: src/apps/android
+    gradle:
+      - yes
+    gradleprops:
+      - hubidubitask.androidOnly=true
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+UpdateCheckData: src/apps/gradle.properties|hubidubitask\.versionCode=(\d+)|.|hubidubitask\.version=([\d.]+)
+CurrentVersion: 3.1.0
+CurrentVersionCode: 15

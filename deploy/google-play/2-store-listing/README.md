@@ -1,12 +1,14 @@
 # 2. The store listing
 
-Paste these into **Grow users › Store presence › Main store listing**.
+The texts live in [`fastlane/metadata/android/`](../../../fastlane/metadata/android),
+where F-Droid reads them. Paste the same ones into **Grow users › Store
+presence › Main store listing**.
 
 | Field | Limit | English | Polish |
 |---|---|---|---|
-| App name | 30 | [`en-US/title.txt`](en-US/title.txt) | [`pl-PL/title.txt`](pl-PL/title.txt) |
-| Short description | 80 | [`en-US/short-description.txt`](en-US/short-description.txt) | [`pl-PL/short-description.txt`](pl-PL/short-description.txt) |
-| Full description | 4000 | [`en-US/full-description.txt`](en-US/full-description.txt) | [`pl-PL/full-description.txt`](pl-PL/full-description.txt) |
+| App name | 30 | [`en-US/title.txt`](../../../fastlane/metadata/android/en-US/title.txt) | [`pl-PL/title.txt`](../../../fastlane/metadata/android/pl-PL/title.txt) |
+| Short description | 80 | [`en-US/short_description.txt`](../../../fastlane/metadata/android/en-US/short_description.txt) | [`pl-PL/short_description.txt`](../../../fastlane/metadata/android/pl-PL/short_description.txt) |
+| Full description | 4000 | [`en-US/full_description.txt`](../../../fastlane/metadata/android/en-US/full_description.txt) | [`pl-PL/full_description.txt`](../../../fastlane/metadata/android/pl-PL/full_description.txt) |
 
 Add Polish under **Manage translations › Add your own translations**. The
 Polish description uses the app's Polish names (Nadchodzące, Projekty,

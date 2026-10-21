@@ -1,10 +1,15 @@
 # 3. Graphics
 
+The graphics live in
+[`fastlane/metadata/android/en-US/images/`](../../../fastlane/metadata/android/en-US/images),
+where F-Droid reads them; upload the same files in Play Console. The Polish
+listing uses the same ones.
+
 | File | Play's field | Play's rule |
 |---|---|---|
-| `icon-512.png` | App icon | 512 × 512, 32-bit PNG |
-| `feature-graphic-1024x500.jpg` | Feature graphic | 1024 × 500, no transparency |
-| `screenshots/*.jpg` | Phone screenshots | 2 to 8, 1080 × 2160 (2:1), in file order |
+| `icon.png` | App icon | 512 × 512, 32-bit PNG |
+| `featureGraphic.jpg` | Feature graphic | 1024 × 500, no transparency |
+| `phoneScreenshots/*.jpg` | Phone screenshots | 2 to 8, 1080 × 2160 (2:1), in file order |
 
 Tablet screenshots are optional; skip them, the app is made for phones.
 
@@ -29,8 +34,9 @@ sh deploy/google-play/3-graphics/render.sh     # icon and feature graphic, from 
 python3 deploy/google-play/3-graphics/shoot.py # all screenshots, from a running emulator
 ```
 
-`render.sh` needs `rsvg-convert` (`brew install librsvg`); it also refreshes
-the website's link preview image. `shoot.py` needs a debug build
+`render.sh` draws `icon.svg` and `feature-graphic.svg`, next to it, and
+needs `rsvg-convert` (`brew install librsvg`); it also refreshes the
+website's link preview image. `shoot.py` needs a debug build
 (`cd src/apps && ./gradlew :android:assembleDebug`, only debug builds carry
 the demo data) and a running emulator. It installs the app fresh, seeds the
 demo data, taps through the app by the words on screen, and also writes the

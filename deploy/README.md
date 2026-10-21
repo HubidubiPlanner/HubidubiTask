@@ -7,3 +7,4 @@ Inside each, numbered folders are the steps in order.
 |---|---|
 | [`google-play/`](google-play) | Publishing the Android app on Google Play: the bundle, listing, graphics, privacy policy, app content answers, release |
 | [`website/`](website) | Publishing the website on GitHub Pages; the Mac and Linux downloads are on the GitHub release |
+| [`f-droid/`](f-droid) | The F-Droid build recipe, how to test it, and how to submit it |
