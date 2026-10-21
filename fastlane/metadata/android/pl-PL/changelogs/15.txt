@@ -1,0 +1,8 @@
+Nowości
+• Bezpłatna i otwartoźródłowa (GPL-3.0); kod jest na GitHubie.
+• Import z pliku todo.txt (Simpletask, Markor): Ustawienia › Import.
+• Kanały obserwują też kanały RSS i Atom, nie tylko strony.
+• Agent znajduje Ollamę na domowym komputerze po adresie IP.
+• Domyślny motyw nazywa się teraz Kość słoniowa; kolory te same.
+• Nie ma już zapisów do Pro ani wyboru własnego serwera AI; ten wybór przechodzi na Claude.
+• Tuż po północy Nadchodzące pokazuje już nowy dzień.
