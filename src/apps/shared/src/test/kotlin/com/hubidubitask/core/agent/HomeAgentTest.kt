@@ -83,6 +83,7 @@ class HomeAgentTest {
         ask(cfg(AgentKind.HERMES, model = ""))
         assertEquals("hermes-agent", JSONObject(chats().single().body).getString("model"))
         assertEquals("Hermes", Agent.clientFor(cfg(AgentKind.HERMES)).health().server)
+        assertEquals("Ollama", Agent.clientFor(cfg(AgentKind.OLLAMA, "")).health().server)
         assertEquals("hermes-agent", Agent.clientFor(cfg(AgentKind.OPENAI, "")).health().server)
     }
 

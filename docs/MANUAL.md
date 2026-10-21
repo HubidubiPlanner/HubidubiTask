@@ -118,6 +118,7 @@ ours is installed there. The app recognises, from the address alone:
 | Hermes Agent | `API_SERVER_ENABLED=true API_SERVER_HOST=0.0.0.0 API_SERVER_KEY=… hermes gateway` | 8642 |
 | opencode | `OPENCODE_SERVER_PASSWORD=… opencode serve --hostname 0.0.0.0` | 4096 |
 | Kilo | `KILO_SERVER_PASSWORD=… kilo serve --hostname 0.0.0.0 --port …` | the one you give |
+| Ollama | `OLLAMA_HOST=0.0.0.0 ollama serve`; no token (anyone on your network can use it), and it answers with the first model it lists | 11434 |
 
 Any other server that speaks OpenAI's chat API works too, with the first model
 it lists. Once the address is typed, **Settings** finds which agent answers and says so; with an

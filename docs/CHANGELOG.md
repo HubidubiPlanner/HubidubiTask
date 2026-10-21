@@ -8,6 +8,10 @@
 - **The Pro sign-up button is gone.** Everything is free.
 - **The self-hosted AI server choice is gone.** A phone or computer that used
   it switches to Claude.
+- **The Agent finds Ollama.** Type the IP of the computer it runs on in
+  **Settings → AI Agent → Agent** and leave the port empty: the app finds it
+  on 11434 and reviews are answered by the first model it lists. Start Ollama
+  with `OLLAMA_HOST=0.0.0.0` so other devices can reach it.
 
 ## 3.0.1 — 20 October 2026
 

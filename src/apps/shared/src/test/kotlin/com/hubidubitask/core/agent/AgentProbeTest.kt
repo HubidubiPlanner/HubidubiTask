@@ -84,6 +84,48 @@ class AgentProbeTest {
         assertEquals("qwen3.6-35b", found.label)
     }
 
+    /** Ollama as it answers: its models at /api/tags and /v1/models, no token, nothing at /health. */
+    private fun ollama() = stub { c -> when (c.path) {
+        "/api/tags" -> 200 to """{"models":[{"name":"llama3.2:latest","model":"llama3.2:latest","size":2019393189}]}"""
+        "/v1/models" -> 200 to """{"object":"list","data":[{"id":"llama3.2:latest","object":"model","owned_by":"library"}]}"""
+        else -> 404 to "404 page not found" } }
+
+    @Test fun `Ollama is found by its model list, and needs no token`() {
+        val s = ollama()
+        val found = assertIs<Result.Found>(detect(s, null))
+        assertEquals(AgentKind.OLLAMA, found.kind)
+        assertEquals("Ollama", found.label)
+        assertEquals("llama3.2:latest", found.model)
+        assertEquals("http://127.0.0.1:${s.port}", found.endpoint)
+        // A token typed anyway is never sent: Ollama asks for none.
+        assertEquals(AgentKind.OLLAMA, assertIs<Result.Found>(detect(s, "tok")).kind)
+        assertTrue(s.calls.all { it.auth == null }, "${s.calls}")
+        // Its port is tried when none is typed, and the catch-all stays last.
+        assertTrue(11434 in AgentKind.DEFAULT_PORTS)
+        assertEquals(AgentKind.OPENAI, AgentKind.entries.last())
+    }
+
+    @Test fun `a plain OpenAI-shaped server is not taken for Ollama`() {
+        val models = """{"data":[{"id":"qwen3.6-35b"}]}"""
+        // A bare 200 at /api/tags, or one without Ollama's "models", is not Ollama.
+        for (tags in listOf("{}", """{"data":[]}""", "ok")) {
+            val s = stub { c -> when (c.path) { "/v1/models" -> 200 to models; "/api/tags" -> 200 to tags; else -> null } }
+            assertEquals(AgentKind.OPENAI, assertIs<Result.Found>(detect(s, null)).kind, tags)
+        }
+    }
+
+    @Test fun `Ollama is not taken for OpenClaw or Hermes, nor they for it`() {
+        assertEquals(AgentKind.OLLAMA, assertIs<Result.Found>(detect(ollama(), null)).kind)
+        val openclaw = openclaw(null)
+        assertEquals(AgentKind.OPENCLAW, assertIs<Result.Found>(detect(openclaw, null)).kind)
+        val hermes = stub { c -> when (c.path) {
+            "/health" -> 200 to """{"status":"ok"}"""
+            "/v1/models" -> 200 to """{"data":[{"id":"hermes-agent"}]}"""
+            else -> null } }
+        assertEquals(AgentKind.HERMES, assertIs<Result.Found>(detect(hermes, null)).kind)
+        assertTrue((openclaw.calls + hermes.calls).none { it.path == "/api/tags" }, "found by /health first")
+    }
+
     @Test fun `nothing there, or something else, is not an agent`() {
         val web = stub { null }
         assertEquals(Result.NotFound, detect(web, null))

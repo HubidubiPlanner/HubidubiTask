@@ -30,6 +30,8 @@ enum class AgentKind(val id: String, val label: String, val port: Int?, private 
     HERMES("hermes", "Hermes", 8642, null),
     OPENCODE("opencode", "opencode", 4096, "opencode"),
     KILO("kilo", "Kilo", null, "kilo"),
+    /** Ollama lists its models at /api/tags, with no token; it chats at /v1 like OpenAI. */
+    OLLAMA("ollama", "Ollama", 11434, null, Signature("/api/tags") { it?.optJSONArray("models") != null }),
     /** Any other server speaking the OpenAI chat shape. Keep it last. */
     OPENAI("openai", "", null, null);
 
