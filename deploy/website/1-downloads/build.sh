@@ -8,6 +8,7 @@
 # out/hubidubitask-x86_64.pkg.tar.zst    the Arch package, distribution/arch/build.sh (needs Docker)
 # out/HubidubiTask-x86_64.AppImage       any Linux, distribution/appimage/build.sh (needs Docker)
 # out/SHA256SUMS                         checksums of the three
+# out/SHA256SUMS.sig                     their signature (SIGNING.md)
 #
 # The Mac app must be built on a Mac with Apple silicon.
 set -eu
@@ -47,5 +48,18 @@ cp "$appimage" "$out/HubidubiTask-x86_64.AppImage"
 
 rm -f "$out/hubidubitask-agent.tar.gz"
 (cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst HubidubiTask-x86_64.AppImage > SHA256SUMS)
+# Signed with the release key the repo signs its tags with (git config
+# user.signingkey; see SIGNING.md), so a download can be checked against it.
+key=$(git -C "$repo" config user.signingkey || true)
+if [ -n "$key" ]; then
+  rm -f "$out/SHA256SUMS.sig"
+  case "$key" in "~/"*) key="$HOME/${key#\~/}" ;; esac
+  ssh-keygen -Y sign -f "$key" -n file "$out/SHA256SUMS" >/dev/null 2>&1
+  ssh-keygen -Y verify -f "$repo/.github/allowed_signers" -I hubidubiplanner@hubidubitask.invalid -n file \
+    -s "$out/SHA256SUMS.sig" < "$out/SHA256SUMS" >/dev/null
+  echo "    SHA256SUMS signed"
+else
+  echo "    !! no signing key set up (SIGNING.md): SHA256SUMS is not signed" >&2
+fi
 echo "==> $out"
 ls -l "$out" | awk 'NR>1 {printf "    %-36s %s bytes\n", $9, $5}'

@@ -16,3 +16,17 @@ distribution/appimage/out/
 # Python caches
 __pycache__/
 *.pyc
+
+# Keys and secrets never belong here (release keys live in ~/.keystores and ~/.ssh)
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*_ed25519
+.env
+.env.*
+local.properties
