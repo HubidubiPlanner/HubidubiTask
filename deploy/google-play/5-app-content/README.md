@@ -14,9 +14,9 @@ the reviewer does not report sync or AI review as broken:
 > own equipment and cannot be reached by a reviewer: (1) sync with the
 > user's HubidubiTask app on their Mac or Linux computer, paired by a typed
 > code over the same Wi-Fi; (2) AI review, which calls an AI the user
-> configures in Settings (their own SelfHostedAI or OpenAI-compatible server, their
-> own Claude API key, or the AI agent they already run at home). Without them the app shows
-> their status and every other feature works.
+> configures in Settings (their own Claude API key, their own
+> OpenAI-compatible server, or the AI agent they already run at home).
+> Without them the app shows their status and every other feature works.
 
 ## Content rating (IARC questionnaire)
 - Category: **Utility, Productivity, Communication, or Other**
@@ -62,28 +62,16 @@ The facts, from the code:
   they configured, a feed's page check, a one-time import.
 - The local database is encrypted (SQLCipher, key sealed by the Keystore), and
   `allowBackup="false"`, so nothing goes to Android's cloud backup.
-- **Settings → Sign up for Pro** (since 1.2): pressing it sends the developer
-  one answer through a Google Form, over HTTPS: the platform, the app's
-  version and its language. No identifier, nothing about the person or their
-  items; sent once per install, and only on that press.
-
 **Recommended answers**
 
 | Question | Answer |
 |---|---|
-| Does your app collect or share any of the required user data types? | **Yes** |
-| Data type | **App activity › App interactions** (the "Sign up for Pro" press) |
-| Collected / shared | **Collected**; **not shared** |
-| Processed ephemerally? | **No** (each answer is kept, to be counted) |
-| Required or optional? | **Optional** (only if the user presses the button) |
-| Purpose | **Analytics** (counting who wants Pro) |
-| Encrypted in transit? | **Yes** |
-| Deletion | Users can ask by email; an answer carries no identifier, so it cannot be told apart from anyone else's |
+| Does your app collect or share any of the required user data types? | **No** |
 
-Everything else stays out of the form: sync goes to the user's own devices;
-reviews and imports go to services the user picked and configured, and only
-when they ask. Play does not count user-initiated transfers to a service the
-user chose as sharing. Before 1.2 (no Pro button) the answer was **No**.
+Nothing reaches the developer. Sync goes to the user's own devices; reviews
+and imports go to services the user picked and configured, and only when
+they ask. Play does not count user-initiated transfers to a service the user
+chose as sharing.
 
 If you prefer the conservative route, declare instead: **collected** ›
 Personal info › Other (task and note text), Photos and videos, Audio (voice

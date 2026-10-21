@@ -2,6 +2,6 @@ Pierwsze wydanie HubidubiTask.
 • Otwiera się na karcie Nadchodzące: dziś, tydzień lub miesiąc, zaległe na górze.
 • Jeden + dla projektu, zadania, notatki, zdjęcia, notatki głosowej lub pliku.
 • Obserwuj strony: zmiana staje się jednym zadaniem.
-• Przegląd dowolnej rzeczy z AI: SelfHostedAI, OpenAI, Claude albo własny Agent.
+• Przegląd dowolnej rzeczy z AI: samodzielnie hostowany serwer AI, OpenAI, Claude albo własny Agent.
 • Paruje się z aplikacją na Maca lub Linuksa przez Twoje Wi-Fi. Bez konta, bez chmury.
 • Po polsku, angielsku, niemiecku, francusku i hiszpańsku.

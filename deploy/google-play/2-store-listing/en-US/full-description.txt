@@ -21,18 +21,18 @@ DONE MEANS DONE
 • Projects are plain containers of tasks and notes. Put a note under a task to keep the details where the work is.
 
 WATCH A PAGE
-• Add a web page as a feed. Once a day, week or month it is checked, and when something changed, Claude turns the change into one task in the project you chose.
+• Add a web page as a feed. Once a day, week or month it is checked, and when something changed, Claude (always Claude, never your own agent) turns the change into one task in the project you chose.
 
 REVIEW WITH AI (OPTIONAL)
 • Long-press any project, task or note and choose Review with AI. It sums up what happened in it, from its tasks and notes, and the summary stays under its title, marked "Not up to date" once something changes.
-• Pick the AI in Settings: your SelfHostedAI server, any OpenAI-compatible model you run, Anthropic's Claude with your own API key, or the AI agent you already run at home (OpenClaw, Hermes, opencode or Kilo), which can look across all your items and add or finish tasks when you ask.
+• Pick the AI in Settings: Claude, from Anthropic, with your own API key; OpenAI, any OpenAI-compatible server you run, with its own model; or Agent, the AI agent you already run on a computer at home (OpenClaw, Hermes, opencode, Kilo or any OpenAI-shaped one), by its IP and token. Your agent can look across all your items and add or finish tasks when you ask.
 • Reviews go straight from your phone to the AI you chose. Nothing passes through us. Without an AI, everything else works the same.
 
 SYNC WITHOUT A CLOUD
 • Pair the phone with the HubidubiTask app on your Mac or Linux computer by typing a short code.
 • From then on they keep each other current. Every edit carries its time, the newest wins, and deletions travel too.
 • Everything works offline. The phone keeps a full copy in an encrypted database.
-• Traffic between your devices is encrypted and pinned to the certificate exchanged when you paired.
+• The pairing code can't be stolen on the Wi-Fi, and every sync is sealed with fresh post-quantum keys.
 
 COMING FROM ANOTHER APP?
 • One-time import from Todoist (with your API token) or Google Calendar (with your private iCal address). The token is used once and not kept.
@@ -40,9 +40,13 @@ COMING FROM ANOTHER APP?
 PRIVACY
 • No account, no sign-in, no ads, no analytics, no trackers.
 • We run no servers, so we never receive your data.
+• The source code is public, so anyone can check this.
 • Taking a photo opens your camera app; the microphone is used only while you record a voice memo.
 
-Plain paper by day, moss green by night: HubidubiTask follows your system's light and dark theme.
+Six colour themes, all high in contrast. The default, Ivory, follows your system's light and dark mode.
 
 In English, Polish, German, French and Spanish. Choose in Settings; until then the app follows your phone's language.
+
+Free and open source (GPL-3.0). Source code: github.com/hubidubitask/HubidubiTask
+
 Get it done. Keep it yours.

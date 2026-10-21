@@ -9,15 +9,29 @@ version, the permissions it ends up with, and the 16 KB alignment of each
 native library. The file to upload lands in `out/` (not committed):
 `out/hubidubitask-<version>-<versionCode>.aab`.
 
+## Your upload keystore
+
+The build signs with your upload keystore, which never goes into the
+repository. Point to it in one of two ways:
+
+- in the environment: `HUBIDUBITASK_KEYSTORE` (the keystore's path) and
+  `HUBIDUBITASK_KEYSTORE_PASSWORD`, plus `HUBIDUBITASK_KEYSTORE_ALIAS` if the
+  key's alias is not `upload`;
+- or in `~/.gradle/gradle.properties`: `hubidubitask.keystore` (the path),
+  `hubidubitask.keystoreAlias` if needed, and on a Mac
+  `hubidubitask.keystoreKeychain`, the Keychain item that holds the password.
+
+Without either, the release build comes out unsigned (as F-Droid builds it)
+and `build.sh` stops.
+
 ## In Play Console
 
 1. **Create app**: name `HubidubiTask: Tasks & Calendar`, default language
    English (United States), App, Free. Free cannot be changed to paid later.
 2. **App signing**: accept Google's app signing when you upload the first
-   bundle. The PRIVATE key that signed it then acts as the upload key:
-   `~/.keystores/hubidubitask-upload.jks`, alias `private`, password
-   in the Keychain item `android-keystore-hubidubitask-upload`. Keep both backed up: a
-   lost upload key can only be reset through Play support.
+   bundle. The key that signed it then acts as the upload key. Keep your
+   upload keystore and its password backed up: a lost upload key can only be
+   reset through Play support.
 3. Upload the `.aab` in step 6, on a testing track.
 
 ## Rules that do not change

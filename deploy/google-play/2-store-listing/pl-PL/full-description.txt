@@ -1,6 +1,6 @@
 HubidubiTask to aplikacja do zadań zbudowana wokół jednej myśli: to, co zapiszesz, ma zostać zrobione, a nie odkładać się w stosie.
 
-Otwiera się na tym, co dalej. Wszystko nowe zaczyna się od jednego +. Telefon i komputer (Mac lub Linux) synchronizują się przez Twoje własne Wi-Fi. Nie ma konta, nie ma chmury i nie ma po drodze żadnego naszego serwera.
+Otwiera się na tym, co dalej. Wszystko nowe zaczyna się od jednego +. Telefon i komputer (Mac lub Linux) synchronizują się przez Twoje własne Wi-Fi. Bez konta, bez chmury i bez naszego serwera po drodze.
 
 ZOBACZ, CO DALEJ
 • Aplikacja otwiera się na dzisiejszym dniu. Zaległe zadania mają własny nagłówek na górze, bo „powinno już się stać” wymaga innej decyzji niż „dzieje się dziś”.
@@ -10,29 +10,29 @@ ZOBACZ, CO DALEJ
 
 JEDEN + DLA WSZYSTKIEGO, CO NOWE
 • Projekt, zadanie, notatka, zdjęcie, obraz z galerii, notatka głosowa albo plik.
-• + jest od razu na karcie Nadchodzące, od której aplikacja startuje, i w tym samym miejscu na karcie Projekty.
+• + jest na karcie Nadchodzące, od której aplikacja startuje, i w tym samym miejscu na karcie Projekty.
 • Przytrzymaj +, a od razu piszesz notatkę: wpisz ją i naciśnij Gotowe.
 • Zadanie trafia do projektu albo prosto do skrzynki. Zdjęcie, nagranie lub plik pyta raz: coś do zrobienia czy coś do zachowania?
 • Nic nie pyta o datę: nowe zadanie lub notatka ma termin na jutro albo nie ma go wcale, jeśli tak wybierzesz w Ustawieniach.
-• Przycisk Nowa notatka na ekranie głównym, a także zapis z widżetu lub z menu udostępniania dowolnej aplikacji.
+• Przycisk Nowa notatka na ekranie głównym oraz zapis z widżetu lub menu udostępniania dowolnej aplikacji.
 
 ZROBIONE ZNACZY ZROBIONE
 • Przytrzymanie oznacza zadanie jako zrobione, przenosi je, ustawia datę albo zleca przegląd.
 • Projekty to proste pojemniki na zadania i notatki. Dodaj notatkę pod zadaniem, żeby szczegóły były tam, gdzie praca.
 
 OBSERWUJ STRONĘ
-• Dodaj stronę internetową jako kanał. Raz dziennie, tygodniowo lub miesięcznie jest sprawdzana, a gdy coś się zmieni, Claude zamienia zmianę w jedno zadanie w wybranym projekcie.
+• Dodaj stronę internetową jako kanał. Raz dziennie, tygodniowo lub miesięcznie jest sprawdzana, a gdy coś się zmieni, Claude (zawsze Claude, nie Twój agent) zamienia zmianę w jedno zadanie w wybranym projekcie.
 
 PRZEGLĄD Z AI (OPCJONALNIE)
-• Przytrzymaj dowolny projekt, zadanie lub notatkę i wybierz Przegląd z AI. Dostaniesz podsumowanie tego, co się w nim wydarzyło, na podstawie zadań i notatek. Podsumowanie zostaje pod tytułem i jest oznaczone jako „Nieaktualne”, gdy coś się zmieni.
-• Wybierz AI w ustawieniach: swój serwer SelfHostedAI, dowolny model zgodny z OpenAI, który uruchamiasz, Claude od Anthropic z własnym kluczem API albo agenta AI, którego już uruchamiasz w domu (OpenClaw, Hermes, opencode lub Kilo); przegląda on wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go o to poprosisz.
+• Przytrzymaj dowolny projekt, zadanie lub notatkę i wybierz Przegląd z AI. Dostaniesz podsumowanie tego, co się w nim wydarzyło, na podstawie zadań i notatek. Podsumowanie zostaje pod tytułem, oznaczone jako „Nieaktualne”, gdy coś się zmieni.
+• Wybierz AI w Ustawieniach: Claude od Anthropic z własnym kluczem API, OpenAI (dowolny zgodny serwer z Twoim modelem) albo Agent, czyli Twój agent AI na komputerze w domu (OpenClaw, Hermes, opencode, Kilo lub inny zgodny z OpenAI), po adresie IP i tokenie. Agent przegląda wszystkie Twoje rzeczy oraz dodaje i kończy zadania, gdy go poprosisz.
 • Przeglądy idą prosto z telefonu do wybranego AI. Nic nie przechodzi przez nas. Bez AI cała reszta działa tak samo.
 
 SYNCHRONIZACJA BEZ CHMURY
 • Sparuj telefon z aplikacją HubidubiTask na Macu lub Linuksie, wpisując krótki kod.
 • Od tej chwili urządzenia same dbają o aktualność. Każda zmiana ma swój czas, wygrywa najnowsza, a usunięcia też się przenoszą.
 • Wszystko działa offline. Telefon trzyma pełną kopię danych w zaszyfrowanej bazie.
-• Ruch między urządzeniami jest szyfrowany i przypięty do certyfikatu wymienionego przy parowaniu.
+• Kodu parowania nie da się przechwycić w Wi-Fi, a każdą synchronizację szyfrują nowe klucze odporne na komputery kwantowe.
 
 PRZECHODZISZ Z INNEJ APLIKACJI?
 • Jednorazowy import z Todoist (Twoim tokenem API) lub Kalendarza Google (Twoim prywatnym adresem iCal). Token jest użyty raz i nie jest przechowywany.
@@ -40,8 +40,11 @@ PRZECHODZISZ Z INNEJ APLIKACJI?
 PRYWATNOŚĆ
 • Bez konta, bez logowania, bez reklam, bez analityki, bez śledzenia.
 • Nie prowadzimy żadnych serwerów, więc nigdy nie dostajemy Twoich danych.
+• Kod źródłowy jest publiczny: każdy może to sprawdzić.
 • Zdjęcie robi aplikacja aparatu w telefonie; mikrofon działa tylko podczas nagrywania notatki głosowej.
 
-Papier w dzień, mech nocą: HubidubiTask podąża za jasnym i ciemnym motywem systemu.
+Sześć motywów kolorów o wysokim kontraście. Domyślny, Kość słoniowa, dopasowuje się do jasnego i ciemnego trybu systemu.
 
 Po polsku, angielsku, niemiecku, francusku i hiszpańsku. Wybierz w Ustawieniach; do tego czasu aplikacja mówi językiem telefonu.
+
+Bezpłatna i otwartoźródłowa (GPL-3.0). Kod źródłowy: github.com/hubidubitask/HubidubiTask

@@ -3,11 +3,12 @@
 #
 #   sh deploy/google-play/1-app-bundle/build.sh
 #
-# Builds :android:bundleRelease, signed with the PRIVATE key (password from the
-# Keychain item android-keystore-hubidubitask-upload, or HUBIDUBITASK_KEYSTORE and
-# HUBIDUBITASK_KEYSTORE_PASSWORD), then checks the signature, the version, the
-# permissions and the 16 KB alignment of every native library, and copies it
-# to out/hubidubitask-<version>-<code>.aab, the file to upload.
+# Builds :android:bundleRelease, signed with your upload keystore
+# (HUBIDUBITASK_KEYSTORE and HUBIDUBITASK_KEYSTORE_PASSWORD, or
+# hubidubitask.keystore in ~/.gradle/gradle.properties; see README.md), then
+# checks the signature, the version, the permissions and the 16 KB alignment
+# of every native library, and copies it to
+# out/hubidubitask-<version>-<code>.aab, the file to upload.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
@@ -20,6 +21,8 @@ echo "==> Building $version (versionCode $code)"
 aab="$apps/android/build/outputs/bundle/release/android-release.aab"
 
 echo "==> Signature"
+keytool -printcert -jarfile "$aab" 2>/dev/null | grep -q '^Owner: ' ||
+  { echo "!! the bundle is not signed: set up your upload keystore (README.md)" >&2; exit 1; }
 jarsigner -verify "$aab" >/dev/null && echo "    verified"
 keytool -printcert -jarfile "$aab" | sed -n 's/^Owner: /    signed by /p' | head -1
 

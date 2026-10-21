@@ -12,8 +12,10 @@ Add Polish under **Manage translations › Add your own translations**. The
 Polish description uses the app's Polish names (Nadchodzące, Projekty,
 Przegląd z AI), as a Polish phone shows them.
 
-Play forbids ranking or price claims and repeated keywords in the name and
-descriptions ("best", "#1", "free", runs of emoji). These texts avoid them.
+Play forbids ranking or price claims in the app name ("best", "#1",
+"free"), and repeated keywords or runs of emoji anywhere. These texts avoid
+them; "free and open source" in the description names the licence, not a
+price.
 
 ## Store settings
 
@@ -21,6 +23,6 @@ descriptions ("best", "#1", "free", runs of emoji). These texts avoid them.
 |---|---|
 | App category | Productivity |
 | Tags (up to 5) | To-do list, Task management, Calendar, Note taking, Productivity: the closest names Play offers |
-| Email | `CONTACT_EMAIL` from `deploy/website/2-site/site.env` (shown publicly) |
-| Website | `SITE_URL` from the same file |
+| Email | Required by Play and shown publicly; set it in Play Console, it is not kept in this repository |
+| Website | `SITE_URL` from `deploy/website/2-site/site.env` |
 | Phone | Leave empty |

@@ -3,4 +3,4 @@ What's new
 • Post-quantum TLS for every connection.
 • Feeds and calendar links load over HTTPS only.
 • Backup passwords need at least 12 characters.
-• New default theme: Claude. The others stay in Settings › Theme.
+• New default theme: ivory and terracotta. The others stay in Settings › Theme.

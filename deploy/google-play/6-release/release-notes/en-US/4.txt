@@ -2,6 +2,6 @@ First release of HubidubiTask.
 • Opens on Incoming: today, the week or the month, overdue first.
 • One + for a project, task, note, photo, voice memo or file.
 • Watch web pages: a change becomes one task.
-• Review any item with AI: SelfHostedAI, OpenAI, Claude or your own Agent.
+• Review any item with AI: a self-hosted AI server, OpenAI, Claude or your own Agent.
 • Pairs with the Mac or Linux app over your own Wi-Fi. No account, no cloud.
 • English, Polish, German, French and Spanish.

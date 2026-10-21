@@ -17,9 +17,10 @@ Version: 3.0.1, versionCode 14 (from `src/apps/gradle.properties`).
 
 - **A Google Play developer account** (one-time fee) in the name you want
   shown as the developer.
-- **A contact email and a website address.** Both are public on the listing.
-  Set them once in `deploy/website/2-site/site.env`; the website, the privacy
-  policy and step 2 use the same values.
+- **A contact email and a website address.** Both are public on the
+  listing. The website is `SITE_URL` in `deploy/website/2-site/site.env`,
+  which the privacy policy also uses. The email is set in Play Console only;
+  it is not kept in this repository.
 - **The website live** (`deploy/website`), because step 4 needs the privacy
   policy at a public address before Play lets you submit.
 - **A new personal developer account** must run a closed test with at least
@@ -31,5 +32,5 @@ Version: 3.0.1, versionCode 14 (from `src/apps/gradle.properties`).
 - Target SDK 36, which Play requires of new apps from 31 August 2026.
 - Every 64-bit native library is 16 KB-aligned (Play rejects apps targeting
   Android 15+ that are not).
-- Signed with the upload key (`CN=HubidubiPlanner`).
+- Signed with your upload key (step 1).
 - No advertising ID, no foreground-service type, no restricted permissions.

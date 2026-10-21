@@ -98,7 +98,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <header>
   <span class="eyebrow">How it fits together</span>
   <h1>HubidubiTask Ecosystem</h1>
-  <p class="lede">One app for tasks, notes and feeds, on Android, macOS and Linux. A phone and a computer pair once and keep each other current over your own Wi-Fi. Each has a full copy and works on its own. Four kinds of AI review items, and Claude turns changed web pages into tasks.</p>
+  <p class="lede">One app for tasks, notes and feeds, on Android, macOS and Linux. A phone and a computer pair once and keep each other current over your own Wi-Fi. Each has a full copy and works on its own. Three kinds of AI review items, and Claude turns changed web pages into tasks.</p>
 </header>
 
 <section aria-labelledby="map-h">
@@ -106,7 +106,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   <div class="map">
     <svg viewBox="0 0 960 520" role="img" aria-labelledby="map-title map-desc">
       <title id="map-title">HubidubiTask devices and connections</title>
-      <desc id="map-desc">The phone and the computer sync with each other on port 5244. Both can ask Claude, a SelfHostedAI server, a model of their own, or the AI agent the user already runs on a computer at home, reached by its IP and token. Feeds fetch web pages.</desc>
+      <desc id="map-desc">The phone and the computer sync with each other on port 5244. Both can ask Claude, an OpenAI-compatible server of the user's own, or the AI agent the user already runs on a computer at home, reached by its IP and token. Feeds fetch web pages.</desc>
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
       </defs>
@@ -129,7 +129,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <text class="t" x="60" y="56">Claude</text>
       <text class="s" x="60" y="80">your API key</text>
       <rect class="ext" x="355" y="24" width="250" height="76"/>
-      <text class="t" x="375" y="56">SelfHostedAI or OpenAI</text>
+      <text class="t" x="375" y="56">OpenAI</text>
       <text class="s" x="375" y="80">your own server</text>
       <rect class="ext" x="670" y="24" width="250" height="76"/>
       <text class="t" x="690" y="56">Web pages</text>
@@ -204,8 +204,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>Phone and computer</td><td>Peer sync: each sends what the other has not seen, then the missing attachments</td><td>5244</td><td>Bonjour, <code>_hubidubios-peer._tcp</code></td><td>Pairing by an 8-character code as a PAKE (J-PAKE) mixed with ML-KEM-768; every round in a sealed session with fresh post-quantum keys, inside TLS (X25519MLKEM768 where both ends offer it) with the certificate pinned at pairing; home-network addresses only</td></tr>
         <tr><td>Apps and your own agent</td><td>OpenClaw, Hermes and others: the OpenAI chat shape, one message with the items as text; opencode and Kilo: a session per question, answered in a JSON schema, then deleted. Changes come back as add_task, capture, mark_done and are checked before the app applies them</td><td>the agent's</td><td>IP in Settings; the port, or each agent's usual one</td><td>Its token or password, in the system's secret store; found without the token, which then goes only to the certificate seen first; HTTPS tried first and its certificate pinned; plain HTTP only to home-network addresses</td></tr>
         <tr><td>Apps and Claude</td><td>Anthropic's SDK</td><td>443</td><td>api.anthropic.com</td><td>Your API key, in the Android Keystore, macOS Keychain or Linux keyring (a file only you can read when there is no working keyring)</td></tr>
-        <tr><td>Apps and the "Sign up for Pro" form</td><td>One form answer, once per install, only when pressed: platform, version, language</td><td>443</td><td>The developer's Google Form</td><td>HTTPS; no identifier</td></tr>
-        <tr><td>Apps and SelfHostedAI or OpenAI</td><td>An encrypted session, or the OpenAI shape</td><td>yours</td><td>Address in Settings</td><td>A public server: a certificate an authority vouches for; a home server: its own certificate, pinned on first use</td></tr>
+        <tr><td>Apps and an OpenAI server</td><td>The OpenAI chat shape</td><td>yours</td><td>Address in Settings</td><td>A public server: a certificate an authority vouches for; a home server: its own certificate, pinned on first use</td></tr>
         <tr><td>Feeds and web pages</td><td>One fetch of the page per period</td><td>443</td><td>The feed's address</td><td>HTTPS</td></tr>
       </tbody>
     </table>
@@ -214,7 +213,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
 <section aria-labelledby="ai-h">
   <h2 id="ai-h">AI</h2>
-  <p>Settings offers four AI choices on every system: SelfHostedAI, the default, then OpenAI, Claude and Agent, which is the AI agent the user already runs at home. There is no chat: the AI reviews any item you long-press. Feeds always write their task with Claude: a page's text comes from strangers, and the user's own agent can run commands.</p>
+  <p>Settings offers three AI choices on every system: Claude, the default, then OpenAI and Agent, which is the AI agent the user already runs at home. There is no chat: the AI reviews any item you long-press. Feeds always write their task with Claude: a page's text comes from strangers, and the user's own agent can run commands.</p>
   <div class="table">
     <table>
       <thead><tr><th>A review by your own agent</th><th>What goes</th><th>What comes back</th></tr></thead>
@@ -237,29 +236,29 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <tr><td>distribution/arch/</td><td>The Linux package for Arch and Omarchy</td></tr>
         <tr><td>distribution/appimage/</td><td>The AppImage for any x86_64 Linux; distribution/linux/ builds the app image both wrap</td></tr>
         <tr><td>deploy/google-play/</td><td>Publishing on Google Play, step by step</td></tr>
-        <tr><td>deploy/website/</td><td>Publishing the website and its downloads</td></tr>
+        <tr><td>deploy/website/</td><td>Publishing the website</td></tr>
+        <tr><td>deploy/f-droid/</td><td>The F-Droid build recipe, and how to submit it</td></tr>
+        <tr><td>fastlane/</td><td>The store texts, graphics and release notes, English and Polish, for F-Droid and Google Play</td></tr>
         <tr><td>site/</td><td>The public website</td></tr>
-        <tr><td>docs/</td><td>This page and the manual</td></tr>
+        <tr><td>docs/</td><td>This page, the manual and the changelog</td></tr>
+        <tr><td>.github/</td><td>The tests on every push, the website on GitHub Pages</td></tr>
       </tbody>
     </table>
   </div>
-  <p>The old workstation (Python services, plugins, the OS layering) is gone from the tree; its last commit is tagged <code>workstation-final</code>.</p>
 </section>
 
 <section aria-labelledby="status-h">
   <h2 id="status-h">Current state</h2>
   <ul class="status">
-    <li><span class="pill ok">Released</span><span>Version 3.0.1 (tag v3.0.1, versionCode 14): the Android app and its Play bundle, the Mac app, the Arch package and the AppImage, with checksums. New since 3.0.0: the Claude colour theme (ivory and terracotta, light or dark as the system is) is the default. 3.0.0 brought pairing v2 (the same 8-character code as a J-PAKE password, hybridised with ML-KEM-768), every sync round sealed with fresh post-quantum keys, post-quantum TLS on the phone (Conscrypt) and the computer (bundled Java 27), keys in the Keystore and Keychain, the AI connections' certificate checks, feeds over HTTPS only, and 12-character backup passwords; phone and computer must be paired once more after both are updated.</span></li>
-    <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; Incoming first, with its title and the "+" where Projects has it; Feeds; four AI choices; Review with AI; English, Polish, German, French and Spanish, chosen in Settings.</span></li>
+    <li><span class="pill ok">Released</span><span>Version 3.0.1 (tag v3.0.1, versionCode 14): the Android app and its Play bundle, the Mac app, the Arch package and the AppImage, with checksums. New since 3.0.0: an ivory and terracotta colour theme, light or dark as the system is, is the default (now called Ivory). 3.0.0 brought pairing v2 (the same 8-character code as a J-PAKE password, hybridised with ML-KEM-768), every sync round sealed with fresh post-quantum keys, post-quantum TLS on the phone (Conscrypt) and the computer (bundled Java 27), keys in the Keystore and Keychain, the AI connections' certificate checks, feeds over HTTPS only, and 12-character backup passwords; phone and computer must be paired once more after both are updated.</span></li>
+    <li><span class="pill ok">Works</span><span>Phone, Mac and Linux apps; peer sync; Incoming first, with its title and the "+" where Projects has it; Feeds; three AI choices; Review with AI; English, Polish, German, French and Spanish, chosen in Settings.</span></li>
     <li><span class="pill ok">Works</span><span>The Agent plugs into the user's own agent (OpenClaw, Hermes, opencode, Kilo, OpenAI-shaped), found by IP; tested against stand-ins of each, not yet against a live one.</span></li>
     <li><span class="pill ok">Works</span><span>The Arch package installs with pacman in a clean Arch system and the app starts and draws its screens.</span></li>
-    <li><span class="pill ok">Works</span><span>Settings › Sign up for Pro on the phone and the computer: Pro isn't sold; "Sign up for Pro" sends one answer to the developer's "HubidubiTask Pro" Google Form so interest can be counted.</span></li>
     <li><span class="pill warn">Open</span><span>Google Play: everything to submit is in deploy/google-play, step by step; the upload itself is done by hand in Play Console.</span></li>
-    <li><span class="pill warn">Open</span><span>The website is ready to publish (deploy/website) once it has an address, a contact email and a host.</span></li>
-    <li><span class="pill warn">Open</span><span>A live try with an agent on a home server running Qwen3.6-35B.</span></li>
-    <li><span class="pill off">Off</span><span>The GitLab pipeline is defined but switched off.</span></li>
+    <li><span class="pill warn">Open</span><span>Free and open source under GPL-3.0-or-later. The GitHub repository is not public yet; once it is, GitHub Actions run the tests and publish the website on GitHub Pages, and the F-Droid recipe (deploy/f-droid) can be submitted.</span></li>
+    <li><span class="pill warn">Open</span><span>A live try with an agent on a home computer running a local model.</span></li>
   </ul>
 </section>
 
-<footer>Written from the repository as it stands on 20 October 2026.</footer>
+<footer>Written from the repository as it stands on 21 October 2026.</footer>
 </div>

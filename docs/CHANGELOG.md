@@ -1,10 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **Free and open source**, under the GNU GPL, version 3 or later. The
+  source is on GitHub: <https://github.com/hubidubitask/HubidubiTask>.
+- **The default theme is now called Ivory.** Same colours as before.
+- **The Pro sign-up button is gone.** Everything is free.
+- **The self-hosted AI server choice is gone.** A phone or computer that used
+  it switches to Claude.
+
 ## 3.0.1 — 20 October 2026
 
-- **Claude theme, the new default.** Claude's own colours: ivory paper,
-  near-black words, terracotta links and buttons, light or dark as the system
-  is. A theme chosen before stays; Sand is still in **Settings → Theme**.
+- **A new default theme**: ivory paper, near-black words, terracotta links
+  and buttons, light or dark as the system is. A theme chosen before stays;
+  Sand is still in **Settings → Theme**.
 - Everything from 3.0.0 below; coming from 2.4.1, pair the phone and the
   computer once more after both are updated.
 
@@ -86,22 +95,22 @@
   Paired devices and Language, evenly spaced (each heading had an extra
   margin). The AI Agent's fields stand without titles, their placeholders
   saying what goes in: the Claude key, the server address, "Model: fast"
-  (SelfHostedAI's model field stays empty unless another is chosen), and the
+  (the AI server's model field stays empty unless another is chosen), and the
   agent's IP address, port, and token or password.
 - **Claude is the default AI agent**, and first in the list.
 - **No Save in Settings › AI Agent**: a change is kept a moment after it is
   made, then checked, and the line under the fields says what answered. The
   line under them no longer shows a server address before anything is
-  saved; with Claude chosen it showed SelfHostedAI's, and with SelfHostedAI it
-  repeated the field.
+  saved; with Claude chosen it showed the AI server's, and with the AI
+  server chosen it repeated the field.
 
 ## 2.1.0 — 17 October 2026
 
 - **Settings, made clearer**, on the phone and the computer: each setting is a
   dropdown under its heading, showing what it is set to. **AI Agent** (was
   AI) comes first, asking only for what the chosen one needs; the Model field
-  is for SelfHostedAI alone (Claude uses the app's model, an OpenAI-shaped server
-  answers with the first model it lists). Then **Pair device**: on the phone
+  is for the self-hosted AI server alone (Claude uses the app's model, an
+  OpenAI-shaped server answers with the first model it lists). Then **Pair device**: on the phone
   the computer it is paired with, Sync now and Unpair, or Pair with a
   computer; on the computer the phones, Pair a phone, and Unpair for each
   (the computer could not unpair a phone before). Then the due date for new
@@ -229,8 +238,8 @@ first, and no chat.
   anything new starts from where the app opens. On the computer, a file
   dropped on Next is captured too.
 - **New names and order in Settings.** The section is **AI**, and its choices
-  are, in this order, SelfHostedAI (the default), **OpenAI** (was Model), Claude and
-  **Agent** (was Harness). Reviews are **Review with AI**. Saved settings carry over unchanged.
+  are, in this order, a self-hosted AI server (the default), **OpenAI** (was
+  Model), Claude and **Agent** (was Harness). Reviews are **Review with AI**. Saved settings carry over unchanged.
 - **Next comes first.** It is the first tab and where the apps open, and it has
   no title: the day, or the range's dates, then the tasks.
 - **No Agent tab.** General questions to an agent are not what the app is for, so the
@@ -271,7 +280,7 @@ The first release of HubidubiOS as one app on Android, macOS and Linux.
   file. On the computer, drop a file on the window.
 - **Feeds.** Watch a web page; once a day, week or month, what changed on it
   becomes one task.
-- **Four agents:** Claude (your API key), SelfHostedAI, Model (any
+- **Four agents:** Claude (your API key), a self-hosted AI server, Model (any
   OpenAI-compatible server) and Harness (Claude Code on your computer, on
   your own Claude plan; a paired phone uses it through the computer). The
   Harness can read your items, use them as tools, fetch pages and use

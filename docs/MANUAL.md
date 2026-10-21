@@ -7,7 +7,9 @@ each other current over your own Wi-Fi.
 ## Install
 
 - **Phone:** from Google Play, or `./gradlew :android:installDebug` while developing.
-- **Mac:** `HubidubiTask.app` (build it with `./gradlew :desktop:createDistributable`).
+- **Mac:** `HubidubiTask.app`, from the
+  [GitHub release](https://github.com/hubidubitask/HubidubiTask/releases/latest),
+  or build it with `./gradlew :desktop:createDistributable`.
 - **Linux, any distribution (x86_64):** `HubidubiTask-x86_64.AppImage`. Make it
   runnable (`chmod +x HubidubiTask-x86_64.AppImage`) and start it; nothing is
   installed. If a firewall is on, let your home network reach the app: TCP
@@ -33,26 +35,6 @@ on the Wi-Fi learns nothing from watching or from posing as the computer.
 Everything synced afterwards is sealed with keys that change every round and
 come partly from a post-quantum exchange (ML-KEM-768), inside TLS. The
 computer answers only addresses on the home network.
-
-## Pro
-
-Pro isn't sold yet. It would be syncing with your Mac and Linux computers.
-The last button in **Settings**, **Sign up for Pro: …**, says you would want
-it: the app sends one answer to the developer's Google Form with the platform
-(Android, macOS or Linux), the app's version and its language, and nothing
-else: no name, no email, nothing about your items. It is sent only when you
-press it, and once per device. Everything else, syncing included, stays free.
-
-What you see under the button:
-
-- **Thanks, you're signed up for Pro.** It was counted; the button goes, and
-  the device won't send again.
-- **That didn't go through. Try again in a moment.** The form couldn't be
-  reached or didn't take it; the button stays, press it again later.
-- **Sign-ups for Pro aren't open yet.** This copy of the app has no form to
-  send to; nothing was sent.
-
-How the count works, for the developer: [PRO.md](PRO.md).
 
 ## Everyday use
 
@@ -107,8 +89,8 @@ its page.
 
 ## Theme
 
-**Settings → Theme:** Claude, the default, takes Claude's own colours (ivory,
-terracotta) and Sand the app's earlier earth tones; both follow the system's
+**Settings → Theme:** Ivory, the default (ivory paper, near-black words,
+terracotta), and Sand, the app's earlier earth tones; both follow the system's
 light or dark mode. Paper and Forest are always light, Night and Ocean always
 dark. A theme chosen before keeps being used. Each
 keeps text and borders in high contrast. The choice is kept on that device. On
@@ -117,14 +99,13 @@ starts.
 
 ## AI
 
-**Settings → AI Agent** chooses one of four. There is no Save: a change is kept
+**Settings → AI Agent** chooses one of three. There is no Save: a change is kept
 a moment after you make it, then checked, and the line under the fields says
 what answered.
 
 | Choice | What to enter |
 |---|---|
 | Claude | An API key from the Anthropic Console (kept in the system's keychain). Chosen until you pick another. |
-| SelfHostedAI | The server's address and the model to use |
 | OpenAI | The address of a server that speaks OpenAI's API; it answers with the first model it lists |
 | Agent | The IP of the computer where your own agent runs, its token or password, and its port if it isn't the usual one |
 
