@@ -2,6 +2,7 @@ package com.hubidubitask.core.feed
 
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Message
+import com.hubidubitask.core.feed.kinds.WebPage
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +24,7 @@ class FeedsTest {
     private var asked: List<Message>? = null
     private fun run(f: EntityRecord, html: String, reply: String = "Read the new pricing page",
                     exists: Boolean = false) =
-        Feeds.check(f, day, "2026-10-06T08:00:00Z", { html }, { asked = it; reply }, { exists })
+        Feeds.check(f, day, "2026-10-06T08:00:00Z", { WebPage.snapshot(html) }, { asked = it; reply }, { exists })
 
     @Test fun `page text keeps blocks as lines and drops scripts, styles and markup`() {
         val text = PageText.extract(page("Prices &amp; plans", "New: Pro <b>tier</b>"))
@@ -90,6 +91,13 @@ class FeedsTest {
     }
 
     @Test fun `a page that can't be opened leaves the period open for the next try`() {
+        val out = Feeds.check(feed(), day, "now", { throw java.io.IOException("timeout") }, { "x" }, { false })
+        assertNull(out.task)
+        assertNull(out.feed.fields["last_period"])
+        assertTrue(out.feed.fields["last_error"]!!.contains("timeout"))
+    }
+
+    @Test fun `a page that can't be opened says so (kept as before)`() {
         val out = Feeds.check(feed(), day, "now", { throw java.io.IOException("timeout") }, { "x" }, { false })
         assertNull(out.task)
         assertNull(out.feed.fields["last_period"])

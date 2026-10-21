@@ -122,14 +122,12 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---- feeds ----
 
-    /** Watch [url]; the first look happens straight away and only remembers the page. */
-    fun addFeed(url: String, title: String, period: String, model: String, projectId: String?) =
+    /** Watch a [kind] as typed ([values]); the first look happens straight away and only remembers it. */
+    fun addFeed(kind: com.hubidubitask.core.feed.FeedKind, values: Map<String, String>, period: String,
+                projectId: String?) =
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val feed = sync().newFeed(mapOf(
-                    "kind" to com.hubidubitask.core.feed.Feeds.KIND_WEB, "url" to url.trim(),
-                    "title" to title.trim().ifBlank { null }, "period" to period, "model" to model,
-                    "project" to projectId))
+                val feed = sync().newFeed(com.hubidubitask.core.feed.Feeds.newFields(kind, values, period, projectId))
                 runCatching { com.hubidubitask.mobile.feed.FeedWork.run(getApplication(), only = feed.id) }
             }
             refresh()

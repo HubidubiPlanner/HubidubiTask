@@ -136,7 +136,7 @@ class DesktopShotsTest {
         event("demo-dentist", "Dentist", at(4, 8, 15), at(4, 9, 0), "Home", null)
 
         fun feed(title: String, url: String, period: String, project: String?, changed: Long?) =
-            put(Feeds.TYPE, "f", mapOf("kind" to Feeds.KIND_WEB, "url" to url, "title" to title, "period" to period,
+            put(Feeds.TYPE, "f", mapOf("kind" to "web", "url" to url, "title" to title, "period" to period,
                 "model" to "claude", "project" to project, "last_checked" to day(0) + "T07:00:00Z",
                 "last_period" to Feeds.periodKey(period, today), "last_changed" to changed?.let(::day)))
         feed("Lisbon tram timetable", "https://www.carris.pt/en/", "week", lisbon, -2L)

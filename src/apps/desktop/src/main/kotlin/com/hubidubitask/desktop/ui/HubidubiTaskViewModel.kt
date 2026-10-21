@@ -10,7 +10,6 @@ import com.hubidubitask.core.agent.AgentProbe
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.feed.Feeds
-import com.hubidubitask.core.feed.PageFetch
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
@@ -312,12 +311,6 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
             found
         }
 
-    /**
-     * What a feed writes its task with: Claude. Never the user's own agent: a
-     * feed's text is a stranger's web page, and that agent can run commands.
-     */
-    private fun feedConfig() = AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey())
-
     private companion object {
         const val CLAUDE_KEY = "claude-api-key"
         const val HARNESS_ENDPOINT = "harness_endpoint"
@@ -331,38 +324,16 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
 
     /** Look at every feed whose period has turned, or [only] now. Returns what happened, by feed id. */
     @Synchronized
-    private fun runFeeds(only: String? = null): Map<String, String> {
-        val today = java.time.LocalDate.now()
-        val out = LinkedHashMap<String, String>()
-        for (feed in store.byType(Feeds.TYPE)) {
-            if (only != null && feed.id != only) continue
-            if (only == null && !Feeds.isDue(feed, today)) continue
-            val client = Agent.clientFor(feedConfig())
-            val result = try {
-                Feeds.check(feed, today, nowUtc(), PageFetch::get, { client.complete(it) },
-                    { store.get(it) != null })
-            } finally { client.close() }
-            store.put(result.feed)
-            result.task?.takeIf { store.get(it.id) == null }?.let { t ->
-                val project = t.project?.let(store::get)?.takeIf { !it.deleted }
-                // Written from a stranger's web page: marked so for the user's agent.
-                write("next_action", t.id, mapOf("text" to t.text, "parent" to project?.id,
-                    "project" to (project?.let { ProjectTree.slugOf(it.fields["title"] ?: it.id) } ?: "inbox"),
-                    "due" to t.due, "body" to t.body, "origin" to "feed"))
-            }
-            out[feed.id] = result.message
-        }
-        return out
-    }
+    private fun runFeeds(only: String? = null): Map<String, String> =
+        com.hubidubitask.core.feed.FeedRunner.run(store, claudeKey(), only)
 
-    /** Watch [url]; the first look happens straight away and only remembers the page. */
-    fun addFeed(url: String, title: String, period: String, model: String, projectId: String?) =
+    /** Watch a [kind] as typed ([values]); the first look happens straight away and only remembers it. */
+    fun addFeed(kind: com.hubidubitask.core.feed.FeedKind, values: Map<String, String>, period: String,
+                projectId: String?) =
         scope.launch {
             withContext(Dispatchers.IO) {
                 val fid = id("f")
-                write(Feeds.TYPE, fid, mapOf("kind" to Feeds.KIND_WEB, "url" to url.trim(),
-                    "title" to title.trim().ifBlank { null }, "period" to period, "model" to model,
-                    "project" to projectId))
+                write(Feeds.TYPE, fid, Feeds.newFields(kind, values, period, projectId))
                 runCatching { runFeeds(only = fid) }
             }
             refresh()

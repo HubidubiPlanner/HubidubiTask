@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,6 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.AgentConfig
+import com.hubidubitask.core.feed.FeedIcon
+import com.hubidubitask.core.feed.FeedKind
+import com.hubidubitask.core.feed.FeedKinds
 import com.hubidubitask.core.feed.Feeds
 import com.hubidubitask.core.i18n.t
 import kotlinx.coroutines.launch
@@ -51,7 +56,7 @@ import kotlinx.coroutines.launch
 fun FeedsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) {
     val c = HubidubiTaskTheme.colors
     var choosingKind by remember { mutableStateOf(false) }
-    var addingWeb by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf<FeedKind?>(null) }
     var open by remember { mutableStateOf<EntityRecord?>(null) }
     val projectTitle = remember(state.projects) {
         state.projects.associate { it.id to (it.fields["title"] ?: it.id) }
@@ -60,18 +65,18 @@ fun FeedsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel)
     if (choosingKind) {
         AppSheet(onDismiss = { choosingKind = false }) {
             SheetTitle(t("New feed"))
-            Feeds.KINDS.forEachIndexed { i, (kind, label) ->
-                ActionRow(Icons.Outlined.Language, t(label), color = c.accent,
-                    last = i == Feeds.KINDS.lastIndex) {
+            FeedKinds.all.forEachIndexed { i, kind ->
+                ActionRow(kind.icon.vector(), kind.label, color = c.accent,
+                    last = i == FeedKinds.all.lastIndex) {
                     choosingKind = false
-                    if (kind == Feeds.KIND_WEB) addingWeb = true
+                    adding = kind
                 }
             }
             SecondaryButton(t("Cancel"), { choosingKind = false },
                 Modifier.fillMaxWidth().padding(top = 16.dp))
         }
     }
-    if (addingWeb) NewWebFeedSheet(state, vm) { addingWeb = false }
+    adding?.let { kind -> NewFeedSheet(kind, state, vm) { adding = null } }
     open?.let { f ->
         FeedSheet(state.feeds.firstOrNull { it.id == f.id } ?: f, projectTitle, vm) { open = null }
     }
@@ -129,12 +134,12 @@ private fun summary(f: EntityRecord, projectTitle: Map<String, String>): String 
     return "${periodLabel(f.fields["period"])} · $where · $last"
 }
 
+/** Adds a feed of [kind]: what it asks for, how often, and where its task goes. */
 @Composable
-private fun NewWebFeedSheet(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel,
-                            onDismiss: () -> Unit) {
+private fun NewFeedSheet(kind: FeedKind, state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel,
+                         onDismiss: () -> Unit) {
     val c = HubidubiTaskTheme.colors
-    var url by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
+    var values by remember(kind.id) { mutableStateOf(mapOf<String, String>()) }
     var period by remember { mutableStateOf("week") }
     var project by remember { mutableStateOf<EntityRecord?>(null) }
     var picking by remember { mutableStateOf(false) }
@@ -156,24 +161,23 @@ private fun NewWebFeedSheet(state: HubidubiTaskViewModel.UiState, vm: HubidubiTa
     }
 
     AppSheet(onDismiss) {
-        SheetTitle(t("A web page"))
+        SheetTitle(kind.label)
         Column(Modifier.imePadding(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(value = url, onValueChange = { url = it },
-                label = { Text(t("Address")) }, singleLine = true, colors = appFieldColors(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                shape = RectangleShape, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = title, onValueChange = { title = it },
-                label = { Text(t("Name (optional)"), color = c.muted) }, singleLine = true,
-                colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+            kind.fields.forEach { field ->
+                OutlinedTextField(value = values[field.key].orEmpty(),
+                    onValueChange = { values = values + (field.key to it) },
+                    label = { if (field.optional) Text(field.label, color = c.muted) else Text(field.label) },
+                    singleLine = true,
+                keyboardOptions = if (field.address) KeyboardOptions(keyboardType = KeyboardType.Uri) else KeyboardOptions.Default,
+                    colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+            }
             Segmented(Feeds.PERIODS.map { (id, label) -> id to t(label) }, period, { period = it })
             ActionRow(Icons.Outlined.Folder, project?.fields?.get("title") ?: t("No project"),
                 color = c.accent, last = true) { picking = true }
         }
-        val ok = url.trim().let { it.startsWith("http://") || it.startsWith("https://") } &&
-            url.trim().length > 10
         PrimaryButton(t("Watch"), {
-            vm.addFeed(url, title, period, "claude", project?.id); onDismiss()
-        }, Modifier.fillMaxWidth().padding(top = 18.dp), enabled = ok)
+            vm.addFeed(kind, values, period, project?.id); onDismiss()
+        }, Modifier.fillMaxWidth().padding(top = 18.dp), enabled = kind.valid(values))
     }
 }
 
@@ -207,4 +211,10 @@ private fun FeedSheet(feed: EntityRecord, projectTitle: Map<String, String>, vm:
             }, Modifier.weight(1f), icon = Icons.Outlined.Sync, enabled = !busy)
         }
     }
+}
+
+/** How this app draws a feed kind's icon. */
+private fun FeedIcon.vector(): ImageVector = when (this) {
+    FeedIcon.WEB -> Icons.Outlined.Language
+    FeedIcon.NEWS -> Icons.Outlined.RssFeed
 }

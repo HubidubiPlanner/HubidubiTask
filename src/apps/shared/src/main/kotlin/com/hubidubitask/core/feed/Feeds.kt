@@ -4,6 +4,7 @@ import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.agent.Message
 import com.hubidubitask.core.agent.Text
 import com.hubidubitask.core.i18n.t
+import com.hubidubitask.core.feed.kinds.WebPage
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.temporal.IsoFields
@@ -14,7 +15,7 @@ import java.time.temporal.IsoFields
  * Stored as an EntityRecord of type "feed", synced between the phone and the
  * Mac like any item. Its fields:
  *
- *  kind         "web" (a web page; the only kind so far)
+ *  kind         which [FeedKind] it is ("web", a web page, when absent)
  *  url, title   what is watched and what it is called
  *  period       "day" | "week" | "month": how often it is looked at
  *  model        "claude" | "harness": who writes the task
@@ -26,9 +27,7 @@ import java.time.temporal.IsoFields
  */
 object Feeds {
     const val TYPE = "feed"
-    const val KIND_WEB = "web"
     val PERIODS = listOf("day" to "Day", "week" to "Week", "month" to "Month")
-    val KINDS = listOf(KIND_WEB to "A web page")
 
     /** Text kept from a page: enough for any page people watch, small enough to sync. */
     const val SNAPSHOT_LIMIT = 40_000
@@ -69,10 +68,15 @@ object Feeds {
     /** What one look at a feed did: the feed as it now stands, the task if one is due, a line for the UI. */
     data class Outcome(val feed: EntityRecord, val task: NewTask?, val message: String)
 
+    /** A new feed of [kind]: what was typed ([values], by field key), how often, where its task goes. */
+    fun newFields(kind: FeedKind, values: Map<String, String>, period: String, project: String?): Map<String, String?> =
+        kind.fields.associate { it.key to values[it.key]?.trim()?.ifBlank { null } } +
+            mapOf("kind" to kind.id, "period" to period, "model" to "claude", "project" to project)
+
     /**
-     * Look at [feed] once. Nothing here touches the network or a store: the
-     * page comes from [fetch] and the task's wording from [ask], so the rules
-     * can be tested on their own. The caller saves [Outcome.feed] and makes
+     * Look at [feed], a [kind], once. Nothing here touches the network or a
+     * store: what it shows comes from [read] and the task's wording from
+     * [ask], so the rules can be tested on their own. The caller saves [Outcome.feed] and makes
      * [Outcome.task].
      *
      * - The first look only remembers the page.
@@ -83,20 +87,21 @@ object Feeds {
      * - A failure (page or model unreachable) records why and leaves the period
      *   open, so the next run tries again.
      */
-    fun check(feed: EntityRecord, today: LocalDate, now: String, fetch: (String) -> String,
-              ask: (List<Message>) -> String, taskExists: (String) -> Boolean): Outcome {
+    fun check(feed: EntityRecord, today: LocalDate, now: String, read: (EntityRecord) -> Snapshot,
+              ask: (List<Message>) -> String, taskExists: (String) -> Boolean,
+              kind: FeedKind = FeedKinds.of(feed.fields["kind"]) ?: WebPage): Outcome {
         val f = feed.fields
         val url = f["url"].orEmpty()
         val key = periodKey(f["period"], today)
         fun save(vararg changes: Pair<String, String?>) = feed.copy(updated = now,
             fields = (f + mapOf("last_checked" to now) + changes.toMap()).filterValues { it != null })
 
-        val html = try { fetch(url) } catch (e: Exception) {
+        val seen = try { read(feed) } catch (e: Exception) {
             return Outcome(save("last_error" to t("Could not open the page: %s", e.message ?: e.javaClass.simpleName)),
                 null, t("Could not open the page"))
         }
-        val text = PageText.extract(html).take(SNAPSHOT_LIMIT)
-        val title = f["title"]?.takeIf { it.isNotBlank() } ?: PageText.title(html)
+        val text = seen.text.take(SNAPSHOT_LIMIT)
+        val title = f["title"]?.takeIf { it.isNotBlank() } ?: seen.title
         val sum = hash(text)
         val previous = f["snapshot"]
 
@@ -116,7 +121,7 @@ object Feeds {
             })
 
         val changes = LineChanges.between(previous, text)
-        val reply = try { ask(prompt(title ?: url, url, changes)) } catch (e: Exception) {
+        val reply = try { ask(prompt(title ?: url, url, changes, kind)) } catch (e: Exception) {
             return Outcome(save("last_error" to (e.message ?: t("The model did not answer"))), null,
                 t("The model did not answer"))
         }
@@ -133,19 +138,12 @@ object Feeds {
     private operator fun EntityRecord.plus(field: Pair<String, String?>) =
         copy(fields = fields + field)
 
-    private const val SYSTEM =
-        "You watch a web page for the user and turn what changed on it into one task. " +
-        "You are given the lines that disappeared and the lines that appeared since the last look. " +
-        "Reply with one line only: a task the user can act on, starting with a verb, under 100 " +
-        "characters, that says what changed. Write it in the language of the page. " +
-        "If the change is noise (dates, counters, ads, cookie banners, layout), reply with the single word NONE."
-
-    fun prompt(title: String, url: String, changes: LineChanges): List<Message> {
+    fun prompt(title: String, url: String, changes: LineChanges, kind: FeedKind = WebPage): List<Message> {
         fun block(lines: List<String>) =
             lines.joinToString("\n").take(CHANGE_LIMIT).ifBlank { "(none)" }
         return listOf(
-            Message("system", SYSTEM),
-            Message("user", "Page: $title ($url)\n\nDisappeared:\n${block(changes.removed)}\n\n" +
+            Message("system", kind.system),
+            Message("user", "${kind.noun}: $title ($url)\n\nDisappeared:\n${block(changes.removed)}\n\n" +
                 "Appeared:\n${block(changes.added)}"),
         )
     }

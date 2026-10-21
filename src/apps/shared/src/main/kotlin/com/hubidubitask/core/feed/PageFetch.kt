@@ -11,7 +11,8 @@ import java.util.concurrent.TimeUnit
 object PageFetch {
     internal const val LIMIT = 3L * 1024 * 1024
 
-    private val web = SafeFetch { connectTimeout(20, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS) }
+    /** The fetcher feeds use: https only, never into the home network. */
+    val web = SafeFetch { connectTimeout(20, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS) }
 
     private val HEADERS = mapOf(
         "User-Agent" to "Mozilla/5.0 (HubidubiTask feed reader)",

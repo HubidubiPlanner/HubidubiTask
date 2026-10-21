@@ -122,13 +122,6 @@ object AgentSettings {
     fun harnessToken(context: Context): String? =
         runCatching { Keystore.getSecret(context, HARNESS_TOKEN) }.getOrNull()?.takeIf { it.isNotBlank() }
 
-    /**
-     * What a feed writes its task with: Claude. Never the user's own agent: a
-     * feed's text is a stranger's web page, and that agent can run commands.
-     */
-    fun feedConfig(context: Context): AgentConfig =
-        AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey(context))
-
     fun claudeKey(context: Context): String? =
         runCatching { Keystore.getSecret(context, CLAUDE_KEY) }.getOrNull()
 }
