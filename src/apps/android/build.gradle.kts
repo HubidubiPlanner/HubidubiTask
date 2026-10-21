@@ -29,34 +29,47 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Release builds are signed with the PRIVATE key, which never enters the
-    // repo: the keystore sits in ~/.keystores and its password in the macOS
-    // Keychain. Elsewhere (CI), point HUBIDUBITASK_KEYSTORE and
-    // HUBIDUBITASK_KEYSTORE_PASSWORD at them instead.
+    // A release build is signed only where a key is set up, and never from the
+    // repo: HUBIDUBITASK_KEYSTORE (with _PASSWORD and _ALIAS) in the
+    // environment, or hubidubitask.keystore, .keystoreAlias and
+    // .keystoreKeychain in ~/.gradle/gradle.properties, the password then read
+    // from that macOS Keychain item. Without one the release build comes out
+    // unsigned, the way F-Droid builds it before signing with its own key.
     signingConfigs {
         create("release") {
             val path = System.getenv("HUBIDUBITASK_KEYSTORE")
-                ?: "${System.getProperty("user.home")}/.keystores/hubidubitask-upload.jks"
-            val password = providers.environmentVariable("HUBIDUBITASK_KEYSTORE_PASSWORD").orElse(
-                providers.exec {
-                    commandLine("security", "find-generic-password", "-s", "android-keystore-hubidubitask-upload", "-w")
-                    isIgnoreExitValue = true
-                }.standardOutput.asText.map { it.trim() })
-            if (file(path).exists()) {
+                ?: project.findProperty("hubidubitask.keystore") as String?
+            if (path != null && file(path).exists()) {
+                val keychain = project.findProperty("hubidubitask.keystoreKeychain") as String?
+                val password = System.getenv("HUBIDUBITASK_KEYSTORE_PASSWORD")
+                    ?: keychain?.let { item ->
+                        providers.exec {
+                            commandLine("security", "find-generic-password", "-s", item, "-w")
+                            isIgnoreExitValue = true
+                        }.standardOutput.asText.get().trim()
+                    }
+                    ?: error("No password for $path: set HUBIDUBITASK_KEYSTORE_PASSWORD or hubidubitask.keystoreKeychain")
                 storeFile = file(path)
-                storePassword = password.get()
-                keyAlias = "private"
-                keyPassword = password.get()
+                storePassword = password
+                keyAlias = System.getenv("HUBIDUBITASK_KEYSTORE_ALIAS")
+                    ?: project.findProperty("hubidubitask.keystoreAlias") as String? ?: "upload"
+                keyPassword = password
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfigs.getByName("release").takeIf { it.storeFile != null }?.let { signingConfig = it }
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+    }
+
+    // Google's encrypted list of the libraries inside stays out of the APK,
+    // which F-Droid builds and reads; Play still gets it in the bundle.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
     }
 
     compileOptions {
