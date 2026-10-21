@@ -46,7 +46,7 @@ class AgentPinTest {
         assertTrue(runBlocking { vm.checkInference() }.connected)
         assertEquals(fp, vm.agentConfig().tlsFingerprint)
 
-        vm.setAgentConfig(openai.copy(protocol = "selfhostedai", model = "fast"))
+        vm.setAgentConfig(openai)
         assertEquals(fp, vm.agentConfig().tlsFingerprint, "the same address keeps its pin")
         vm.setAgentConfig(openai.copy(endpoint = "https://127.0.0.2:${server.port}"))
         assertNull(vm.agentConfig().tlsFingerprint, "a new address starts without one")

@@ -43,7 +43,7 @@ class ThemeContrastTest {
         assertTrue(low.isEmpty(), low.joinToString("\n"))
     }
 
-    @Test fun `a theme is light or dark as it says, Claude and Sand as the system is`() {
+    @Test fun `a theme is light or dark as it says, Ivory and Sand as the system is`() {
         for (theme in ColorTheme.entries) for (systemDark in listOf(false, true)) {
             val (c, dark) = paletteOf(theme, systemDark)
             assertEquals(theme.dark ?: systemDark, dark, "$theme")
@@ -51,10 +51,12 @@ class ThemeContrastTest {
         }
     }
 
-    @Test fun `a kept choice comes back, none or an unknown one is Claude`() {
+    @Test fun `a kept choice comes back, none or an unknown one is Ivory`() {
         for (theme in ColorTheme.entries) assertEquals(theme, ColorTheme.of(theme.id))
-        assertEquals(ColorTheme.CLAUDE, ColorTheme.of(null))
-        assertEquals(ColorTheme.CLAUDE, ColorTheme.of("violet"))
+        // Ivory is kept under the name it first shipped as.
+        assertEquals(ColorTheme.IVORY, ColorTheme.of("claude"))
+        assertEquals(ColorTheme.IVORY, ColorTheme.of(null))
+        assertEquals(ColorTheme.IVORY, ColorTheme.of("violet"))
         assertEquals(ColorTheme.SAND, ColorTheme.of("sand"))
     }
 }

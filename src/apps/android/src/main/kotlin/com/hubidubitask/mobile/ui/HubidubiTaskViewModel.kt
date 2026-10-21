@@ -149,20 +149,6 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
         return msg
     }
 
-    // ---- Pro: not sold yet. "Sign up for Pro" only counts who would want it.
-
-    /** Whether this phone has already said it wants Pro. */
-    fun proWanted(): Boolean = proPrefs().getBoolean("wanted", false)
-
-    /** Say so, once: kept as said when the answer went through. */
-    suspend fun wantPro(): com.hubidubitask.core.pro.ProInterest.Result = withContext(Dispatchers.IO) {
-        com.hubidubitask.core.pro.ProInterest.send(com.hubidubitask.core.pro.ProInterest.ANDROID,
-            com.hubidubitask.mobile.BuildConfig.VERSION_NAME, language.value.code)
-    }.also { if (it == com.hubidubitask.core.pro.ProInterest.Result.SENT) proPrefs().edit().putBoolean("wanted", true).apply() }
-
-    private fun proPrefs() = getApplication<Application>()
-        .getSharedPreferences("pro", android.content.Context.MODE_PRIVATE)
-
     /** Sync with the paired computers now, not at the next minute. */
     fun syncMacNow() = viewModelScope.launch {
         _state.value = _state.value.copy(syncing = true)

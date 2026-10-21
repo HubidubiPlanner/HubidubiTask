@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
-// Six colour themes, chosen in Settings ([ColorTheme]). Claude, the default,
-// takes Claude's own colours, light or dark as the system is. Sand is the
+// Six colour themes, chosen in Settings ([ColorTheme]). Ivory, the default,
+// is warm ivory and terracotta, light or dark as the system is. Sand is the
 // app's earlier look: five earth tones and their steps (Moss #56594D · Sage
 // #848072 · Clay #B4997E · Sand #CFC2AB · Cream #D3C9AF), light as "Piasek" and
 // dark as "Mech", also as the system is. Paper and Forest are always light,
@@ -52,10 +52,10 @@ data class AppColors(
     val ok: Color,         // "connected", "synced"
 )
 
-// Claude, the default: Claude's own look, light or dark as the system is.
-// Ivory paper, white cards, near-black ink, Claude's terracotta, taken a step
+// Ivory, the default, light or dark as the system is.
+// Ivory paper, white cards, near-black ink, terracotta, taken a step
 // darker in light (a step lighter in dark) so links keep 4.5:1.
-private val ClaudeLight = AppColors(
+private val IvoryLight = AppColors(
     paper = Color(0xFFF4F3EE),
     raised = Color(0xFFFFFFFF),
     line = Color(0xFF87857B),
@@ -73,8 +73,8 @@ private val ClaudeLight = AppColors(
     ok = Color(0xFF3D6B35),
 )
 
-// Claude, dark: warm charcoal, ivory ink, the terracotta button with dark text.
-private val ClaudeDark = AppColors(
+// Ivory, dark: warm charcoal, ivory ink, the terracotta button with dark text.
+private val IvoryDark = AppColors(
     paper = Color(0xFF262624),
     raised = Color(0xFF30302E),
     line = Color(0xFF85837A),
@@ -208,12 +208,13 @@ private val Ocean = AppColors(
 )
 
 /**
- * The colour themes Settings offers, in its order. Claude and Sand follow the
+ * The colour themes Settings offers, in its order. Ivory and Sand follow the
  * system's light or dark mode ([dark] null); the others are always the one
  * they are.
  */
-enum class ColorTheme(val label: String, val dark: Boolean?) {
-    CLAUDE("Claude", null),
+enum class ColorTheme(val label: String, val dark: Boolean?, private val key: String? = null) {
+    // Kept as "claude", the name it first shipped under, so a choice made then stays.
+    IVORY("Ivory", null, key = "claude"),
     SAND("Sand", null),
     PAPER("Paper", false),
     NIGHT("Night", true),
@@ -221,20 +222,20 @@ enum class ColorTheme(val label: String, val dark: Boolean?) {
     OCEAN("Ocean", true);
 
     /** Kept under this name. */
-    val id: String get() = name.lowercase()
+    val id: String get() = key ?: name.lowercase()
 
     /** What Settings says of it, on its right in the list. */
     val mode: String get() = when (dark) { null -> "Follows the system"; true -> "Dark"; false -> "Light" }
 
     companion object {
-        /** A kept choice; Claude when none, or one this version doesn't know, was kept. */
-        fun of(id: String?): ColorTheme = entries.firstOrNull { it.id == id } ?: CLAUDE
+        /** A kept choice; Ivory when none, or one this version doesn't know, was kept. */
+        fun of(id: String?): ColorTheme = entries.firstOrNull { it.id == id } ?: IVORY
     }
 }
 
-/** [theme]'s colours and whether they are dark; [systemDark] matters to Claude and Sand alone. */
+/** [theme]'s colours and whether they are dark; [systemDark] matters to Ivory and Sand alone. */
 internal fun paletteOf(theme: ColorTheme, systemDark: Boolean): Pair<AppColors, Boolean> = when (theme) {
-    ColorTheme.CLAUDE -> if (systemDark) ClaudeDark to true else ClaudeLight to false
+    ColorTheme.IVORY -> if (systemDark) IvoryDark to true else IvoryLight to false
     ColorTheme.SAND -> if (systemDark) Mech to true else Piasek to false
     ColorTheme.PAPER -> Paper to false
     ColorTheme.NIGHT -> Night to true
@@ -321,7 +322,7 @@ private val SquareShapes = Shapes(
     extraLarge = RoundedCornerShape(0.dp),
 )
 
-private val LocalAppColors = staticCompositionLocalOf { ClaudeLight }
+private val LocalAppColors = staticCompositionLocalOf { IvoryLight }
 
 object HubidubiTaskTheme {
     val colors: AppColors
@@ -329,11 +330,11 @@ object HubidubiTaskTheme {
 }
 
 /**
- * [theme]'s colours, light or dark as it says; Claude and Sand follow [systemDark], the
+ * [theme]'s colours, light or dark as it says; Ivory and Sand follow [systemDark], the
  * system's mode unless screenshots say which.
  */
 @Composable
-fun HubidubiTaskTheme(theme: ColorTheme = ColorTheme.CLAUDE, systemDark: Boolean = isSystemInDarkTheme(),
+fun HubidubiTaskTheme(theme: ColorTheme = ColorTheme.IVORY, systemDark: Boolean = isSystemInDarkTheme(),
                       content: @Composable () -> Unit) {
     val (colors, dark) = paletteOf(theme, systemDark)
     CompositionLocalProvider(LocalAppColors provides colors) {

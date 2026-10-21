@@ -1076,51 +1076,6 @@ private fun StatusRow(label: String, value: String, good: Boolean, last: Boolean
     }
 }
 
-/**
- * Pro, which is not sold yet: one button whose words say what it would be.
- * Pressing it signs this install up, counted once (core ProInterest); then a
- * line of thanks takes its place.
- */
-@Composable
-private fun ProSection(vm: HubidubiTaskViewModel, edge: Dp) {
-    val c = HubidubiTaskTheme.colors
-    val scope = rememberCoroutineScope()
-    var wanted by remember { mutableStateOf(vm.proWanted()) }
-    var sending by remember { mutableStateOf(false) }
-    // What the last press came to, said under the button until it is pressed again.
-    var outcome by remember { mutableStateOf<com.hubidubitask.core.pro.ProInterest.Result?>(null) }
-    Column(Modifier.padding(start = edge, end = edge, top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (wanted)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = c.ok,
-                    modifier = Modifier.padding(top = 1.dp).size(20.dp))
-                Text(t("Thanks, you're signed up for Pro. It gets built if enough people want it."),
-                    style = MaterialTheme.typography.bodySmall, color = c.muted)
-            }
-        else {
-            PrimaryButton(if (sending) t("Sending…") else t("Sign up for Pro: sync with your Mac and Linux computers"), {
-                sending = true; outcome = null
-                scope.launch {
-                    val result = vm.wantPro()
-                    sending = false
-                    outcome = result
-                    if (result == com.hubidubitask.core.pro.ProInterest.Result.SENT) wanted = true
-                }
-            }, Modifier.fillMaxWidth(), enabled = !sending)
-            when (outcome) {
-                // No form yet: nothing to send to, and nothing wrong with the connection.
-                com.hubidubitask.core.pro.ProInterest.Result.NOT_OPEN ->
-                    Text(t("Sign-ups for Pro aren't open yet."),
-                        style = MaterialTheme.typography.bodySmall, color = c.muted)
-                com.hubidubitask.core.pro.ProInterest.Result.FAILED ->
-                    Text(t("That didn't go through. Try again in a moment."),
-                        style = MaterialTheme.typography.bodySmall, color = c.danger)
-                else -> {}
-            }
-        }
-    }
-}
-
 @Composable
 fun SettingsScreen(
     state: HubidubiTaskViewModel.UiState,
@@ -1137,23 +1092,13 @@ fun SettingsScreen(
     val saved = remember { vm.agentConfig() }
     var endpoint by remember { mutableStateOf(saved.endpoint) }
     var protocol by remember { mutableStateOf(saved.protocol) }
-    // The default is filled in rather than hinted at: an empty box reads as
-    // "you must supply this", which is exactly what it is not.
+    // Each choice asks its own model: Claude the app's, an OpenAI-shaped
+    // server its first, the user's own agent the one found there.
     val defaultModel = com.hubidubitask.core.agent.AgentConfig.defaultModel(protocol)
-    // Empty unless one of the server's own was chosen: the default shows as
-    // the placeholder, and an empty field means the default.
-    var model by remember {
-        mutableStateOf(saved.model.takeIf { it != com.hubidubitask.core.agent.AgentConfig.defaultModel(saved.protocol) }.orEmpty())
-    }
-    // Switching protocol swaps the default, unless the user typed their own.
-    LaunchedEffect(protocol) {
-        if (model in setOf("fast", "local", com.hubidubitask.core.agent.AgentConfig.CLAUDE_MODEL)) model = ""
-    }
     // Claude's key is kept apart from the other agents' settings, in the
     // system's secret store.
     var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
     val claude = protocol == "claude"
-    val selfhosted = protocol == "selfhostedai"
     // The user's own agent on a computer at home: its IP, port and token.
     val harness = protocol == "harness"
     val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.AgentLink.split(vm.harnessEndpoint()) }
@@ -1195,7 +1140,7 @@ fun SettingsScreen(
             // The app's own language, each named in itself.
             SettingRow(t("Language"), language.label,
                 Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } }, labelWidth)
-            // Claude and Sand follow the system's light or dark, the others are always one
+            // Ivory and Sand follow the system's light or dark, the others are always one
             // of them, said on the right of each in the list.
             SettingRow(t("Theme"), t(theme.label), ColorTheme.entries.map {
                 DropdownItem(t(it.label), it == theme, detail = t(it.mode)) { vm.setTheme(it) }
@@ -1236,18 +1181,11 @@ fun SettingsScreen(
                     helper = "",
                     enabled = true, placeholder = t("Server address"))
 
-            // Only SelfHostedAI is told which of its models to use; the others choose
-            // their own (Claude the app's, an OpenAI-shaped server its first).
-            if (selfhosted)
-                LabeledField("", model, { model = it; message = null; touched = true },
-                    helper = "",
-                    enabled = true, placeholder = "${t("Model")}: $defaultModel")
-
             // No Save: a change is kept on its own a moment after the last
             // keystroke or choice, then checked, and the line under says what
             // was found. Nothing is kept before anything was changed here.
-            LaunchedEffect(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken) {
-                val inputs = listOf(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken)
+            LaunchedEffect(protocol, endpoint, claudeKey, harnessIp, harnessPort, harnessToken) {
+                val inputs = listOf(protocol, endpoint, claudeKey, harnessIp, harnessPort, harnessToken)
                 if (!touched || inputs == kept) return@LaunchedEffect
                 delay(800)
                 kept = inputs
@@ -1261,7 +1199,7 @@ fun SettingsScreen(
                     message = when (found) {
                         is com.hubidubitask.core.agent.AgentProbe.Result.Found -> {
                             harnessPort = com.hubidubitask.core.agent.AgentLink.split(found.endpoint).second
-                            kept = listOf(protocol, endpoint, model, claudeKey, harnessIp, harnessPort, harnessToken)
+                            kept = listOf(protocol, endpoint, claudeKey, harnessIp, harnessPort, harnessToken)
                             if (h.connected) t("Connected to %s", found.label)
                             else t("Saved, but the agent at %s did not answer: %s", found.label,
                                 h.error ?: t("no reply"))
@@ -1277,7 +1215,7 @@ fun SettingsScreen(
                 }
                 vm.setAgentConfig(saved.copy(
                     endpoint = endpoint.trim(), protocol = protocol,
-                    model = if (selfhosted) model.ifBlank { defaultModel } else defaultModel,
+                    model = defaultModel,
                     apiKey = if (claude) claudeKey.trim() else null))
                 // A choice with nothing to reach it by yet is kept, not checked.
                 if ((claude && claudeKey.isBlank()) || (!claude && endpoint.isBlank())) return@LaunchedEffect
@@ -1335,8 +1273,6 @@ fun SettingsScreen(
             Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted,
                 modifier = Modifier.padding(start = edge, end = edge, top = 8.dp))
         }
-        // Last: what is not here yet.
-        ProSection(vm, edge)
         Spacer(Modifier.height(16.dp))
     }
 }

@@ -73,8 +73,6 @@ class AgentHttpTest {
         val error = t("Plain HTTP is only for your home network. Use an https:// address.")
         val public = "http://8.8.8.8:9"
         assertEquals(error, OpenAiClient(AgentConfig(public, protocol = "openai")).health().error)
-        val selfhosted = SelfhostedaiClient(AgentConfig(public, protocol = "selfhostedai"))
-        try { assertEquals(error, selfhosted.health().error) } finally { selfhosted.close() }
         assertEquals(error, OpencodeAgent(AgentConfig(public, protocol = "harness", kind = "opencode")).health().error)
         assertEquals(error, Agent.clientFor(AgentConfig(public, protocol = "harness", kind = "hermes")).health().error)
     }

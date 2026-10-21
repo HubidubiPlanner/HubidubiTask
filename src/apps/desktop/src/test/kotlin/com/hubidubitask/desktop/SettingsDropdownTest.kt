@@ -22,8 +22,8 @@ import kotlin.test.assertEquals
 
 /**
  * Settings is a table of the due date, the language, the theme and the
- * devices, each row opening its list, and the AI agent under it as before. Choosing changes what is shown: the Model field only for
- * SelfHostedAI, the API key only for Claude; there is no Save, a choice keeps itself.
+ * devices, each row opening its list, and the AI agent under it as before. Choosing changes what is shown: the API key only
+ * for Claude, an address for OpenAI; no model is asked for, there is no Save, a choice keeps itself.
  */
 @OptIn(ExperimentalTestApi::class)
 class SettingsDropdownTest {
@@ -47,18 +47,10 @@ class SettingsDropdownTest {
         assertEquals(1, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)
         assertEquals(0, onAllNodesWithText("Model").fetchSemanticsNodes().size)
         assertEquals(0, onAllNodesWithText("Save").fetchSemanticsNodes().size)
-        // "Claude" is also the theme, in the table above; the AI's list is the last.
         onAllNodesWithText("Claude").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
         waitForIdle()
         shot("settings-ai-open")
-        // SelfHostedAI: its address and its model, untitled; the model empty, its default as the placeholder.
-        onAllNodesWithText("SelfHostedAI").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
-        waitForIdle()
-        assertEquals(2, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)
-        onNodeWithText("Model: fast").assertExists()
-        assertEquals(0, onAllNodesWithText("Server address").fetchSemanticsNodes().size)
         // OpenAI: an address alone, and no model asked for.
-        onNodeWithText("SelfHostedAI").performClick()
         onAllNodesWithText("OpenAI").let { it[it.fetchSemanticsNodes().size - 1] }.performClick()
         waitForIdle()
         assertEquals(1, onAllNodes(androidx.compose.ui.test.hasSetTextAction()).fetchSemanticsNodes().size)

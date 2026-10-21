@@ -20,8 +20,8 @@ class I18nTest {
         // Labels from lists, translated where they are shown: tabs, ranges, periods, the agent, the feed kind,
         // the colour themes and what each is.
         return found + setOf("Incoming", "Projects", "Feeds", "Settings", "Day", "Week", "Month", "Agent", "A web page",
-            "Sand", "Paper", "Night", "Forest", "Ocean", "Follows the system", "Light", "Dark") -
-            setOf("SelfHostedAI", "OpenAI", "Claude")
+            "Ivory", "Sand", "Paper", "Night", "Forest", "Ocean", "Follows the system", "Light", "Dark") -
+            setOf("OpenAI", "Claude")
     }
 
     @Test fun `every text the apps show has every translation`() {

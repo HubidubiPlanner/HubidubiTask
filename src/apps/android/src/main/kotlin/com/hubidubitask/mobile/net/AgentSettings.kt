@@ -15,15 +15,16 @@ object AgentSettings {
 
     fun load(context: Context): AgentConfig {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val protocol = p.getString("protocol", null) ?: AgentConfig.DEFAULT_PROTOCOL
+        val protocol = AgentConfig.knownProtocol(p.getString("protocol", null))
         val harness = protocol == "harness"
         return AgentConfig(
             endpoint = if (harness) harnessEndpoint(context)
-                       else p.getString("endpoint", null) ?: AgentConfig.DEFAULT_ENDPOINT,
+                       else p.getString("endpoint", null).orEmpty(),
             protocol = protocol,
+            // Only the user's own agent names a model, the one found there; the
+            // others choose their own (Claude the app's, an OpenAI-shaped server its first).
             model = if (harness) p.getString(HARNESS_MODEL, null).orEmpty()
-                    else p.getString("model", null)?.takeIf { it.isNotBlank() }
-                        ?: AgentConfig.defaultModel(protocol),
+                    else AgentConfig.defaultModel(protocol),
             // Every key and the agent's token open paid or powerful things, so
             // they live in the Keystore, not in plain preferences.
             apiKey = when (protocol) {
@@ -51,14 +52,13 @@ object AgentSettings {
             // (see saveHarness), so switching back and forth loses neither.
             .apply { if (!own) putString("endpoint", c.endpoint) }
             .putString("protocol", c.protocol)
-            .apply { if (c.protocol != "harness") putString("model", c.model) }
             .apply { if (moved) remove(TLS_FP) }
             .putString("language", c.language)
             .apply()
     }
 
     private const val CLAUDE_KEY = "claude_api_key"
-    /** The OpenAI or SelfHostedAI server's key, in the Keystore. */
+    /** The OpenAI-shaped server's key, in the Keystore. */
     private const val API_KEY = "agent_api_key"
     /** Where that key lay in plain preferences before it moved to the Keystore. */
     private const val PLAIN_API_KEY = "api_key"
@@ -70,7 +70,7 @@ object AgentSettings {
     private const val HARNESS_TOKEN = "harness_token"
 
     /**
-     * The OpenAI or SelfHostedAI server's key. One an older version kept in plain
+     * The OpenAI-shaped server's key. One an older version kept in plain
      * preferences moves into the Keystore on first read.
      */
     private fun apiKey(context: Context): String? {

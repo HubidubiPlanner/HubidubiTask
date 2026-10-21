@@ -23,8 +23,7 @@ import javax.net.ssl.X509TrustManager
  * phone and the computer ask the agent directly, with nothing in between.
  *
  * [protocol] "claude" is Anthropic's Claude API, reached with an API key and
- * no endpoint of ours; "selfhostedai" is selfhostedai-agent's encrypted API (usually
- * :8443); "openai" is any OpenAI-compatible server; "harness" (labelled
+ * no endpoint of ours; "openai" is any OpenAI-compatible server; "harness" (labelled
  * "Agent"; the id stays because settings store it) is an agent the user
  * already runs on a computer at home, at the IP and port they typed, of the
  * [kind] found there (see [AgentKind], [AgentProbe]); [apiKey] is its token.
@@ -44,16 +43,18 @@ data class AgentConfig(
     val kind: String? = null,
 ) {
     companion object {
-        const val DEFAULT_ENDPOINT = "https://192.168.1.50:8443"
         const val CLAUDE_MODEL = "claude-opus-5-5"
 
         /** Every agent the apps can use, in the order Settings offers them. */
         /** Labels only: the ids are what settings store, so they never change. "Agent" is the user's own. */
-        val PROTOCOLS = listOf("claude" to "Claude", "selfhostedai" to "SelfHostedAI",
-            "openai" to "OpenAI", "harness" to "Agent")
+        val PROTOCOLS = listOf("claude" to "Claude", "openai" to "OpenAI", "harness" to "Agent")
 
         /** What a fresh install uses: the first choice in Settings, Claude. */
         const val DEFAULT_PROTOCOL = "claude"
+
+        /** A stored choice the apps no longer offer reads as the default. */
+        fun knownProtocol(id: String?): String =
+            id?.takeIf { p -> PROTOCOLS.any { it.first == p } } ?: DEFAULT_PROTOCOL
 
         /**
          * What a feed writes its task with. Never the user's own agent: a feed's
@@ -64,7 +65,6 @@ data class AgentConfig(
         fun defaultModel(protocol: String) = when (protocol) {
             "claude" -> CLAUDE_MODEL
             "harness" -> ""
-            "selfhostedai" -> "fast"
             // An OpenAI-shaped server is not asked for a model by name: it
             // answers with the first one it lists (OpenAiClient).
             else -> ""
@@ -91,10 +91,9 @@ interface ModelClient {
 object Agent {
 
     fun clientFor(config: AgentConfig): ModelClient = when (config.protocol) {
-        "claude" -> ClaudeClient(config)
         "openai" -> OpenAiClient(config)
         "harness" -> HomeAgent.clientFor(config)
-        else -> SelfhostedaiClient(config)
+        else -> ClaudeClient(config)
     }
 
     private val LANGUAGE = mapOf(
@@ -258,7 +257,7 @@ private class AgentTrust(
     }
 }
 
-/** Text clean-up shared by both transports, ported from hubidubitask_agent. */
+/** Text clean-up for what models answer. */
 object Text {
     private val THINK = Regex("<(think|thinking|reasoning)>.*?</\\1>",
         setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
@@ -272,42 +271,5 @@ object Text {
         val out = THINK.replace(text, "")
         val at = out.lowercase().indexOf("<think")
         return (if (at >= 0) out.substring(0, at) else out).trim()
-    }
-
-    private val ECHO = listOf("\nCurrent prompt:", "\nCurrent prompt/context:",
-        "\nCurrent prompt/system instruction:")
-
-    /**
-     * Cut a reply where the model stops answering and starts reciting: the
-     * persona template, the prompt itself coming back, or a second "Answer:"
-     * to a question it made up.
-     */
-    fun trimEcho(text: String, prompt: String = ""): String {
-        val cuts = ECHO.map { text.indexOf(it) }.filter { it >= 0 }.toMutableList()
-        prompt.lines().map { it.trim() }.firstOrNull { it.length >= 40 }?.let { first ->
-            text.indexOf(first, 1).takeIf { it >= 0 }?.let(cuts::add)
-        }
-        text.indexOf("\nAnswer:", 1).takeIf { it >= 0 }?.let(cuts::add)
-        val cut = cuts.minOrNull()
-        return (if (cut != null) text.substring(0, cut) else text).trim()
-    }
-
-    /**
-     * One prompt string that fits, ending in a cue. The server keeps the
-     * *front* of an over-long prompt, so the conversation is kept whole and the
-     * system instructions are trimmed to what budget is left — the question is
-     * the part that must survive.
-     */
-    fun flatten(messages: List<Message>, budget: Int = 3200): String {
-        val cue = "\n\nAnswer:"
-        val body = messages.filter { it.role != "system" }.map { it.content }
-            .filter { it.isNotEmpty() }.joinToString("\n\n")
-        var instructions = messages.filter { it.role == "system" }.map { it.content }
-            .filter { it.isNotEmpty() }.joinToString("\n\n")
-        val room = budget - body.length - cue.length
-        if (room <= 0) return body.takeLast(budget - cue.length) + cue
-        if (instructions.length > room)
-            instructions = instructions.take(maxOf(0, room - 14)).trimEnd() + "\n[…]"
-        return listOf(instructions, body).filter { it.isNotEmpty() }.joinToString("\n\n") + cue
     }
 }

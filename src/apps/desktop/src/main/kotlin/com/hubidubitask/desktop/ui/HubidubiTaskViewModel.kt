@@ -249,13 +249,15 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     private var lastHealth: Pair<Long, Health>? = null
 
     fun agentConfig(): AgentConfig {
-        val p = store.kv("agent_protocol") ?: AgentConfig.DEFAULT_PROTOCOL
+        val p = AgentConfig.knownProtocol(store.kv("agent_protocol"))
         val harness = p == "harness"
         return AgentConfig(
             endpoint = if (harness) harnessEndpoint()
-                       else store.kv("agent_endpoint") ?: AgentConfig.DEFAULT_ENDPOINT,
+                       else store.kv("agent_endpoint").orEmpty(),
             protocol = p,
-            model = if (harness) store.kv(HARNESS_MODEL).orEmpty() else store.kv("agent_model") ?: AgentConfig.defaultModel(p),
+            // Only the user's own agent names a model, the one found there; the
+            // others choose their own (Claude the app's, an OpenAI-shaped server its first).
+            model = if (harness) store.kv(HARNESS_MODEL).orEmpty() else AgentConfig.defaultModel(p),
             apiKey = when (p) { "claude" -> claudeKey(); "harness" -> harnessToken(); else -> null },
             tlsFingerprint = if (harness) store.kv(HARNESS_FP) else store.kv("agent_fp"),
             kind = if (harness) store.kv(HARNESS_KIND) else null,
@@ -276,7 +278,6 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
             }
         }
         store.setKv("agent_protocol", c.protocol)
-        if (c.protocol != "harness") store.setKv("agent_model", c.model)
         lastHealth = null
     }
 
@@ -535,23 +536,6 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     /** The workstation's rule, so the same event has the same id everywhere. */
     private fun eventId(uid: String) = "e_" + MessageDigest.getInstance("SHA-256")
         .digest(uid.toByteArray()).joinToString("") { "%02x".format(it) }.take(16)
-
-    // ---- Pro: not sold yet. "Sign up for Pro" only counts who would want it.
-
-    /** The form the answer goes to; a test points it elsewhere. */
-    internal var proForm = com.hubidubitask.core.pro.ProInterest.FORM
-
-    /** Whether this computer has already said it wants Pro. */
-    fun proWanted(): Boolean = store.kv("pro_wanted") != null
-
-    /** Say so, once: kept as said when the answer went through. */
-    suspend fun wantPro(): com.hubidubitask.core.pro.ProInterest.Result = withContext(Dispatchers.IO) {
-        com.hubidubitask.core.pro.ProInterest.send(
-            if (com.hubidubitask.desktop.Platform.isMac) com.hubidubitask.core.pro.ProInterest.MAC
-            else com.hubidubitask.core.pro.ProInterest.LINUX,
-            // jpackage names the version to the app it launches; a run from Gradle has none.
-            System.getProperty("jpackage.app-version") ?: "dev", language.value.code, proForm)
-    }.also { if (it == com.hubidubitask.core.pro.ProInterest.Result.SENT) store.setKv("pro_wanted", nowUtc()) }
 
     // ---- pairing
 
