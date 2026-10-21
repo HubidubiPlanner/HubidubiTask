@@ -6,7 +6,7 @@ publish it with [`deploy/website`](../deploy/website).
 
 ```
 index.html      Home: Next, the + and the steps, taps, the AI choices, pairing
-download.html   Android, the free Mac app, Linux; first start on a Mac; pairing
+download.html   Android, Mac and Linux (the release on GitHub); pairing
 agent.html      Plugging in the AI agent you already run at home
 privacy.html    The privacy policy (the URL Google Play asks for)
 style.css       The app's sand (light) and moss (dark), IBM Plex Sans only
@@ -15,13 +15,11 @@ assets/         Icon, link preview image, and screens/: the app's screenshots, l
 ```
 
 Preview: `python3 -m http.server -d site 8000`, then http://localhost:8000.
-The download links work once `deploy/website` has assembled the site.
 
 The pages follow the system's light or dark setting; screenshots switch with
-it. `hubidubitask.example` and `hello@hubidubitask.example` are placeholders
-that `deploy/website/2-site/assemble.sh` replaces from its `site.env`.
+it. `https://hubidubitask.example` and `https://contact.hubidubitask.example`
+are placeholders that `deploy/website/2-site/assemble.sh` replaces with
+`SITE_URL` and `CONTACT_URL` from its `site.env`.
 
 When the app changes: retake the screenshots with
-`deploy/google-play/3-graphics/shoot.py`, recount the taps table, and update
-the version and file sizes on the Download page (the assemble step
-checks them against the real files).
+`deploy/google-play/3-graphics/shoot.py` and recount the taps table.

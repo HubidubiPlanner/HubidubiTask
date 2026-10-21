@@ -1,0 +1,27 @@
+# The shared and desktop tests, on every push and pull request. The desktop
+# tests draw Compose windows, so they run under a virtual display. The runner
+# image has the Android SDK (ANDROID_HOME), which configuring the build needs.
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Shared and desktop tests
+        working-directory: src/apps
+        run: xvfb-run -a ./gradlew --no-daemon :shared:test :desktop:test

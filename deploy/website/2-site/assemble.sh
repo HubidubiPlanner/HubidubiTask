@@ -4,10 +4,11 @@
 #   sh deploy/website/2-site/assemble.sh
 #
 # Copies site/ and the downloads from step 1, puts in the address and contact
-# from site.env, and refuses to finish when the pages and the files disagree:
-# the version on the download page, the file sizes it states, links to files
-# that are not there. While no page links to downloads/ (the Mac, Linux and
-# Agent buttons say "Coming soon"), it takes no downloads and checks none.
+# link from site.env, and refuses to finish when the pages and the files
+# disagree: the version on the download page, the file sizes it states, links
+# to files that are not there. While no page links to downloads/ (the Mac and
+# Linux buttons go to the latest GitHub release), it takes no downloads and
+# checks none.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
@@ -35,13 +36,13 @@ if [ $offers = 1 ] && [ -z "$DOWNLOADS_URL" ]; then
   cp "$downloads"/* "$public/downloads/"
 fi
 
-python3 - "$public" "$site_url" "$CONTACT_EMAIL" "${DOWNLOADS_URL%/}" "$version" "$downloads" "$offers" <<'PY'
+python3 - "$public" "$site_url" "${CONTACT_URL%/}" "${DOWNLOADS_URL%/}" "$version" "$downloads" "$offers" <<'PY'
 import glob, os, re, sys
-public, site_url, email, dl_url, version, downloads, offers = sys.argv[1:]
+public, site_url, contact_url, dl_url, version, downloads, offers = sys.argv[1:]
 problems = []
 for page in glob.glob(os.path.join(public, "*.html")):
     s = open(page, encoding="utf-8").read()
-    s = s.replace("https://hubidubitask.example", site_url).replace("hello@hubidubitask.example", email)
+    s = s.replace("https://contact.hubidubitask.example", contact_url).replace("https://hubidubitask.example", site_url)
     if dl_url:
         s = s.replace('href="downloads/', 'href="%s/' % dl_url)
     open(page, "w", encoding="utf-8").write(s)
@@ -63,8 +64,8 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
 
-case "$site_url$CONTACT_EMAIL" in
-  *hubidubitask.example*) echo "!! site.env still has the placeholder address or email; set them before publishing" >&2 ;;
+case "$site_url $CONTACT_URL" in
+  *hubidubitask.example*) echo "!! site.env still has the placeholder address or contact; set them before publishing" >&2 ;;
 esac
 echo "==> $public ($(du -sh "$public" | cut -f1)), for $site_url"
 echo "    preview: python3 -m http.server -d $public 8000"
