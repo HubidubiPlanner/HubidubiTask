@@ -306,10 +306,8 @@ fun ActionRow(
 
 // Dates are stored as ISO days in UTC (the picker hands back UTC midnight), so
 // they are read back in UTC too, or a date would slide by one near midnight.
-private fun utc(pattern: String) = java.text.SimpleDateFormat(pattern, java.util.Locale.ENGLISH)
-    .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
-
-fun todayIso(): String = utc("yyyy-MM-dd").format(java.util.Date())
+/** Today here, "yyyy-MM-dd": the local day, which due dates are, not UTC's (a day behind after midnight in Europe). */
+fun todayIso(): String = java.time.LocalDate.now().toString()
 
 /** "Friday, 25 September", in the chosen language: the line under the Incoming title. */
 fun todayLong(): String = I18n.dayLong(java.time.LocalDate.now())
