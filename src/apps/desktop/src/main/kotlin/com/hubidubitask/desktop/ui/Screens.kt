@@ -93,7 +93,6 @@ import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.Backup
 import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.NewItemDue
-import com.hubidubitask.core.agent.AgentConfig.Companion.PROTOCOLS
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.Language
 import com.hubidubitask.core.i18n.t
@@ -102,7 +101,6 @@ import com.hubidubitask.mobile.browse.ItemDetail
 import com.hubidubitask.mobile.browse.ItemSummary
 import com.hubidubitask.mobile.browse.ReviewBrowse
 import com.hubidubitask.mobile.tree.ProjectTree
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -838,7 +836,7 @@ private fun projectTitles(projects: List<EntityRecord>): (EntityRecord) -> Strin
 
 /** A field with its label above it rather than inside: it stays readable once filled. */
 @Composable
-private fun LabeledField(
+internal fun LabeledField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -896,32 +894,6 @@ fun SettingsScreen(
     var pairing by remember { mutableStateOf(false) }
     PairPhoneSheet(pairing, vm, state) { pairing = false }
 
-    // The agent is asked directly, so its address is this phone's own
-    // setting. Everything is proposed, nothing demanded: the form arrives
-    // filled in and Save works on arrival.
-    val saved = remember { vm.agentConfig() }
-    var endpoint by remember { mutableStateOf(saved.endpoint) }
-    var protocol by remember { mutableStateOf(saved.protocol) }
-    // Each choice asks its own model: Claude the app's, an OpenAI-shaped
-    // server its first, the user's own agent the one found there.
-    val defaultModel = com.hubidubitask.core.agent.AgentConfig.defaultModel(protocol)
-    // Claude's key is kept apart from the other agents' settings, in the
-    // system's secret store.
-    var claudeKey by remember { mutableStateOf(vm.claudeKey().orEmpty()) }
-    val claude = protocol == "claude"
-    // The user's own agent on a computer at home: its IP, port and token.
-    val harness = protocol == "harness"
-    val (savedIp, savedPort) = remember { com.hubidubitask.core.agent.AgentLink.split(vm.harnessEndpoint()) }
-    var harnessIp by remember { mutableStateOf(savedIp) }
-    var harnessPort by remember { mutableStateOf(savedPort) }
-    var harnessToken by remember { mutableStateOf(vm.harnessToken().orEmpty()) }
-    // Set by the first change made here; what was last kept, so it is not kept twice.
-    var touched by remember { mutableStateOf(false) }
-    var kept by remember { mutableStateOf<List<String>?>(null) }
-    var message by remember { mutableStateOf<String?>(null) }
-    // Whether the last check found the AI answering; the message says it in words.
-    var connected by remember { mutableStateOf(false) }
-
     // One edge for everything here: the cards, the fields, the buttons and the
     // choices all start and end on the line the headings start on.
     val edge = 20.dp
@@ -964,89 +936,7 @@ fun SettingsScreen(
             // heading, and only what that one needs to be reached.
             SectionLabel(t("AI Agent"))
 
-            Column(Modifier.padding(horizontal = edge), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Dropdown(t(PROTOCOLS.first { it.first == protocol }.second),
-                    PROTOCOLS.map { (id, label) -> DropdownItem(t(label), id == protocol) { protocol = id; message = null; touched = true } })
-
-                if (claude)
-                    LabeledField("", claudeKey, { claudeKey = it; message = null; touched = true },
-                        helper = "", enabled = true, placeholder = "sk-ant-…", secret = true)
-                else if (harness) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        LabeledField("", harnessIp, { harnessIp = it; message = null; touched = true },
-                            helper = "", enabled = true, placeholder = t("IP address"),
-                            modifier = Modifier.weight(2f))
-                        LabeledField("", harnessPort, { harnessPort = it.filter(Char::isDigit); message = null; touched = true },
-                            helper = "", enabled = true, placeholder = t("Port"),
-                            modifier = Modifier.weight(1f))
-                    }
-                    LabeledField("", harnessToken, { harnessToken = it; message = null; touched = true },
-                        helper = "", enabled = true, placeholder = t("Token or password"), secret = true)
-                }
-                else
-                    LabeledField("", endpoint, { endpoint = it; message = null; touched = true },
-                        helper = "",
-                        enabled = true, placeholder = t("Server address"))
-
-                // No Save: a change is kept on its own a moment after the last
-                // keystroke or choice, then checked, and the line under says what
-                // was found. Nothing is kept before anything was changed here.
-                LaunchedEffect(protocol, endpoint, claudeKey, harnessIp, harnessPort, harnessToken) {
-                    val inputs = listOf(protocol, endpoint, claudeKey, harnessIp, harnessPort, harnessToken)
-                    if (!touched || inputs == kept) return@LaunchedEffect
-                    delay(800)
-                    kept = inputs
-                    message = null
-                    if (harness) {
-                        if (harnessIp.isBlank()) return@LaunchedEffect
-                        // Which agent listens there is found, not asked: the address is enough.
-                        message = t("Saved — checking…")
-                        val found = vm.plugAgent(harnessIp, harnessPort, harnessToken)
-                        val h = vm.checkInference()
-                        message = when (found) {
-                            is com.hubidubitask.core.agent.AgentProbe.Result.Found -> {
-                                harnessPort = com.hubidubitask.core.agent.AgentLink.split(found.endpoint).second
-                                kept = listOf(protocol, endpoint, claudeKey, harnessIp, harnessPort, harnessToken)
-                                if (h.connected) t("Connected to %s", found.label)
-                                else t("Saved, but the agent at %s did not answer: %s", found.label,
-                                    h.error ?: t("no reply"))
-                            }
-                            is com.hubidubitask.core.agent.AgentProbe.Result.NeedsToken ->
-                                if (found.refused) t("%s refused the token", found.label)
-                                else t("%s needs its token", found.label)
-                            com.hubidubitask.core.agent.AgentProbe.Result.NotFound ->
-                                t("Saved, but the agent at %s did not answer: %s", harnessIp.trim(), t("no reply"))
-                        }
-                        connected = found is com.hubidubitask.core.agent.AgentProbe.Result.Found && h.connected
-                        return@LaunchedEffect
-                    }
-                    vm.setAgentConfig(saved.copy(
-                        endpoint = endpoint.trim(), protocol = protocol,
-                        model = defaultModel,
-                        apiKey = if (claude) claudeKey.trim() else null))
-                    // A choice with nothing to reach it by yet is kept, not checked.
-                    if ((claude && claudeKey.isBlank()) || (!claude && endpoint.isBlank())) return@LaunchedEffect
-                    // Saving is not the same as working. An address nothing answers
-                    // on looks identical to a good one until a question fails, so
-                    // probe it now and say plainly which happened.
-                    message = t("Saved — checking…")
-                    val h = vm.checkInference()
-                    message = if (h.connected) t("Connected to %s", h.server ?: endpoint)
-                        else if (claude) t("Saved, but Claude did not answer: %s", h.error ?: t("no reply"))
-                        else t("Saved, but nothing answered at %s — check the address and that the server is running there.", endpoint)
-                    connected = h.connected
-                }
-
-                // What the last Save found, and nothing before: an address under the
-                // fields only repeated one, or named a choice not made yet.
-                message?.let {
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Dot(if (connected) c.ok else c.muted)
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = c.muted)
-                    }
-                }
-            }
+            AgentSection(vm, edge)
             // Kept quiet at the very end: things done once in a while, not settings
             // anyone looks for day to day. Export and Import side by side: a copy of everything as one
             // file sealed with a password, the way to keep it outside the app;

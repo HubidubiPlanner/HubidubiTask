@@ -195,6 +195,7 @@ internal val SPANISH: Map<String, String> = mapOf(
     "Sand" to "Arena",
     "Save" to "Guardar",
     "Saved — checking…" to "Guardado — comprobando…",
+    "Saved, but %s did not answer: %s" to "Guardado, pero %s no respondió: %s",
     "Saved, but Claude did not answer: %s" to "Guardado, pero Claude no respondió: %s",
     "Saved, but nothing answered at %s — check the address and that the server is running there." to "Guardado, pero nada responde en %s — comprueba la dirección y que el servidor esté en marcha.",
     "Saved, but the agent at %s did not answer: %s" to "Guardado, pero el agente en %s no respondió: %s",

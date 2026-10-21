@@ -10,8 +10,8 @@ import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentAction
 import com.hubidubitask.core.agent.AgentItems
 import com.hubidubitask.core.agent.AgentConfig
-import com.hubidubitask.core.agent.AgentLink
-import com.hubidubitask.core.agent.AgentProbe
+import com.hubidubitask.core.agent.AgentStore
+import com.hubidubitask.core.agent.AgentType
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.i18n.Language
@@ -284,42 +284,25 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     /** The agent settings this phone holds, for the settings form. */
     fun agentConfig(): AgentConfig = AgentSettings.load(getApplication())
 
-    fun claudeKey(): String? = AgentSettings.claudeKey(getApplication())
-    fun harnessEndpoint(): String = AgentSettings.harnessEndpoint(getApplication())
-    fun harnessToken(): String? = AgentSettings.harnessToken(getApplication())
+    /** What [type]'s fields in Settings show. */
+    fun agentForm(type: AgentType): Map<String, String> = AgentSettings.store(getApplication()).form(type)
 
-    /**
-     * Find the user's agent at [host] and [port] (blank: each kind's usual
-     * one), and make it the Agent if it answers. What was typed is kept either
-     * way, so the form shows it again.
-     */
-    suspend fun plugAgent(host: String, port: String, token: String): AgentProbe.Result =
+    /** Whether keeping [values] for [type] is followed by a check. */
+    fun agentWillCheck(type: AgentType, values: Map<String, String>): Boolean =
+        AgentSettings.store(getApplication()).willCheck(type, values)
+
+    /** Keep what was typed for [type] and, when it is enough, check that it answers. */
+    suspend fun setUpAgent(type: AgentType, values: Map<String, String>): AgentStore.Outcome =
         withContext(Dispatchers.IO) {
-            val typed = AgentLink.parse(host, port) ?: return@withContext AgentProbe.Result.NotFound
-            val found = AgentProbe.detect(typed.first, typed.second, token.trim().ifBlank { null })
-            val app = getApplication<Application>()
-            when (found) {
-                is AgentProbe.Result.Found ->
-                    AgentSettings.saveHarness(app, found.endpoint, found.kind.id, found.model, found.fingerprint, token)
-                is AgentProbe.Result.NeedsToken ->
-                    AgentSettings.saveHarness(app, found.endpoint, found.kind.id, "", null, token)
-                AgentProbe.Result.NotFound ->
-                    AgentSettings.saveHarness(app, AgentLink.endpoint("https", typed.first, typed.second), null, "", null, token)
+            AgentSettings.store(getApplication()).setUp(type, values) {
+                lastHealth = null
+                health(force = true).also { h -> _state.value = _state.value.copy(inference = h) }
             }
-            AgentSettings.save(app, AgentSettings.load(app).copy(protocol = "harness"))
-            lastHealth = null
-            found
         }
 
     /** Re-probe the agent and report what came back. */
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(force = true) }
         .also { h -> _state.value = _state.value.copy(inference = h) }
-
-    /** Point the phone at an agent. */
-    fun setAgentConfig(config: AgentConfig) {
-        AgentSettings.save(getApplication(), config)
-        lastHealth = null
-    }
 
     fun capture(text: String) = viewModelScope.launch {
         withContext(Dispatchers.IO) { sync().capture(text, due()) }

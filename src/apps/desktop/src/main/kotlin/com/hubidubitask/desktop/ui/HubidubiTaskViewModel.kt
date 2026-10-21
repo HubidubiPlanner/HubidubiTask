@@ -5,8 +5,11 @@ import com.hubidubitask.core.EntityRecord
 import com.hubidubitask.core.NewItemDue
 import com.hubidubitask.core.agent.Agent
 import com.hubidubitask.core.agent.AgentConfig
-import com.hubidubitask.core.agent.AgentLink
-import com.hubidubitask.core.agent.AgentProbe
+import com.hubidubitask.core.agent.AgentNames
+import com.hubidubitask.core.agent.AgentPrefs
+import com.hubidubitask.core.agent.AgentStore
+import com.hubidubitask.core.agent.AgentType
+import com.hubidubitask.core.agent.AgentTypes
 import com.hubidubitask.core.agent.Health
 import com.hubidubitask.core.agent.ModelClient
 import com.hubidubitask.core.feed.Feeds
@@ -247,78 +250,42 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     private var agent: ModelClient? = null
     private var lastHealth: Pair<Long, Health>? = null
 
-    fun agentConfig(): AgentConfig {
-        val p = AgentConfig.knownProtocol(store.kv("agent_protocol"))
-        val harness = p == "harness"
-        return AgentConfig(
-            endpoint = if (harness) harnessEndpoint()
-                       else store.kv("agent_endpoint").orEmpty(),
-            protocol = p,
-            // Only the user's own agent names a model, the one found there; the
-            // others choose their own (Claude the app's, an OpenAI-shaped server its first).
-            model = if (harness) store.kv(HARNESS_MODEL).orEmpty() else AgentConfig.defaultModel(p),
-            apiKey = when (p) { "claude" -> claudeKey(); "harness" -> harnessToken(); else -> null },
-            tlsFingerprint = if (harness) store.kv(HARNESS_FP) else store.kv("agent_fp"),
-            kind = if (harness) store.kv(HARNESS_KIND) else null,
-        )
-    }
+    /** This computer's AI settings: plain values in its store, keys and tokens in the system's secret store. */
+    private val agents = AgentStore(object : AgentPrefs {
+        override fun get(key: String) = store.kv(key)
+        override fun set(key: String, value: String?) = store.setKv(key, value)
+        override fun secret(name: String) = Secrets.get(name)
+        override fun setSecret(name: String, value: String) { Secrets.put(name, value) }
+    }, AgentNames.COMPUTER)
 
+    fun agentConfig(): AgentConfig = agents.load()
+
+    /** Keep [c] as the choice (its address, and Claude's key); tests set an agent this way. */
     fun setAgentConfig(c: AgentConfig) {
-        // Claude and the user's agent keep their own address and secret (see
-        // plugAgent), so switching back and forth loses neither.
-        when (c.protocol) {
-            "claude" -> c.apiKey?.let { Secrets.put(CLAUDE_KEY, it) }
-            "harness" -> {}
-            else -> {
-                // A pin belongs to the address it was taken from: a new address starts
-                // without one, and only a check that reaches it pins it (see pin).
-                if (store.kv("agent_endpoint") != c.endpoint) store.setKv("agent_fp", null)
-                store.setKv("agent_endpoint", c.endpoint)
-            }
-        }
-        store.setKv("agent_protocol", c.protocol)
+        agents.keep(AgentTypes.of(c.protocol), buildMap {
+            put("endpoint", c.endpoint)
+            c.apiKey?.let { put("apiKey", it) }
+        })
         lastHealth = null
     }
 
     /** Claude's key, from the system's secret store rather than the app's database. */
-    fun claudeKey(): String? = Secrets.get(CLAUDE_KEY)
-    /** The user's own agent on a computer at home, "scheme://ip:port"; blank until found. */
-    fun harnessEndpoint(): String = store.kv(HARNESS_ENDPOINT).orEmpty()
-    /** Its token or password, from the system's secret store. */
-    fun harnessToken(): String? = Secrets.get(HARNESS_TOKEN)?.takeIf { it.isNotBlank() }
+    fun claudeKey(): String? = agents.claudeKey()
 
-    /**
-     * Find the user's agent at [host] and [port] (blank: each kind's usual
-     * one), and make it the Agent if it answers. What was typed is kept either
-     * way, so the form shows it again. Its certificate is pinned from now on.
-     */
-    suspend fun plugAgent(host: String, port: String, token: String): AgentProbe.Result =
+    /** What [type]'s fields in Settings show. */
+    fun agentForm(type: AgentType): Map<String, String> = agents.form(type)
+
+    /** Whether keeping [values] for [type] is followed by a check. */
+    fun agentWillCheck(type: AgentType, values: Map<String, String>): Boolean = agents.willCheck(type, values)
+
+    /** Keep what was typed for [type] and, when it is enough, check that it answers. */
+    suspend fun setUpAgent(type: AgentType, values: Map<String, String>): AgentStore.Outcome =
         withContext(Dispatchers.IO) {
-            val typed = AgentLink.parse(host, port) ?: return@withContext AgentProbe.Result.NotFound
-            val found = AgentProbe.detect(typed.first, typed.second, token.trim().ifBlank { null })
-            fun save(endpoint: String, kind: String?, model: String, fp: String?) {
-                store.setKv(HARNESS_ENDPOINT, endpoint); store.setKv(HARNESS_KIND, kind)
-                store.setKv(HARNESS_MODEL, model); store.setKv(HARNESS_FP, fp)
-                Secrets.put(HARNESS_TOKEN, token.trim())
+            agents.setUp(type, values) {
+                lastHealth = null
+                health(true).also { h -> _state.value = _state.value.copy(inference = h) }
             }
-            when (found) {
-                is AgentProbe.Result.Found -> save(found.endpoint, found.kind.id, found.model, found.fingerprint)
-                is AgentProbe.Result.NeedsToken -> save(found.endpoint, found.kind.id, "", null)
-                AgentProbe.Result.NotFound -> save(AgentLink.endpoint("https", typed.first, typed.second), null, "", null)
-            }
-            store.setKv("agent_protocol", "harness")
-            lastHealth = null
-            found
         }
-
-    private companion object {
-        const val CLAUDE_KEY = "claude-api-key"
-        const val HARNESS_ENDPOINT = "harness_endpoint"
-        const val HARNESS_FP = "harness_fp"
-        const val HARNESS_KIND = "harness_kind"
-        const val HARNESS_MODEL = "harness_model"
-        const val HARNESS_TOKEN = "harness-token"
-    }
 
     // ---- feeds: watched pages, each turned into at most one task per period
 
@@ -370,18 +337,8 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
         }
     }
 
-    /**
-     * Trust on first answer: keep [fingerprint] as the pin for [cfg]'s address.
-     * Only while [cfg] is still the setting and holds no pin, and only in the
-     * home network; a public address is held to the system's certificate
-     * authorities instead. Resolves the host, so call it off the main thread.
-     */
-    private fun pin(cfg: AgentConfig, fingerprint: String) {
-        val now = agentConfig()
-        if (now.protocol != cfg.protocol || now.endpoint != cfg.endpoint || now.tlsFingerprint != null) return
-        if (cfg.protocol == "claude" || !AgentLink.isPrivate(AgentLink.split(cfg.endpoint).first)) return
-        store.setKv(if (cfg.protocol == "harness") HARNESS_FP else "agent_fp", fingerprint)
-    }
+    /** Trust on first answer: a home server's certificate, pinned from now on ([AgentStore.pin]). */
+    private fun pin(cfg: AgentConfig, fingerprint: String) = agents.pin(cfg, fingerprint)
 
     suspend fun checkInference(): Health = withContext(Dispatchers.IO) { health(true) }
         .also { h -> _state.value = _state.value.copy(inference = h) }

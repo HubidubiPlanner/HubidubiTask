@@ -195,6 +195,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "Sand" to "Piasek",
     "Save" to "Zapisz",
     "Saved — checking…" to "Zapisano — sprawdzam…",
+    "Saved, but %s did not answer: %s" to "Zapisano, ale %s nie odpowiada: %s",
     "Saved, but Claude did not answer: %s" to "Zapisano, ale Claude nie odpowiedział: %s",
     "Saved, but nothing answered at %s — check the address and that the server is running there." to "Zapisano, ale pod adresem %s nic nie odpowiada — sprawdź adres i czy serwer tam działa.",
     "Saved, but the agent at %s did not answer: %s" to "Zapisano, ale agent pod adresem %s nie odpowiedział: %s",

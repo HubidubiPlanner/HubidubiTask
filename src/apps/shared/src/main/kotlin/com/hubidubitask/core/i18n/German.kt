@@ -195,6 +195,7 @@ internal val GERMAN: Map<String, String> = mapOf(
     "Sand" to "Sand",
     "Save" to "Speichern",
     "Saved — checking…" to "Gespeichert — wird geprüft…",
+    "Saved, but %s did not answer: %s" to "Gespeichert, aber %s hat nicht geantwortet: %s",
     "Saved, but Claude did not answer: %s" to "Gespeichert, aber Claude hat nicht geantwortet: %s",
     "Saved, but nothing answered at %s — check the address and that the server is running there." to "Gespeichert, aber unter %s antwortet nichts — prüfe die Adresse und ob der Server dort läuft.",
     "Saved, but the agent at %s did not answer: %s" to "Gespeichert, aber der Agent unter %s hat nicht geantwortet: %s",

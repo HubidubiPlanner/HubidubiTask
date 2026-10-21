@@ -45,16 +45,14 @@ data class AgentConfig(
     companion object {
         const val CLAUDE_MODEL = "claude-opus-5-5"
 
-        /** Every agent the apps can use, in the order Settings offers them. */
-        /** Labels only: the ids are what settings store, so they never change. "Agent" is the user's own. */
-        val PROTOCOLS = listOf("claude" to "Claude", "openai" to "OpenAI", "harness" to "Agent")
+        /** Every agent the apps can use, by id and name, in the order Settings offers them ([AgentTypes]). */
+        val PROTOCOLS: List<Pair<String, String>> get() = AgentTypes.all.map { it.id to it.label }
 
         /** What a fresh install uses: the first choice in Settings, Claude. */
         const val DEFAULT_PROTOCOL = "claude"
 
         /** A stored choice the apps no longer offer reads as the default. */
-        fun knownProtocol(id: String?): String =
-            id?.takeIf { p -> PROTOCOLS.any { it.first == p } } ?: DEFAULT_PROTOCOL
+        fun knownProtocol(id: String?): String = AgentTypes.of(id).id
 
         /**
          * What a feed writes its task with. Never the user's own agent: a feed's
@@ -62,13 +60,8 @@ data class AgentConfig(
          */
         val FEED_MODELS = listOf("claude" to "Claude")
 
-        fun defaultModel(protocol: String) = when (protocol) {
-            "claude" -> CLAUDE_MODEL
-            "harness" -> ""
-            // An OpenAI-shaped server is not asked for a model by name: it
-            // answers with the first one it lists (OpenAiClient).
-            else -> ""
-        }
+        /** The model a type asks for; blank lets an OpenAI-shaped server answer with its first. */
+        fun defaultModel(protocol: String) = AgentTypes.of(protocol).defaultModel
     }
 }
 
@@ -90,11 +83,7 @@ interface ModelClient {
 
 object Agent {
 
-    fun clientFor(config: AgentConfig): ModelClient = when (config.protocol) {
-        "openai" -> OpenAiClient(config)
-        "harness" -> HomeAgent.clientFor(config)
-        else -> ClaudeClient(config)
-    }
+    fun clientFor(config: AgentConfig): ModelClient = AgentTypes.of(config.protocol).client(config)
 
     private val LANGUAGE = mapOf(
         "au" to "Answer in the same language as the material.",

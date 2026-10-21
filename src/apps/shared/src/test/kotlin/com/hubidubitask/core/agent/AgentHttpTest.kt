@@ -72,8 +72,15 @@ class AgentHttpTest {
     @Test fun `every client keeps to it`() {
         val error = t("Plain HTTP is only for your home network. Use an https:// address.")
         val public = "http://8.8.8.8:9"
-        assertEquals(error, OpenAiClient(AgentConfig(public, protocol = "openai")).health().error)
-        assertEquals(error, OpencodeAgent(AgentConfig(public, protocol = "harness", kind = "opencode")).health().error)
-        assertEquals(error, Agent.clientFor(AgentConfig(public, protocol = "harness", kind = "hermes")).health().error)
+        // Every type in Settings but Claude's SDK, and every kind of home agent: a
+        // client that went around Agent.http would fail some other way here.
+        for (type in AgentTypes.all.filter { !it.sdk }) {
+            val kinds = if (type.found) AgentKind.entries.map { it.id } else listOf(null)
+            for (kind in kinds) {
+                val client = type.client(AgentConfig(public, protocol = type.id, kind = kind))
+                try { assertEquals(error, client.health().error, "${type.id} ${kind.orEmpty()}") } finally { client.close() }
+            }
+        }
+        assertEquals(listOf("claude"), AgentTypes.all.filter { it.sdk }.map { it.id }, "only Claude goes through an SDK")
     }
 }

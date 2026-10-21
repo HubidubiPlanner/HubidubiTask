@@ -117,6 +117,10 @@ object AgentProbe {
                 else -> null
             }
         }.takeIf { health.ok }
+            // Any other kind by its own signature, still without the token.
+            ?: AgentKind.entries.firstOrNull { k ->
+                k.signature?.let { sig -> runCatching { s.get(sig.path) }.getOrNull()?.let { it.ok && sig.matches(it.json) } } == true
+            }
         var models = s.get("/v1/models")
         if (models.refused) {
             val auth = (kind ?: AgentKind.OPENAI).authorization(token)
@@ -137,7 +141,11 @@ object AgentProbe {
         }
         // OpenClaw keeps its chat endpoint off unless turned on: it is still the one
         // found, and the check after saving says what it answered.
-        if (kind != null) return Result.Found(kind, s.base, if (kind == AgentKind.OPENCLAW) "openclaw" else "hermes-agent", s.cert)
+        if (kind != null) return Result.Found(kind, s.base, when (kind) {
+            AgentKind.OPENCLAW -> "openclaw"
+            AgentKind.HERMES -> "hermes-agent"
+            else -> ""
+        }, s.cert)
         return Result.NotFound
     }
 }

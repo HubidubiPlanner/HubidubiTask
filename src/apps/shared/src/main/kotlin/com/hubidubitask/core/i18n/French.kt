@@ -195,6 +195,7 @@ internal val FRENCH: Map<String, String> = mapOf(
     "Sand" to "Sable",
     "Save" to "Enregistrer",
     "Saved — checking…" to "Enregistré — vérification…",
+    "Saved, but %s did not answer: %s" to "Enregistré, mais %s n’a pas répondu : %s",
     "Saved, but Claude did not answer: %s" to "Enregistré, mais Claude n’a pas répondu : %s",
     "Saved, but nothing answered at %s — check the address and that the server is running there." to "Enregistré, mais rien ne répond à %s — vérifiez l’adresse et que le serveur y fonctionne.",
     "Saved, but the agent at %s did not answer: %s" to "Enregistré, mais l’agent à %s n’a pas répondu : %s",

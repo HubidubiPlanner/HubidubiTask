@@ -1,22 +1,36 @@
 package com.hubidubitask.core.agent
 
+import org.json.JSONObject
 import java.util.Base64
+
+/**
+ * How a kind of agent is told apart without its token: a GET on [path] that
+ * answers 2xx with a reply [matches] accepts.
+ */
+class Signature(val path: String, val matches: (JSONObject?) -> Boolean)
 
 /**
  * The agents the user may already run at home that listen on the network by
  * themselves, so nothing of ours is installed there. Each is recognised from
  * its address alone (see [AgentProbe]). [port] is where it listens unless told
- * otherwise; [user] marks the ones that take a password as Basic auth.
+ * otherwise (tried in this order when no port is typed); [user] marks the ones
+ * that take a password as Basic auth.
+ *
+ * A new kind that speaks the OpenAI chat shape needs only an entry here with
+ * its [signature]: [AgentProbe] tries every signature before taking a server
+ * for a plain OpenAI-shaped one, and [HomeAgent] asks it through [OpenAiAgent].
+ * OpenClaw, Hermes, opencode and Kilo are told apart by AgentProbe itself.
  *
  * Others could join the same way: goose ("goose serve", ACP over HTTP, 3284),
  * Qwen Code ("qwen serve", 4170), Codex's app-server (WebSocket).
  */
-enum class AgentKind(val id: String, val label: String, val port: Int?, private val user: String?) {
+enum class AgentKind(val id: String, val label: String, val port: Int?, private val user: String?,
+                     val signature: Signature? = null) {
     OPENCLAW("openclaw", "OpenClaw", 18789, null),
     HERMES("hermes", "Hermes", 8642, null),
     OPENCODE("opencode", "opencode", 4096, "opencode"),
     KILO("kilo", "Kilo", null, "kilo"),
-    /** Any other server speaking the OpenAI chat shape. */
+    /** Any other server speaking the OpenAI chat shape. Keep it last. */
     OPENAI("openai", "", null, null);
 
     /** Whether it can be held to a JSON schema, so changes need no fenced block. */
@@ -32,7 +46,7 @@ enum class AgentKind(val id: String, val label: String, val port: Int?, private 
         fun of(id: String?): AgentKind = entries.firstOrNull { it.id == id } ?: OPENAI
 
         /** Tried in this order when no port was typed. */
-        val DEFAULT_PORTS = listOf(18789, 8642, 4096)
+        val DEFAULT_PORTS: List<Int> get() = entries.mapNotNull { it.port }
     }
 }
 
