@@ -1,5 +1,7 @@
 package com.hubidubitask.core.agent
 
+import com.hubidubitask.core.i18n.t
+
 /**
  * A user's agent that speaks the OpenAI chat shape: OpenClaw's gateway,
  * Hermes Agent's API server, or any other. The agent keeps its own system
@@ -24,6 +26,10 @@ class OpenAiAgent(private val config: AgentConfig) : HomeAgentClient {
     }
 
     override fun health(): Health = client.health().let { h ->
-        h.copy(server = kind.label.ifEmpty { h.models.firstOrNull() ?: h.server.orEmpty() })
+        val server = kind.label.ifEmpty { h.models.firstOrNull() ?: h.server.orEmpty() }
+        // Answering but with no model to ask (an Ollama with none pulled yet) can't answer a review.
+        if (h.connected && !named && h.models.none { it.isNotBlank() })
+            h.copy(connected = false, server = server, error = t("it has no model yet"))
+        else h.copy(server = server)
     }
 }

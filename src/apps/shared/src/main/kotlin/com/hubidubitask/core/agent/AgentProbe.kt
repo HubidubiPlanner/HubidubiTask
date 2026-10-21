@@ -135,7 +135,9 @@ object AgentProbe {
             val model = when (kind) {
                 AgentKind.OPENCLAW -> ids.firstOrNull { it == "openclaw" } ?: "openclaw"
                 AgentKind.HERMES -> ids.firstOrNull() ?: "hermes-agent"
-                else -> ids.firstOrNull() ?: return Result.NotFound
+                // A kind told apart by its signature is found even with no model yet:
+                // the check after saving says so, rather than "nothing answered".
+                else -> ids.firstOrNull() ?: if (kind != null) "" else return Result.NotFound
             }
             return Result.Found(kind ?: AgentKind.OPENAI, s.base, model, s.cert)
         }

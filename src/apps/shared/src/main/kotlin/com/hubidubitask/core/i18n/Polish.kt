@@ -113,6 +113,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "Inbox" to "Skrzynka",
     "Incoming" to "Nadchodzące",
     "IP address" to "Adres IP",
+    "it has no model yet" to "nie ma jeszcze żadnego modelu",
     "It redirects to an address that isn't secure." to "Przekierowuje na niezabezpieczony adres.",
     "Its attachment is deleted too." to "Załącznik też zostanie usunięty.",
     "Ivory" to "Kość słoniowa",

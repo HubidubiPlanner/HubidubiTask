@@ -113,6 +113,7 @@ internal val FRENCH: Map<String, String> = mapOf(
     "Inbox" to "Boîte de réception",
     "Incoming" to "À venir",
     "IP address" to "Adresse IP",
+    "it has no model yet" to "il n’a encore aucun modèle",
     "It redirects to an address that isn't secure." to "Redirection vers une adresse non sécurisée.",
     "Its attachment is deleted too." to "Sa pièce jointe est aussi supprimée.",
     "Ivory" to "Ivoire",

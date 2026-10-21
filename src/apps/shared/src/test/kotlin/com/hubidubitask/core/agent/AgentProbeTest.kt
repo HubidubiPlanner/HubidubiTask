@@ -105,6 +105,19 @@ class AgentProbeTest {
         assertEquals(AgentKind.OPENAI, AgentKind.entries.last())
     }
 
+    @Test fun `Ollama with no model pulled is still found, and the check says why it can't answer`() {
+        val s = stub { c -> when (c.path) {
+            "/api/tags" -> 200 to """{"models":[]}"""
+            "/v1/models" -> 200 to """{"object":"list","data":[]}"""
+            else -> null } }
+        val found = assertIs<Result.Found>(detect(s, null))
+        assertEquals(AgentKind.OLLAMA, found.kind)
+        assertEquals("", found.model)
+        val h = HomeAgent.clientFor(AgentConfig(found.endpoint, protocol = "harness", kind = "ollama")).health()
+        assertFalse(h.connected)
+        assertEquals(com.hubidubitask.core.i18n.t("it has no model yet"), h.error)
+    }
+
     @Test fun `a plain OpenAI-shaped server is not taken for Ollama`() {
         val models = """{"data":[{"id":"qwen3.6-35b"}]}"""
         // A bare 200 at /api/tags, or one without Ollama's "models", is not Ollama.

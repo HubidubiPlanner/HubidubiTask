@@ -113,6 +113,7 @@ internal val GERMAN: Map<String, String> = mapOf(
     "Inbox" to "Eingang",
     "Incoming" to "Anstehend",
     "IP address" to "IP-Adresse",
+    "it has no model yet" to "es hat noch kein Modell",
     "It redirects to an address that isn't secure." to "Es wird auf eine unsichere Adresse weitergeleitet.",
     "Its attachment is deleted too." to "Der Anhang wird ebenfalls gelöscht.",
     "Ivory" to "Elfenbein",
