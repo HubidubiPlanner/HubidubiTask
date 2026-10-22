@@ -6,3 +6,4 @@ What's new
 • The default theme is now called Ivory; same colours.
 • The Pro sign-up and the self-hosted AI server choice are gone; that choice switches to Claude.
 • Just after midnight, Incoming shows the new day.
+• A smaller app (37 MB, was 53 MB).

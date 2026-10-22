@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.1.0 — 22 October 2026
 
 - **Free and open source**, under the GNU GPL, version 3 or later. The
   source is on GitHub: <https://github.com/HubidubiPlanner/HubidubiTask>.

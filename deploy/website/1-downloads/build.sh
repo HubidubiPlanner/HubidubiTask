@@ -1,16 +1,17 @@
 #!/bin/sh
-# Step 1: the files of a release, built from this repository.
+# Step 1: the files of a release, built from this repository and named as
+# they are on the GitHub release (release.sh publishes them).
 #
 #   sh deploy/website/1-downloads/build.sh            build what is missing or old
 #   sh deploy/website/1-downloads/build.sh --rebuild  build everything again
 #
-# out/HubidubiTask.dmg                   the Mac app (Apple silicon), :desktop:packageDmg
-# out/hubidubitask-x86_64.pkg.tar.zst    the Arch package, distribution/arch/build.sh (needs Docker)
-# out/HubidubiTask-x86_64.AppImage       any Linux, distribution/appimage/build.sh (needs Docker)
-# out/HubidubiTask-<version>.apk         Android, signed with the APK key (SIGNING.md); F-Droid
-#                                        ships it under this name (deploy/f-droid/README.md)
-# out/SHA256SUMS                         checksums of the four
-# out/SHA256SUMS.sig                     their signature (SIGNING.md)
+# out/HubidubiTask-<v>.dmg                       the Mac app (Apple silicon), :desktop:packageDmg
+# out/hubidubitask-<v>-1-x86_64.pkg.tar.zst      the Arch package, distribution/arch/build.sh (needs Docker)
+# out/HubidubiTask-<v>-x86_64.AppImage           any Linux, distribution/appimage/build.sh (needs Docker)
+# out/HubidubiTask-<v>.apk                       Android, signed with the APK key (SIGNING.md); F-Droid
+#                                                fetches it under this name (deploy/f-droid/README.md)
+# out/SHA256SUMS                                 checksums of the four
+# out/SHA256SUMS.sig                             their signature (SIGNING.md)
 #
 # The Mac app must be built on a Mac with Apple silicon.
 set -eu
@@ -21,13 +22,15 @@ out="$here/out"
 version=$(sed -n 's/^hubidubitask.version=//p' "$apps/gradle.properties")
 rebuild=false; [ "${1:-}" = "--rebuild" ] && rebuild=true
 mkdir -p "$out"
+# Files of other versions don't belong to this release.
+find "$out" -maxdepth 1 -type f ! -name "*-$version*" ! -name '.gitignore' -delete
 
 dmg="$apps/desktop/build/compose/binaries/main/dmg/HubidubiTask-$version.dmg"
 if $rebuild || [ ! -f "$dmg" ]; then
   echo "==> Mac app $version"
   (cd "$apps" && ./gradlew -q :desktop:packageDmg)
 fi
-cp "$dmg" "$out/HubidubiTask.dmg"
+cp "$dmg" "$out/HubidubiTask-$version.dmg"
 
 # Both Linux files wrap one Linux app image; the second reuses it when the
 # first has just built it.
@@ -38,7 +41,7 @@ if $rebuild || [ ! -f "$pkg" ]; then
   "$repo/distribution/arch/build.sh"
   built=true
 fi
-cp "$pkg" "$out/hubidubitask-x86_64.pkg.tar.zst"
+cp "$pkg" "$out/"
 
 appimage="$repo/distribution/appimage/out/HubidubiTask-$version-x86_64.AppImage"
 if $rebuild || [ ! -f "$appimage" ]; then
@@ -46,7 +49,7 @@ if $rebuild || [ ! -f "$appimage" ]; then
   if $built; then REUSE_IMAGE=1 "$repo/distribution/appimage/build.sh"
   else "$repo/distribution/appimage/build.sh"; fi
 fi
-cp "$appimage" "$out/HubidubiTask-x86_64.AppImage"
+cp "$appimage" "$out/"
 
 # Android: built from a fresh clone of the release tag, the way F-Droid builds
 # it, so F-Droid's own build matches this one byte for byte and F-Droid ships
@@ -77,8 +80,8 @@ fi
 "$apksigner" verify --print-certs "$apk" | grep -q "certificate SHA-256 digest: $cert" ||
   { echo "!! $apk is not signed with the APK key ($cert)" >&2; exit 1; }
 
-(cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst HubidubiTask-x86_64.AppImage \
-  "HubidubiTask-$version.apk" > SHA256SUMS)
+(cd "$out" && shasum -a 256 "HubidubiTask-$version.dmg" "hubidubitask-$version-1-x86_64.pkg.tar.zst" \
+  "HubidubiTask-$version-x86_64.AppImage" "HubidubiTask-$version.apk" > SHA256SUMS)
 # Signed with the release key the repo signs its tags with (git config
 # user.signingkey; see SIGNING.md), so a download can be checked against it.
 key=$(git -C "$repo" config user.signingkey || true)

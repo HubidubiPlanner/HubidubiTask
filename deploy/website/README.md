@@ -6,7 +6,7 @@ takes three steps, one folder each:
 
 | Step | Folder | What it does |
 |---|---|---|
-| 1 | [`1-downloads/`](1-downloads) | Builds the Mac app, the Linux package and the AppImage, with checksums, or takes them from the GitHub release; only for a host that serves the downloads itself |
+| 1 | [`1-downloads/`](1-downloads) | Builds a release's files (Mac app, Arch package, AppImage, Android APK) with signed checksums, and `release.sh` publishes them as the GitHub release; `fetch-release.sh` takes them back from there for a host that serves the downloads itself |
 | 2 | [`2-site/`](2-site) | Puts the site and any downloads together, with the address and contact link from `site.env`, and checks the pages against the files |
 | 3 | [`3-publish/`](3-publish) | Uploads it, and what to check afterwards |
 
@@ -22,6 +22,11 @@ publishes it from main by itself
 and Linux buttons link to the latest GitHub release, so the site carries no
 downloads (see [`3-publish/`](3-publish)). The three commands are for
 checking it locally or publishing somewhere else.
+
+A release: tag the version (`git tag -s v<version>`) and push the tag,
+then `sh deploy/website/1-downloads/build.sh --rebuild` and
+`sh deploy/website/1-downloads/release.sh`. The site's download buttons and
+F-Droid take the files from that release.
 
 The screenshots in `site/assets/screens/` are the real apps with made-up data:
 the phone ones from `deploy/google-play/3-graphics/shoot.py`, the computer

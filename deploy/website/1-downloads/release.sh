@@ -1,0 +1,41 @@
+#!/bin/sh
+# Step 1, last part: publish the files build.sh made as the GitHub release of
+# the version in src/apps/gradle.properties. The website's download buttons
+# and F-Droid (the APK) take them from there.
+#
+#   sh deploy/website/1-downloads/release.sh
+#
+# Needs: the signed tag v<version> pushed to GitHub, out/ built for that
+# version, and gh logged in to the project's account. The notes are the
+# version's section of docs/CHANGELOG.md.
+set -eu
+here=$(cd "$(dirname "$0")" && pwd)
+repo=$(cd "$here/../../.." && pwd)
+out="$here/out"
+version=$(sed -n 's/^hubidubitask.version=//p' "$repo/src/apps/gradle.properties")
+tag="v$version"
+github=${HUBIDUBITASK_GITHUB:-HubidubiPlanner/HubidubiTask}
+
+git -C "$repo" -c gpg.ssh.allowedSignersFile="$repo/.github/allowed_signers" verify-tag "$tag" >/dev/null 2>&1 ||
+  { echo "!! $tag is missing or not signed with the release key (SIGNING.md)" >&2; exit 1; }
+gh api "repos/$github/git/ref/tags/$tag" >/dev/null 2>&1 ||
+  { echo "!! $tag is not on GitHub yet: push it first" >&2; exit 1; }
+
+files="HubidubiTask-$version.dmg hubidubitask-$version-1-x86_64.pkg.tar.zst HubidubiTask-$version-x86_64.AppImage HubidubiTask-$version.apk"
+cd "$out"
+for f in $files SHA256SUMS SHA256SUMS.sig; do
+  [ -f "$f" ] || { echo "!! out/$f is missing: run build.sh" >&2; exit 1; }
+done
+shasum -a 256 -c SHA256SUMS >/dev/null || { echo "!! out/ doesn't match SHA256SUMS" >&2; exit 1; }
+ssh-keygen -Y verify -f "$repo/.github/allowed_signers" -I hubidubiplanner@hubidubitask.invalid -n file \
+  -s SHA256SUMS.sig < SHA256SUMS >/dev/null || { echo "!! SHA256SUMS.sig doesn't verify" >&2; exit 1; }
+
+notes=$(mktemp)
+trap 'rm -f "$notes"' EXIT
+awk -v v="## $version " 'index($0, v) == 1 {on = 1; next} /^## / {on = 0} on' "$repo/docs/CHANGELOG.md" > "$notes"
+[ -s "$notes" ] || { echo "!! docs/CHANGELOG.md has no section for $version" >&2; exit 1; }
+printf '\nCheck a download against SHA256SUMS and its signature: see SIGNING.md.\n' >> "$notes"
+
+# shellcheck disable=SC2086
+gh release create "$tag" -R "$github" --verify-tag --title "HubidubiTask $version" --notes-file "$notes" \
+  $files SHA256SUMS SHA256SUMS.sig
