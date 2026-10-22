@@ -83,8 +83,10 @@ names (`v3.1.0`) must exist in the checkout. The built APK lands in
 
 F-Droid's [inclusion policy](https://f-droid.org/docs/Inclusion_Policy/)
 asks for three months of development, unless the app "has been proven to
-have some users". This one has had users on Google Play since 1.0.0, so it
-can be submitted now.
+have some users". The history starts on 31 August 2026, so the three months
+are up on 1 December 2026. A merge request before then should say how many
+testers the app has on Google Play's test track; the reviewers decide
+whether that is enough.
 
 1. Use the project's GitLab account; the recipe's `AuthorName` is
    HubidubiPlanner.
