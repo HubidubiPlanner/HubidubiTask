@@ -1,0 +1,10 @@
+# gitleaks settings: its default rules, except that the F-Droid recipe's
+# AllowedAPKSigningKeys line is allowed. That value is the public SHA-256
+# fingerprint of the APK certificate (SIGNING.md), not a secret.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "public APK certificate fingerprint in the F-Droid recipe"
+regexTarget = "line"
+regexes = ['''^AllowedAPKSigningKeys: [0-9a-f]{64}$''']
