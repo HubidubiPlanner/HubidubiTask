@@ -8,7 +8,7 @@ each other current over your own Wi-Fi.
 
 - **Phone:** from Google Play, or `./gradlew :android:installDebug` while developing.
 - **Mac:** `HubidubiTask.app`, from the
-  [GitHub release](https://github.com/hubidubitask/HubidubiTask/releases/latest),
+  [GitHub release](https://github.com/HubidubiPlanner/HubidubiTask/releases/latest),
   or build it with `./gradlew :desktop:createDistributable`.
 - **Linux, any distribution (x86_64):** `HubidubiTask-x86_64.AppImage`. Make it
   runnable (`chmod +x HubidubiTask-x86_64.AppImage`) and start it; nothing is

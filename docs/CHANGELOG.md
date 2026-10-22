@@ -3,7 +3,7 @@
 ## Unreleased
 
 - **Free and open source**, under the GNU GPL, version 3 or later. The
-  source is on GitHub: <https://github.com/hubidubitask/HubidubiTask>.
+  source is on GitHub: <https://github.com/HubidubiPlanner/HubidubiTask>.
 - **The default theme is now called Ivory.** Same colours as before.
 - **The Pro sign-up button is gone.** Everything is free.
 - **The self-hosted AI server choice is gone.** A phone or computer that used

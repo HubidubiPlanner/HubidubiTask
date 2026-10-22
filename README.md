@@ -15,9 +15,9 @@ your own server.
 - **Android:** [Google Play](https://play.google.com/store/apps/details?id=com.saferendering.hubidubitask).
   F-Droid is coming.
 - **Mac** (Apple silicon) **and Linux** (x86_64, an AppImage or an Arch
-  package): [GitHub Releases](https://github.com/hubidubitask/HubidubiTask/releases/latest).
+  package): [GitHub Releases](https://github.com/HubidubiPlanner/HubidubiTask/releases/latest).
 
-Website: <https://hubidubitask.github.io/HubidubiTask>. How to use it:
+Website: <https://hubidubiplanner.github.io/HubidubiTask>. How to use it:
 [`docs/MANUAL.md`](docs/MANUAL.md).
 
 ## AI

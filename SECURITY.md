@@ -4,7 +4,7 @@
 
 Report it privately, through GitHub's private vulnerability reporting:
 
-<https://github.com/hubidubitask/HubidubiTask/security/advisories/new>
+<https://github.com/HubidubiPlanner/HubidubiTask/security/advisories/new>
 
 Never in a public issue, a pull request or a discussion. There is no email
 address for reports; GitHub keeps the report visible only to you and the

@@ -1,4 +1,4 @@
-# The website on GitHub Pages, https://hubidubitask.github.io/HubidubiTask/:
+# The website on GitHub Pages, https://hubidubiplanner.github.io/HubidubiTask/:
 # site/ put together and checked by deploy/website/2-site/assemble.sh. The Mac
 # and Linux buttons link to the latest GitHub release, so the site carries no
 # downloads. In Settings › Pages the source must be "GitHub Actions".

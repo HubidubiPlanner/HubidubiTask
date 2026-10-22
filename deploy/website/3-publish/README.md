@@ -6,7 +6,7 @@ images, a few MB. If the site serves the downloads itself, they add about
 
 ## GitHub Pages (where it lives)
 
-The site is at <https://hubidubitask.github.io/HubidubiTask/>, published by
+The site is at <https://hubidubiplanner.github.io/HubidubiTask/>, published by
 [`.github/workflows/pages.yml`](../../../.github/workflows/pages.yml). It runs
 on every push to main that changes `site/`, `deploy/website/`, the version or
 the workflow, and by hand from Actions › Pages › Run workflow. In the
@@ -14,7 +14,7 @@ repository's Settings › Pages, the source is "GitHub Actions".
 
 GitHub Pages takes no single file over 100 MB, so the downloads stay on the
 release page: the Mac and Linux buttons link to
-<https://github.com/hubidubitask/HubidubiTask/releases/latest>, and
+<https://github.com/HubidubiPlanner/HubidubiTask/releases/latest>, and
 `assemble.sh` takes no files.
 
 ## Other hosts

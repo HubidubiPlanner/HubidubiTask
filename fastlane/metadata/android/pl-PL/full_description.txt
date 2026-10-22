@@ -47,4 +47,4 @@ Sześć motywów kolorów o wysokim kontraście. Domyślny, Kość słoniowa, do
 
 Po polsku, angielsku, niemiecku, francusku i hiszpańsku. Wybierz w Ustawieniach; do tego czasu aplikacja mówi językiem telefonu.
 
-Bezpłatna i otwartoźródłowa (GPL-3.0). Kod źródłowy: github.com/hubidubitask/HubidubiTask
+Bezpłatna i otwartoźródłowa (GPL-3.0). Kod źródłowy: github.com/HubidubiPlanner/HubidubiTask

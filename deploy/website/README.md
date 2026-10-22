@@ -16,7 +16,7 @@ sh deploy/website/2-site/assemble.sh
 sh deploy/website/3-publish/publish.sh
 ```
 
-The site is at <https://hubidubitask.github.io/HubidubiTask/>: GitHub Pages
+The site is at <https://hubidubiplanner.github.io/HubidubiTask/>: GitHub Pages
 publishes it from main by itself
 ([`.github/workflows/pages.yml`](../../.github/workflows/pages.yml)). The Mac
 and Linux buttons link to the latest GitHub release, so the site carries no

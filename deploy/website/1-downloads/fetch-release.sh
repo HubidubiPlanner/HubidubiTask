@@ -14,7 +14,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
 out="$here/out"
 version=$(sed -n 's/^hubidubitask.version=//p' "$repo/src/apps/gradle.properties")
-release="https://github.com/hubidubitask/HubidubiTask/releases/download/v$version"
+release="https://github.com/HubidubiPlanner/HubidubiTask/releases/download/v$version"
 dmg="HubidubiTask-$version.dmg"
 pkg="hubidubitask-$version-1-x86_64.pkg.tar.zst"
 appimage="HubidubiTask-$version-x86_64.AppImage"

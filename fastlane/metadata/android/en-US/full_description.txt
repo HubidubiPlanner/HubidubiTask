@@ -47,6 +47,6 @@ Six colour themes, all high in contrast. The default, Ivory, follows your system
 
 In English, Polish, German, French and Spanish. Choose in Settings; until then the app follows your phone's language.
 
-Free and open source (GPL-3.0). Source code: github.com/hubidubitask/HubidubiTask
+Free and open source (GPL-3.0). Source code: github.com/HubidubiPlanner/HubidubiTask
 
 Get it done. Keep it yours.

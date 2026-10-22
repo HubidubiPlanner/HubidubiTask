@@ -7,15 +7,15 @@ Categories:
   - Task
 License: GPL-3.0-or-later
 AuthorName: HubidubiPlanner
-WebSite: https://hubidubitask.github.io/HubidubiTask
-SourceCode: https://github.com/hubidubitask/HubidubiTask
-IssueTracker: https://github.com/hubidubitask/HubidubiTask/issues
-Changelog: https://github.com/hubidubitask/HubidubiTask/blob/HEAD/docs/CHANGELOG.md
+WebSite: https://hubidubiplanner.github.io/HubidubiTask
+SourceCode: https://github.com/HubidubiPlanner/HubidubiTask
+IssueTracker: https://github.com/HubidubiPlanner/HubidubiTask/issues
+Changelog: https://github.com/HubidubiPlanner/HubidubiTask/blob/HEAD/docs/CHANGELOG.md
 
 AutoName: HubidubiTask
 
 RepoType: git
-Repo: https://github.com/hubidubitask/HubidubiTask.git
+Repo: https://github.com/HubidubiPlanner/HubidubiTask.git
 
 Builds:
   - versionName: 3.1.0

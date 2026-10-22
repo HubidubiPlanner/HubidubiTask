@@ -73,7 +73,7 @@ Markdown.
 
 - One topic per pull request, with tests for what changes.
 - Bugs and ideas go to the issues:
-  <https://github.com/hubidubitask/HubidubiTask/issues>.
+  <https://github.com/HubidubiPlanner/HubidubiTask/issues>.
 - Security problems never go to a public issue; see [SECURITY.md](SECURITY.md).
 
 ## Licence

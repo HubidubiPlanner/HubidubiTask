@@ -7,7 +7,7 @@ pkgver=1.7.0  # set from src/apps/gradle.properties by build.sh
 pkgrel=1
 pkgdesc="HubidubiTask: tasks, notes and feeds, synced with your phone"
 arch=('x86_64')
-url="https://hubidubitask.github.io/HubidubiTask"
+url="https://hubidubiplanner.github.io/HubidubiTask"
 license=('GPL-3.0-or-later')
 depends=('libxrender' 'libxtst' 'libxi' 'alsa-lib' 'fontconfig' 'freetype2' 'libglvnd')
 # Called hubidubios up to 1.7.0; this package takes its place on upgrade.
