@@ -62,7 +62,7 @@ isn't there, pull first.
 2. **Choose the input.**
    - A file the user exports from the other app is the most private choice: nothing leaves the device. Prefer it when the app offers an export.
    - An API needs a token: use `Secret`, read only, and never keep the token anywhere.
-   - `howTo` is the one line under the field that says where to find the value (see Todoist's). Leave it null when the label says enough, because the app's owner dislikes helper text. A file input has no field and no `howTo`.
+   - `howTo` is the one line under the field that says where to find the value (see Todoist's). Leave it null when the label says enough, because the app keeps hint text out (CONTRIBUTING.md). A file input has no field and no `howTo`.
 
 3. **Write `shared/src/main/kotlin/com/hubidubitask/mobile/importer/sources/<Name>Source.kt`.**
    - Make it an `object <Name>Source : ImportSource`.

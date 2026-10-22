@@ -24,7 +24,7 @@ echo "==> Signature"
 keytool -printcert -jarfile "$aab" 2>/dev/null | grep -q '^Owner: ' ||
   { echo "!! the bundle is not signed: set up your upload keystore (README.md)" >&2; exit 1; }
 jarsigner -verify "$aab" >/dev/null && echo "    verified"
-keytool -printcert -jarfile "$aab" | sed -n 's/^Owner: /    signed by /p' | head -1
+keytool -printcert -jarfile "$aab" | sed -n 's/^.*SHA256: /    upload key SHA-256 /p' | head -1
 
 echo "==> Permissions (merged manifest)"
 manifest=$(find "$apps/android/build/intermediates/merged_manifests/release" -name AndroidManifest.xml | head -1)

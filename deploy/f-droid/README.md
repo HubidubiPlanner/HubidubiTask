@@ -74,17 +74,18 @@ fdroid build -v -l com.saferendering.hubidubitask
 `rewritemeta` must leave the file as it is, and `lint` must print nothing.
 `fdroid build` downloads the APK named in `Binaries` and compares it with its
 own build; it fails if they differ.
-While the GitHub repository is not public yet, build from this checkout
-instead: in the copy under `~/fdroiddata/metadata/`, set `Repo: /src`. The
-tag the recipe names (`v3.1.0`) must exist in the checkout. The built APK
-lands in `~/fdroiddata/unsigned/`.
+To try a tag that isn't pushed yet, build from this checkout instead: in
+the copy under `~/fdroiddata/metadata/`, set `Repo: /src`. The tag the recipe
+names (`v3.1.0`) must exist in the checkout. The built APK lands in
+`~/fdroiddata/unsigned/`.
 
 ## Submit it
 
 Not before **1 December 2026**. F-Droid wants about three months of public
 development history, and this history starts on 31 August 2026.
 
-1. Use the project's GitLab account; the recipe's `AuthorName` is HubidubiPlanner.
+1. Use the project's GitLab account; the recipe's `AuthorName` is
+   HubidubiPlanner.
 2. Fork <https://gitlab.com/fdroid/fdroiddata> and create a branch named
    `com.saferendering.hubidubitask`.
 3. Add the recipe as `metadata/com.saferendering.hubidubitask.yml`, with

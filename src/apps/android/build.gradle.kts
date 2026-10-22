@@ -17,9 +17,9 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        // Play knows the app by this id, and since 1.0.0 the phone from Play
-        // runs it too. -Phubidubitask.appId=… installs a build under another id,
-        // which is a second, empty app beside it.
+        // Play knows the app by this id (since 1.0.0). -Phubidubitask.appId=…
+        // installs a build under another id, which is a second, empty app
+        // beside the one from Play.
         applicationId = (project.findProperty("hubidubitask.appId") as String?)
             ?: "com.saferendering.hubidubitask"
         minSdk = 26

@@ -62,6 +62,7 @@ if $rebuild || [ ! -f "$apk" ]; then
   git -C "$repo" rev-parse -q --verify "refs/tags/v$version" >/dev/null ||
     { echo "!! tag v$version is missing: tag the release first" >&2; exit 1; }
   tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
   git clone -q --no-local --branch "v$version" "$repo" "$tmp/src" 2>/dev/null
   [ -f "$apps/local.properties" ] && cp "$apps/local.properties" "$tmp/src/src/apps/"
   (cd "$tmp/src/src/apps" && ./gradlew -q -Phubidubitask.androidOnly=true \
@@ -76,7 +77,6 @@ fi
 "$apksigner" verify --print-certs "$apk" | grep -q "certificate SHA-256 digest: $cert" ||
   { echo "!! $apk is not signed with the APK key ($cert)" >&2; exit 1; }
 
-rm -f "$out/hubidubitask-agent.tar.gz"
 (cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst HubidubiTask-x86_64.AppImage \
   "HubidubiTask-$version.apk" > SHA256SUMS)
 # Signed with the release key the repo signs its tags with (git config

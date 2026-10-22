@@ -39,7 +39,7 @@ update can only come from where the app was installed.
   (`CN=HubidubiPlanner, O=HubidubiTask`) has the SHA-256 fingerprint
 
   ```
-  8b3d4656b54320a19dba8e70dec35e87fe990e95cbb06c27f27c12db07ef80a1
+  9edba9349d2da2c0e032a855b09b2e8ca046d26dc7ed2a13257eb093a99d8184
   ```
 
   F-Droid doesn't sign the app itself: it builds it from the tagged source,
