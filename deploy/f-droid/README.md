@@ -81,19 +81,25 @@ names (`v3.1.0`) must exist in the checkout. The built APK lands in
 
 ## Submit it
 
-Not before **1 December 2026**. F-Droid wants about three months of public
-development history, and this history starts on 31 August 2026.
+F-Droid's [inclusion policy](https://f-droid.org/docs/Inclusion_Policy/)
+asks for three months of development, unless the app "has been proven to
+have some users". This one has had users on Google Play since 1.0.0, so it
+can be submitted now.
 
 1. Use the project's GitLab account; the recipe's `AuthorName` is
    HubidubiPlanner.
-2. Fork <https://gitlab.com/fdroid/fdroiddata> and create a branch named
-   `com.saferendering.hubidubitask`.
+2. Fork <https://gitlab.com/fdroid/fdroiddata>, keep the fork public, and
+   create a branch named `com.saferendering.hubidubitask`.
 3. Add the recipe as `metadata/com.saferendering.hubidubitask.yml`, with
-   `Repo` pointing at GitHub again. Commit it as
-   `New App: com.saferendering.hubidubitask` and push.
-4. Wait for the fork's CI pipeline to pass, then open a merge request to
-   fdroiddata from that branch and fill in its template.
-5. Answer the reviewers' questions. They may ask about the native libraries
+   `Repo` pointing at GitHub and `commit` the full hash of the tagged commit
+   (`git rev-parse 'v3.1.0^{commit}'`), never the tag name. Commit it as
+   `New app: HubidubiTask` and push.
+4. Wait for the fork's CI pipeline to pass. If GitLab asks for a phone number
+   or a card to run it, don't give one: say so in the merge request and
+   F-Droid starts the pipeline.
+5. Open a merge request to fdroiddata from that branch, titled
+   `New app: HubidubiTask`, and fill in its template.
+6. Answer the reviewers' questions. They may ask about the native libraries
    that come with SQLCipher and Conscrypt (both open source, from Maven
    Central) and about the anti-feature: the app can use Anthropic's Claude
    API, an OpenAI-compatible server, Todoist and Google Calendar, all
@@ -101,3 +107,21 @@ development history, and this history starts on 31 August 2026.
 
 Once it is merged, F-Droid's update checker adds each new `v…` tag by
 itself.
+
+## Google's developer verification
+
+From 2027, phones with Google Play install an app only when its package name
+and signing key are registered to a developer verified by Google. Play
+registered the Play-signed app by itself. The APK key, which signs the
+F-Droid and GitHub APKs, has to be added to the same package once, in Play
+Console:
+
+1. **Android developer verification → Package names**: add the APK key to
+   `com.saferendering.hubidubitask`, SHA-256
+   `9edba9349d2da2c0e032a855b09b2e8ca046d26dc7ed2a13257eb093a99d8184`.
+2. To prove the key is yours, Play Console shows a snippet (**Upload APK**).
+   Put it in `src/apps/android/src/main/assets/adi-registration.properties`,
+   build a release APK signed with the APK key, and upload that APK there.
+
+Until then the APK installs as before outside Brazil, Indonesia, Singapore
+and Thailand, where checks started on 30 September 2026.
