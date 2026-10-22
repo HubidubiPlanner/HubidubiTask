@@ -34,7 +34,8 @@ android {
     // environment, or hubidubitask.keystore, .keystoreAlias and
     // .keystoreKeychain in ~/.gradle/gradle.properties, the password then read
     // from that macOS Keychain item. Without one the release build comes out
-    // unsigned, the way F-Droid builds it before signing with its own key.
+    // unsigned, the way F-Droid builds it to compare with the signed APK of
+    // the GitHub release (deploy/f-droid/README.md).
     signingConfigs {
         create("release") {
             val path = System.getenv("HUBIDUBITASK_KEYSTORE")

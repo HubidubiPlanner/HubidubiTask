@@ -1,0 +1,5 @@
+# Text files are checked out with LF line endings on every machine, so a
+# release APK built anywhere matches F-Droid's build byte for byte
+# (deploy/f-droid/README.md).
+* text=auto eol=lf
+*.bat text eol=crlf

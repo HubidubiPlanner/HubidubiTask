@@ -29,5 +29,23 @@ git config gpg.ssh.allowedSignersFile .github/allowed_signers
 git verify-tag v3.1.0
 ```
 
-The Android app is signed by Google Play (from Play) or by F-Droid (from
-F-Droid); each store checks its own signature when it installs or updates.
+## The Android app
+
+Two signatures exist, one per store; Android checks it on every update, so an
+update can only come from where the app was installed.
+
+- **From F-Droid, or the `.apk` of a GitHub release:** signed with the
+  project's APK key, which only the maintainer holds. Its certificate
+  (`CN=HubidubiPlanner, O=HubidubiTask`) has the SHA-256 fingerprint
+
+  ```
+  8b3d4656b54320a19dba8e70dec35e87fe990e95cbb06c27f27c12db07ef80a1
+  ```
+
+  F-Droid doesn't sign the app itself: it builds it from the tagged source,
+  checks that its build is identical to the signed APK of the release, and
+  then ships that signed APK. Check a downloaded one with
+  `apksigner verify --print-certs HubidubiTask-3.1.0.apk`.
+- **From Google Play:** signed by Google (Play App Signing), which every app
+  uploaded to Play as a bundle uses. Only the maintainer can upload a
+  version; Play checks the upload key.

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Step 1: the three files the website offers, built from this repository.
+# Step 1: the files of a release, built from this repository.
 #
 #   sh deploy/website/1-downloads/build.sh            build what is missing or old
 #   sh deploy/website/1-downloads/build.sh --rebuild  build everything again
@@ -7,7 +7,9 @@
 # out/HubidubiTask.dmg                   the Mac app (Apple silicon), :desktop:packageDmg
 # out/hubidubitask-x86_64.pkg.tar.zst    the Arch package, distribution/arch/build.sh (needs Docker)
 # out/HubidubiTask-x86_64.AppImage       any Linux, distribution/appimage/build.sh (needs Docker)
-# out/SHA256SUMS                         checksums of the three
+# out/HubidubiTask-<version>.apk         Android, signed with the APK key (SIGNING.md); F-Droid
+#                                        ships it under this name (deploy/f-droid/README.md)
+# out/SHA256SUMS                         checksums of the four
 # out/SHA256SUMS.sig                     their signature (SIGNING.md)
 #
 # The Mac app must be built on a Mac with Apple silicon.
@@ -46,8 +48,37 @@ if $rebuild || [ ! -f "$appimage" ]; then
 fi
 cp "$appimage" "$out/HubidubiTask-x86_64.AppImage"
 
+# Android: built from a fresh clone of the release tag, the way F-Droid builds
+# it, so F-Droid's own build matches this one byte for byte and F-Droid ships
+# this copy, signed with the key only the owner holds. The key and its
+# Keychain item can be changed with HUBIDUBITASK_APK_KEYSTORE and
+# HUBIDUBITASK_APK_KEYCHAIN.
+apk="$out/HubidubiTask-$version.apk"
+cert=$(sed -n 's/^AllowedAPKSigningKeys: *//p' "$repo/deploy/f-droid/com.saferendering.hubidubitask.yml")
+sdk=${ANDROID_HOME:-$(sed -n 's/^sdk.dir=//p' "$apps/local.properties" 2>/dev/null)}
+apksigner=$(ls -d "$sdk"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+if $rebuild || [ ! -f "$apk" ]; then
+  echo "==> Android APK $version, from tag v$version"
+  git -C "$repo" rev-parse -q --verify "refs/tags/v$version" >/dev/null ||
+    { echo "!! tag v$version is missing: tag the release first" >&2; exit 1; }
+  tmp=$(mktemp -d)
+  git clone -q --no-local --branch "v$version" "$repo" "$tmp/src" 2>/dev/null
+  [ -f "$apps/local.properties" ] && cp "$apps/local.properties" "$tmp/src/src/apps/"
+  (cd "$tmp/src/src/apps" && ./gradlew -q -Phubidubitask.androidOnly=true \
+    -Phubidubitask.keystore="${HUBIDUBITASK_APK_KEYSTORE:-$HOME/.keystores/hubidubitask-release.jks}" \
+    -Phubidubitask.keystoreAlias=release \
+    -Phubidubitask.keystoreKeychain="${HUBIDUBITASK_APK_KEYCHAIN:-android-keystore-hubidubitask-release}" \
+    :android:assembleRelease)
+  cp "$tmp/src/src/apps/android/build/outputs/apk/release/android-release.apk" "$apk"
+  rm -rf "$tmp"
+fi
+# Only the APK key may have signed it: the certificate F-Droid accepts.
+"$apksigner" verify --print-certs "$apk" | grep -q "certificate SHA-256 digest: $cert" ||
+  { echo "!! $apk is not signed with the APK key ($cert)" >&2; exit 1; }
+
 rm -f "$out/hubidubitask-agent.tar.gz"
-(cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst HubidubiTask-x86_64.AppImage > SHA256SUMS)
+(cd "$out" && shasum -a 256 HubidubiTask.dmg hubidubitask-x86_64.pkg.tar.zst HubidubiTask-x86_64.AppImage \
+  "HubidubiTask-$version.apk" > SHA256SUMS)
 # Signed with the release key the repo signs its tags with (git config
 # user.signingkey; see SIGNING.md), so a download can be checked against it.
 key=$(git -C "$repo" config user.signingkey || true)

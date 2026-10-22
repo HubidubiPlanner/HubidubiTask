@@ -16,6 +16,7 @@ AutoName: HubidubiTask
 
 RepoType: git
 Repo: https://github.com/HubidubiPlanner/HubidubiTask.git
+Binaries: https://github.com/HubidubiPlanner/HubidubiTask/releases/download/v%v/HubidubiTask-%v.apk
 
 Builds:
   - versionName: 3.1.0
@@ -26,6 +27,8 @@ Builds:
       - yes
     gradleprops:
       - hubidubitask.androidOnly=true
+
+AllowedAPKSigningKeys: 8b3d4656b54320a19dba8e70dec35e87fe990e95cbb06c27f27c12db07ef80a1
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
