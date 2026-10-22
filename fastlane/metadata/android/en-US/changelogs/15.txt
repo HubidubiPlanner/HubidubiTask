@@ -1,9 +1,6 @@
-What's new
-• Free and open source (GPL-3.0); the source is on GitHub.
-• Import from a todo.txt file (Simpletask, Markor): Settings › Import.
-• Feeds can watch an RSS or Atom feed, not only a web page.
-• The Agent finds Ollama on your home computer by its IP.
-• The default theme is now called Ivory; same colours.
-• The Pro sign-up and the self-hosted AI server choice are gone; that choice switches to Claude.
-• Just after midnight, Incoming shows the new day.
-• A smaller app (37 MB, was 53 MB).
+• Free and open source (GPL-3.0), code on GitHub
+• Import tasks from a todo.txt file
+• Feeds can follow RSS and Atom feeds
+• The Agent finds Ollama on your home computer
+• A smaller app: 37 MB instead of 53 MB
+• Just after midnight, Incoming shows the new day

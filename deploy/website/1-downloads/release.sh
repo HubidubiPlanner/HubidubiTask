@@ -7,7 +7,8 @@
 #
 # Needs: the signed tag v<version> pushed to GitHub, out/ built for that
 # version, and gh logged in to the project's account. The notes are the
-# version's section of docs/CHANGELOG.md.
+# short plain-text ones Google Play and F-Droid show:
+# fastlane/metadata/android/en-US/changelogs/<versionCode>.txt.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
@@ -30,11 +31,9 @@ shasum -a 256 -c SHA256SUMS >/dev/null || { echo "!! out/ doesn't match SHA256SU
 ssh-keygen -Y verify -f "$repo/.github/allowed_signers" -I hubidubiplanner@hubidubitask.invalid -n file \
   -s SHA256SUMS.sig < SHA256SUMS >/dev/null || { echo "!! SHA256SUMS.sig doesn't verify" >&2; exit 1; }
 
-notes=$(mktemp)
-trap 'rm -f "$notes"' EXIT
-awk -v v="## $version " 'index($0, v) == 1 {on = 1; next} /^## / {on = 0} on' "$repo/docs/CHANGELOG.md" > "$notes"
-[ -s "$notes" ] || { echo "!! docs/CHANGELOG.md has no section for $version" >&2; exit 1; }
-printf '\nCheck a download against SHA256SUMS and its signature: see SIGNING.md.\n' >> "$notes"
+code=$(sed -n 's/^hubidubitask.versionCode=//p' "$repo/src/apps/gradle.properties")
+notes="$repo/fastlane/metadata/android/en-US/changelogs/$code.txt"
+[ -s "$notes" ] || { echo "!! no release notes: fastlane/metadata/android/en-US/changelogs/$code.txt" >&2; exit 1; }
 
 # shellcheck disable=SC2086
 gh release create "$tag" -R "$github" --verify-tag --title "HubidubiTask $version" --notes-file "$notes" \
