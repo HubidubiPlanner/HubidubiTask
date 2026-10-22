@@ -48,7 +48,20 @@ import com.hubidubitask.desktop.ui.SettingsScreen
 
 private data class Dest(val route: String, val label: String, val icon: ImageVector)
 
+/**
+ * The Mac app's launcher on Java 27 starts `main` with no context class
+ * loader, and the threads made from it, the window's too, inherit that.
+ * Compose finds the app's fonts through it, so the window failed with "Failed
+ * to load font". This gives this thread and the window's thread the app's own.
+ */
+internal fun useAppClassLoader() {
+    val app = Store::class.java.classLoader
+    Thread.currentThread().contextClassLoader = app
+    javax.swing.SwingUtilities.invokeAndWait { Thread.currentThread().contextClassLoader = app }
+}
+
 fun main() {
+    useAppClassLoader()
     val store = Store()
     // The title bar takes the theme's light or dark from the start; Java can't
     // change it on an open window, so a new choice reaches it at the next start.
