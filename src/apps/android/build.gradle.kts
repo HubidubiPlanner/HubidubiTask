@@ -62,7 +62,11 @@ android {
     buildTypes {
         release {
             signingConfigs.getByName("release").takeIf { it.storeFile != null }?.let { signingConfig = it }
-            isMinifyEnabled = false
+            // R8 drops unused code and shortens names: a smaller app that
+            // starts faster. What is only reached by name is kept in
+            // proguard-rules.pro; the libraries bring their own rules too.
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 

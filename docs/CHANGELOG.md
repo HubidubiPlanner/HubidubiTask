@@ -20,6 +20,8 @@
   period's one task says what's new; new dates alone are not a change.
 - **Just after midnight, Incoming shows the new day.** For an hour or two it
   showed the day before, by UTC's clock.
+- **A smaller Android app**: about 37 MB instead of 53 MB, as unused code is
+  left out of the build.
 - **The Mac app opens again.** 3.0.0 and 3.0.1 stopped at start with "Failed
   to load font": the Java the app brings since 3.0.0 starts it in a way that
   hid the app's own files from it.
