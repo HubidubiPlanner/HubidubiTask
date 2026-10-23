@@ -5,11 +5,11 @@ requests. Designed page by page in the design canvas "HubidubiTask Website";
 publish it with [`deploy/website`](../deploy/website).
 
 ```
-index.html      Home: Next, the + and the steps, taps, the AI choices, pairing
+index.html      Home: who it is for, Next, the + and the steps, taps, the AI choices, pairing
 download.html   Android, Mac and Linux (the release on GitHub); pairing
 agent.html      Plugging in the AI agent you already run at home
 privacy.html    The privacy policy (the URL Google Play asks for)
-style.css       The app's sand (light) and moss (dark), IBM Plex Sans only
+style.css       The app's default Ivory theme (light and dark), IBM Plex Sans only
 fonts/          The app's own fonts (OFL, see fonts/LICENSE.txt)
 assets/         Icon, link preview image, and screens/: the app's screenshots, light and dark
 ```

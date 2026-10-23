@@ -1,23 +1,16 @@
-/* HubidubiTask website. One typeface, the app's own sand (light) and moss
-   (dark), square corners like the app's buttons and cards. Fonts and images
-   are served from here, so no page load reaches a third party. */
+/* HubidubiTask website. One typeface, the app's default Ivory theme (ivory
+   paper and terracotta, warm charcoal when dark), square corners like the
+   app's buttons and cards. Fonts and images are served from here, so no page
+   load reaches a third party. */
 
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_medium.ttf") format("truetype"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("fonts/plex_sans_semibold.ttf") format("truetype"); font-weight: 600 700; font-display: swap; }
 
 :root {
-  --paper: #E9E1CF;
-  --raised: #F5F0E4;
-  --band: #E1D8C3;
-  --line: #CFC2AB;
-  --ink: #2E3028;
-  --muted: #5E5B52;
-  --accent: #7A624C;
-  --button: #7A624C;
-  --on-button: #F8F4EB;
-  --frame: #2E3028;
-  --shadow: rgba(46, 48, 40, 0.28);
+  --paper: #F4F3EE; --raised: #FFFFFF; --band: #E9E7DE; --line: #D8D5CB; --ink: #141413;
+  --muted: #5E5D59; --accent: #A84E2E; --button: #B0532F; --on-button: #FFFFFF;
+  --frame: #30302E; --shadow: rgba(20, 20, 19, 0.25);
   --sans: "Plex Sans", "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --wide: 1120px;
   --measure: 660px;
@@ -25,22 +18,22 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #1C1D18; --raised: #25271F; --band: #22241D; --line: #3A3C33; --ink: #D3C9AF;
-    --muted: #9A9686; --accent: #B4997E; --button: #B4997E; --on-button: #1C1D18;
-    --frame: #0E0F0B; --shadow: rgba(0, 0, 0, 0.55);
+    --paper: #262624; --raised: #30302E; --band: #1F1E1D; --line: #45443F; --ink: #FAF9F5;
+    --muted: #ADABA1; --accent: #E3896B; --button: #D97757; --on-button: #141413;
+    --frame: #0F0F0E; --shadow: rgba(0, 0, 0, 0.55);
     color-scheme: dark;
   }
 }
 [data-theme="dark"] {
-  --paper: #1C1D18; --raised: #25271F; --band: #22241D; --line: #3A3C33; --ink: #D3C9AF;
-  --muted: #9A9686; --accent: #B4997E; --button: #B4997E; --on-button: #1C1D18;
-  --frame: #0E0F0B; --shadow: rgba(0, 0, 0, 0.55);
+  --paper: #262624; --raised: #30302E; --band: #1F1E1D; --line: #45443F; --ink: #FAF9F5;
+  --muted: #ADABA1; --accent: #E3896B; --button: #D97757; --on-button: #141413;
+  --frame: #0F0F0E; --shadow: rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 [data-theme="light"] {
-  --paper: #E9E1CF; --raised: #F5F0E4; --band: #E1D8C3; --line: #CFC2AB; --ink: #2E3028;
-  --muted: #5E5B52; --accent: #7A624C; --button: #7A624C; --on-button: #F8F4EB;
-  --frame: #2E3028; --shadow: rgba(46, 48, 40, 0.28);
+  --paper: #F4F3EE; --raised: #FFFFFF; --band: #E9E7DE; --line: #D8D5CB; --ink: #141413;
+  --muted: #5E5D59; --accent: #A84E2E; --button: #B0532F; --on-button: #FFFFFF;
+  --frame: #30302E; --shadow: rgba(20, 20, 19, 0.25);
   color-scheme: light;
 }
 
@@ -112,12 +105,17 @@ main { display: block; }
 .desktop-below { margin: 40px 0 0; }
 
 /* Home: hero */
-.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: center; padding-block: 72px 24px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: start; padding-block: 56px 24px; }
 .hero h1 { font-size: clamp(42px, 6.2vw, 72px); line-height: 1.02; letter-spacing: -0.025em; }
 .hero .lede { font-size: 21px; color: var(--muted); margin-top: 22px; max-width: 34em; }
 .hero .actions { margin-top: 32px; }
 .hero .assure { margin-top: 18px; font-size: 15px; color: var(--muted); }
 .hero .phone { justify-self: center; max-width: 320px; }
+/* Who it is for, under the buttons, beside the phone. */
+.hero .ahead { margin-top: 72px; display: grid; gap: 12px; }
+.hero .ahead h2 { font-size: clamp(28px, 3.4vw, 38px); line-height: 1.15; letter-spacing: -0.01em; }
+.hero .ahead p { color: var(--muted); max-width: var(--measure); }
+.section-near { padding-top: 40px; }
 
 /* The H of "Head" is the logo's H, with its check badge, set at the
    title's cap height on its baseline. The plain letter is there for screen
@@ -230,6 +228,7 @@ main { display: block; }
 @media (max-width: 860px) {
   .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 48px; }
   .hero .phone { max-width: 280px; }
+  .hero .ahead { margin-top: 48px; }
   .cards-3, .cards-2 { grid-template-columns: minmax(0, 1fr); }
   .split { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .taps-box { grid-template-columns: minmax(0, 1fr); }
