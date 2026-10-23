@@ -19,9 +19,9 @@ Repo: https://github.com/HubidubiPlanner/HubidubiTask.git
 Binaries: https://github.com/HubidubiPlanner/HubidubiTask/releases/download/v%v/HubidubiTask-%v.apk
 
 Builds:
-  - versionName: 3.1.0
-    versionCode: 15
-    commit: eac291ac1ec36fd2c1ca228db672a9eebdaa8b5e
+  - versionName: 3.1.1
+    versionCode: 16
+    commit: e40c563006aa16f10340903299127e2c224fce5b
     subdir: src/apps/android
     gradle:
       - yes
@@ -33,5 +33,5 @@ AllowedAPKSigningKeys: 9edba9349d2da2c0e032a855b09b2e8ca046d26dc7ed2a13257eb093a
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
 UpdateCheckData: src/apps/gradle.properties|hubidubitask\.versionCode=(\d+)|.|hubidubitask\.version=([\d.]+)
-CurrentVersion: 3.1.0
-CurrentVersionCode: 15
+CurrentVersion: 3.1.1
+CurrentVersionCode: 16
