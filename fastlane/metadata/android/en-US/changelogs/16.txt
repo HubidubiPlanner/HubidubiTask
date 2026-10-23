@@ -1,0 +1,1 @@
+• New tasks can be due next week: Settings → Due date for new tasks. Tomorrow stays the default.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.1.1 — 23 October 2026
 
 - **Next week as the due date for new tasks.** **Settings → Due date for new
   tasks** now offers Tomorrow (still the default), **Next week** and No date.
