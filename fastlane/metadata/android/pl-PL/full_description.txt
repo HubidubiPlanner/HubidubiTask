@@ -13,7 +13,7 @@ JEDEN + DLA WSZYSTKIEGO, CO NOWE
 • + jest na karcie Nadchodzące, od której aplikacja startuje, i w tym samym miejscu na karcie Projekty.
 • Przytrzymaj +, a od razu piszesz notatkę: wpisz ją i naciśnij Gotowe.
 • Zadanie trafia do projektu albo prosto do skrzynki. Zdjęcie, nagranie lub plik pyta raz: coś do zrobienia czy coś do zachowania?
-• Nic nie pyta o datę: nowe zadanie lub notatka ma termin na jutro albo nie ma go wcale, jeśli tak wybierzesz w Ustawieniach.
+• Nic nie pyta o datę: nowe zadanie lub notatka ma termin na jutro, a jeśli tak wybierzesz w Ustawieniach, za tydzień albo wcale.
 • Przycisk Nowa notatka na ekranie głównym oraz zapis z widżetu lub menu udostępniania dowolnej aplikacji.
 
 ZROBIONE ZNACZY ZROBIONE

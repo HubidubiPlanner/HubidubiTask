@@ -51,7 +51,8 @@ computer answers only addresses on the home network.
   app never opens.
 - **Nothing asks for a date.** Every new task and note is due tomorrow, so it
   comes back on Incoming the next day; **Settings → Due date for new
-  tasks** switches that to **No date**, kept on that device. The widget and
+  tasks** switches that to **Next week** (seven days on) or **No date**, kept
+  on that device. The widget and
   the share menu follow it too. To date one differently, long-press it and
   choose **Date**.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a

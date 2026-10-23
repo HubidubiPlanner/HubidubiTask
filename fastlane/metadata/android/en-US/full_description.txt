@@ -13,7 +13,7 @@ ONE + FOR EVERYTHING NEW
 • The + is right on Incoming, where the app opens, and in the same place on Projects.
 • Hold the + for a note straight away: type it, press Done.
 • A task goes into a project or straight to the inbox. A photo, memo or file asks once: something to do, or something to keep?
-• Nothing asks for a date: a new task or note is due tomorrow, or undated if you choose that in Settings.
+• Nothing asks for a date: a new task or note is due tomorrow, or next week or undated if you choose that in Settings.
 • A New note button for your home screen, and capture from the home-screen widget or any app's share menu.
 
 DONE MEANS DONE

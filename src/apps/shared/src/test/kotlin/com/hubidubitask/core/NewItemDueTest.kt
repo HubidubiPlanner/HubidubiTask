@@ -16,6 +16,12 @@ class NewItemDueTest {
     }
 
     @Test
+    fun `next week is seven days on`() {
+        assertEquals(NewItemDue.NEXT_WEEK, NewItemDue.of(NewItemDue.NEXT_WEEK))
+        assertEquals("2027-01-07", NewItemDue.due(NewItemDue.NEXT_WEEK, today))
+    }
+
+    @Test
     fun `no date gives none`() {
         assertEquals(NewItemDue.NONE, NewItemDue.of(NewItemDue.NONE))
         assertNull(NewItemDue.due(NewItemDue.NONE, today))
@@ -23,6 +29,6 @@ class NewItemDueTest {
 
     @Test
     fun `every choice has a label`() {
-        assertEquals(listOf(NewItemDue.TOMORROW, NewItemDue.NONE), NewItemDue.OPTIONS.map { it.first })
+        assertEquals(listOf(NewItemDue.TOMORROW, NewItemDue.NEXT_WEEK, NewItemDue.NONE), NewItemDue.OPTIONS.map { it.first })
     }
 }

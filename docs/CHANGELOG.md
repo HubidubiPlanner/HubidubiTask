@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Next week as the due date for new tasks.** **Settings → Due date for new
+  tasks** now offers Tomorrow (still the default), **Next week** and No date.
+  Next week is seven days on, the first day under "Next week" in the Month
+  view.
+
 ## 3.1.0 — 22 October 2026
 
 - **Free and open source**, under the GNU GPL, version 3 or later. The

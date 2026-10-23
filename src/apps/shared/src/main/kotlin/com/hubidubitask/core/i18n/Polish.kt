@@ -142,6 +142,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "New project" to "Nowy projekt",
     "New project or task" to "Nowy projekt lub zadanie",
     "Next action" to "Następne działanie",
+    "Next week" to "Następny tydzień",
     "Next week · %s" to "Następny tydzień · %s",
     "Night" to "Noc",
     "No change" to "Bez zmian",

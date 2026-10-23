@@ -142,6 +142,7 @@ internal val GERMAN: Map<String, String> = mapOf(
     "New project" to "Neues Projekt",
     "New project or task" to "Neues Projekt oder neue Aufgabe",
     "Next action" to "Nächste Aktion",
+    "Next week" to "Nächste Woche",
     "Next week · %s" to "Nächste Woche · %s",
     "Night" to "Nacht",
     "No change" to "Keine Änderung",
