@@ -1,0 +1,42 @@
+name: Contact for businesses
+description: Your product working with HubidubiTask
+title: "Integration: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        HubidubiTask is free and open source. If you'd like your product to work with it (an AI service, a feed, an import or an AI skill), tell us about it here.
+
+        Issues are public, so leave out anything confidential.
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      description: Its name and website.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What it would be
+      options:
+        - AI connection
+        - Feed
+        - Private feed
+        - Import
+        - AI skill
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: What people using HubidubiTask would get
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: API or documentation
+    validations:
+      required: false
