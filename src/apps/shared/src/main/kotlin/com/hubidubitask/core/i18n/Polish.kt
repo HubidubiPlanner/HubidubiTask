@@ -103,6 +103,7 @@ internal val POLISH: Map<String, String> = mapOf(
     "Feeds" to "Kanały",
     "Follows the system" to "Jak w systemie",
     "Forest" to "Las",
+    "Found %s. Waiting for the code on the computer." to "Znaleziono %s. Czekam na kod na komputerze.",
     "From the feed %s: %s" to "Z kanału %s: %s",
     "From the gallery" to "Z galerii",
     "here" to "tutaj",

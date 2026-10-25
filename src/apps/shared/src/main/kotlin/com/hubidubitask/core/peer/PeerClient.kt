@@ -17,15 +17,42 @@ import javax.net.ssl.SSLPeerUnverifiedException
 import javax.net.ssl.X509TrustManager
 
 /** Where a computer was found: by Bonjour or typed by hand. */
-data class PeerAddress(val name: String, val host: String, val port: Int)
+data class PeerAddress(val name: String, val host: String, val port: Int) {
+    companion object {
+        private val hostChars = Regex("[A-Za-z0-9.:%_-]+")
+
+        /**
+         * An address typed by hand: "192.168.1.62", "192.168.1.62:5244", with
+         * or without http(s):// or a path, spaces anywhere, or the whole list
+         * the computer shows ("…:5244, …:5244", the first counts). IPv6 as
+         * "[fd00::1]:5244" or bare. Null when it can't be an address.
+         */
+        fun typed(s: String): PeerAddress? {
+            val t = s.filterNot { it.isWhitespace() }.substringBefore(',')
+                .replace(Regex("^[A-Za-z][A-Za-z0-9+.-]*://"), "").substringBefore('/')
+            val (host, port) = when {
+                t.startsWith("[") -> t.substringAfter('[').substringBefore(']') to
+                    t.substringAfter("]", "").removePrefix(":").ifEmpty { null }
+                t.count { it == ':' } > 1 -> t to null
+                else -> t.substringBefore(':') to t.substringAfter(':', "").ifEmpty { null }
+            }
+            if (host.isEmpty() || !hostChars.matches(host)) return null
+            val p = if (port == null) PeerPairing.PORT else port.toIntOrNull()?.takeIf { it in 1..65535 } ?: return null
+            return PeerAddress(host, host, p)
+        }
+    }
+}
 
 /**
  * The phone's side of talking to one computer over HTTPS: pairing, and sync
  * rounds in sealed sessions (see [PairV2], [PeerSession]). The computer's
  * certificate is self-signed; [pin] (its sha256) is checked on every call
- * once known, and [seen] reports what the last call was shown.
+ * once known, and [seen] reports what the last call was shown. [sockets],
+ * when given, opens every connection on that network: the phone's Wi-Fi,
+ * even when mobile data is the default (a Wi-Fi without internet).
  */
-class PeerClient(val host: String, val port: Int, private val pin: String?) {
+class PeerClient(val host: String, val port: Int, private val pin: String?,
+                 private val sockets: javax.net.SocketFactory? = null) {
     @Volatile var seen: String? = null; private set
     private val base = "https://${if (':' in host) "[$host]" else host}:$port"
 
@@ -39,7 +66,8 @@ class PeerClient(val host: String, val port: Int, private val pin: String?) {
         override fun getAcceptedIssuers() = arrayOf<X509Certificate>()
     }
 
-    private fun http(pin: String?, readSeconds: Long = 30): OkHttpClient {
+    /** [callSeconds] bounds a whole call (0: no bound), so a device that answers a byte at a time can't hold one. */
+    private fun http(pin: String?, readSeconds: Long = 30, callSeconds: Long = 0): OkHttpClient {
         val tm = Trust(pin)
         val ssl = SSLContext.getInstance("TLS").apply { init(null, arrayOf(tm), null) }
         return OkHttpClient.Builder().sslSocketFactory(ssl.socketFactory, tm)
@@ -48,14 +76,18 @@ class PeerClient(val host: String, val port: Int, private val pin: String?) {
             // A dead kept-alive connection (the computer restarted) is retried on a new
             // one. Safe: a sealed request goes once (a repeat is refused by its number),
             // and a repeated pairing finish gets the same answer.
-            .connectTimeout(4, TimeUnit.SECONDS).readTimeout(readSeconds, TimeUnit.SECONDS).build()
+            .connectTimeout(4, TimeUnit.SECONDS).readTimeout(readSeconds, TimeUnit.SECONDS)
+            .callTimeout(callSeconds, TimeUnit.SECONDS)
+            .apply { sockets?.let { socketFactory(it) } }.build()
     }
 
     // ---- pairing
 
-    /** Whether the computer has a code open: true, false, or null when it can't be reached. */
+    /** Whether the computer has a code open: true, false, or null when it can't be reached or isn't one of ours. */
     fun pairingOpen(): Boolean? = runCatching {
-        http(pin, 10).newCall(Request.Builder().url("$base/peer/v2/pair/open").build()).execute().use { it.code == 200 }
+        http(pin, 10, callSeconds = 15).newCall(Request.Builder().url("$base/peer/v2/pair/open").build()).execute().use {
+            when (it.code) { 200 -> true; 409 -> false; else -> null }
+        }
     }.getOrNull()
 
     sealed interface PairOutcome {
@@ -72,7 +104,7 @@ class PeerClient(val host: String, val port: Int, private val pin: String?) {
     fun pair(code: String, phoneId: String, name: String): PairOutcome {
         // The certificate seen first is the one every later step is pinned to.
         val fp = pin ?: run { pairingOpen(); seen } ?: return PairOutcome.Unreachable
-        val http = http(fp)
+        val http = http(fp, callSeconds = 30)
         val attempt = PairPhone(code, phoneId, name)
         val started = try {
             post(http, "/peer/v2/pair/start", attempt.start.json()).use { r ->
@@ -311,15 +343,30 @@ class PhonePairing(
         data object TimedOut : Result
     }
 
-    fun run(candidates: () -> List<PeerAddress>, active: () -> Boolean = { true }): Result {
+    /**
+     * Searches [candidates] (asked again on every pass) while [active]. After
+     * each pass, [reached] gets the computers that answered, code open or not,
+     * so the phone can say it has found one and is waiting for the code there.
+     */
+    fun run(candidates: () -> List<PeerAddress>, active: () -> Boolean = { true },
+            reached: (List<PeerAddress>) -> Unit = {}): Result {
         val until = clock() + PeerPairing.CODE_TTL_MS
         val key = PeerPairing.normalize(code)
         if (failures(key) >= PeerPairing.MAX_ATTEMPTS) return Result.GaveUp
         while (clock() < until && active()) {
             var refused = false
+            val answered = ArrayList<PeerAddress>()
+            // One computer reached at two addresses (Wi-Fi and Ethernet, Bonjour and the
+            // sweep) is tried once: a mistyped code costs one try, not one per address.
+            // Known by its certificate, proven by the finished handshake.
+            val tried = HashSet<String>()
             for (at in candidates()) {
+                if (!active()) break
                 val client = reach(at)
-                if (client.pairingOpen() != true) continue
+                val open = client.pairingOpen() ?: continue
+                if (client.seen?.let(tried::add) == false) continue
+                answered += at
+                if (!open) continue
                 when (val out = client.pair(code, phoneId, name)) {
                     is PeerClient.PairOutcome.Paired -> return Result.Paired(at, out)
                     PeerClient.PairOutcome.WrongCode -> {
@@ -329,6 +376,7 @@ class PhonePairing(
                     else -> {}
                 }
             }
+            reached(answered)
             if (refused && !shownHere) return Result.WrongCode
             if (!active()) break
             pause()

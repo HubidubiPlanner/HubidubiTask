@@ -145,6 +145,36 @@ class PeerServerTest {
     }
 
     @Test
+    fun `the phone hears it has found the computer before the code is typed there`() {
+        var now = 0L
+        val heard = mutableListOf<List<String>>()
+        val gone = PeerAddress("gone", "127.0.0.1", java.net.ServerSocket(0).use { it.localPort })
+        val run = PhonePairing("QRST-UVWX", "phone-1", "Pixel", shownHere = true, clock = { now },
+            pause = { now += 60_000; if (heard.size == 2) server.desk.open("QRST-UVWX") })
+        val out = run.run({ listOf(gone, PeerAddress("Mac", "127.0.0.1", server.port)) },
+            reached = { heard += it.map { a -> a.name } })
+        assertIs<PhonePairing.Result.Paired>(out)
+        // Found on each pass while no code was open there; a computer that isn't there isn't "found".
+        assertEquals(listOf(listOf("Mac"), listOf("Mac")), heard)
+    }
+
+    @Test
+    fun `a computer reached at two addresses costs one try per wrong code`() {
+        server.desk.open("ABCD-EFGH")
+        val twice = listOf(PeerAddress("Wi-Fi", "127.0.0.1", server.port), PeerAddress("Ethernet", "localhost", server.port))
+        // Each address reached as slowly as a real phone does, inside the computer's rate limit.
+        val run = PhonePairing("WXYZ-2346", "phone-1", "Pixel", shownHere = false, pause = {},
+            reach = { Thread.sleep(600); PeerClient(it.host, it.port, null) })
+        assertEquals(PhonePairing.Result.WrongCode, run.run({ twice }))
+        // One try spent, so three more leave the code open (five close it).
+        repeat(3) {
+            Thread.sleep(600)
+            assertEquals(PeerClient.PairOutcome.WrongCode, client().pair("WXYZ-2347", "phone-1", "Pixel"))
+        }
+        assertTrue(server.desk.isOpen())
+    }
+
+    @Test
     fun `a code typed on the phone and refused ends the run at once`() {
         server.desk.open("ABCD-EFGH")
         val run = PhonePairing("WXYZ-2345", "phone-1", "Pixel", shownHere = false, pause = {})

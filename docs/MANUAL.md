@@ -29,6 +29,15 @@ what is written on one reaches all of them. **Devices** lists them, each
 with when it last synced, a tick once it has, and a button on its right that
 unpairs it; on the phone, **Sync now** is in the list too.
 
+The phone (or tablet) finds the computer by itself: by Bonjour, and where
+Bonjour doesn't get through (some mesh and guest Wi-Fi, some tablets) by
+knocking on the sync port at each address of the Wi-Fi. A VPN on the
+computer doesn't hide it. Once the phone has found the computer it says so
+and waits for the code there. If it never finds it, type the address the
+computer shows under its code in **Computer's address**, even while it is
+looking. If the computer's address changes later, the phone finds it again by
+its certificate.
+
 The code works once, for ten minutes, and five wrong tries close it on either
 device. It is never sent: both devices prove they hold it (a PAKE), so someone
 on the Wi-Fi learns nothing from watching or from posing as the computer.

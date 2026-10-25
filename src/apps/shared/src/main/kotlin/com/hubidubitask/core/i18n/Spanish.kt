@@ -103,6 +103,7 @@ internal val SPANISH: Map<String, String> = mapOf(
     "Feeds" to "Fuentes",
     "Follows the system" to "Como el sistema",
     "Forest" to "Bosque",
+    "Found %s. Waiting for the code on the computer." to "%s encontrado. Esperando el código en el ordenador.",
     "From the feed %s: %s" to "De la fuente %s: %s",
     "From the gallery" to "De la galería",
     "here" to "aquí",

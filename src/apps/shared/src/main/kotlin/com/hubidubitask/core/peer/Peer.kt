@@ -154,6 +154,8 @@ object PeerPairing {
     private val random = SecureRandom()
 
     const val CODE_TTL_MS = 10 * 60 * 1000L
+    /** The port every computer listens on, so a phone can find one without Bonjour. */
+    const val PORT = 5244
     /** Wrong tries a code survives, on the computer and on the phone alike. */
     const val MAX_ATTEMPTS = 5
 

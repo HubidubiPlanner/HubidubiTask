@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Pairing finds the computer where Bonjour doesn't get through.** The phone
+  or tablet also knocks on the sync port at each address of its Wi-Fi, so
+  mesh and guest networks and tablets that drop Bonjour pair too. While it
+  looks it says when it has found the computer and is waiting for the code
+  there, and an address typed during the search is used at once, with or
+  without `http://` or the port.
+- **A computer with a VPN is found again.** The Mac and Linux apps announced
+  themselves on one network only, sometimes the VPN's; now on every home
+  network, and again whenever it changes. The address shown to type is the
+  Wi-Fi's or Ethernet's, not the VPN's.
+- **Sync finds a computer whose address changed**, also where Bonjour doesn't
+  get through.
+
 ## 3.1.1 — 23 October 2026
 
 - **Next week as the due date for new tasks.** **Settings → Due date for new

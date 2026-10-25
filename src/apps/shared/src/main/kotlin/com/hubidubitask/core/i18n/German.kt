@@ -103,6 +103,7 @@ internal val GERMAN: Map<String, String> = mapOf(
     "Feeds" to "Feeds",
     "Follows the system" to "Wie das System",
     "Forest" to "Wald",
+    "Found %s. Waiting for the code on the computer." to "%s gefunden. Warte auf den Code am Computer.",
     "From the feed %s: %s" to "Aus dem Feed %s: %s",
     "From the gallery" to "Aus der Galerie",
     "here" to "hier",

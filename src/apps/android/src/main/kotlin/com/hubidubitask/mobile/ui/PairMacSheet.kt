@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.i18n.t
+import com.hubidubitask.core.peer.PeerAddress
 import com.hubidubitask.core.peer.PeerPairing
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -46,11 +47,18 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
     var address by remember { mutableStateOf("") }
     var job by remember { mutableStateOf<Job?>(null) }
     var result by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
+    // The computers the search reached, code open there or not.
+    var found by remember { mutableStateOf<List<PeerAddress>>(emptyList()) }
+    val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
 
     fun close() { job?.cancel(); onDismiss() }
     fun start(c: String, here: Boolean) {
+        found = emptyList()
         job = scope.launch {
-            result = vm.pairMac(c, address.takeIf { it.isNotBlank() }, shownHere = here)
+            // The address is read on every pass: typed during the search, it counts.
+            result = vm.pairMac(c, { address.takeIf { it.isNotBlank() } }, shownHere = here) { seen ->
+                main.post { found = seen }
+            }
             job = null
         }
     }
@@ -85,7 +93,7 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
                         colors = appFieldColors(), shape = RectangleShape, modifier = Modifier.fillMaxWidth())
                 }
                 OutlinedTextField(value = address, onValueChange = { address = it },
-                    singleLine = true, enabled = job == null || mode == "show",
+                    singleLine = true,
                     label = { Text(t("Computer's address (only if it isn't found)")) },
                     placeholder = { Text("192.168.1.62:5244") },
                     colors = appFieldColors(), shape = RectangleShape,
@@ -97,7 +105,8 @@ fun PairMacSheet(open: Boolean, vm: HubidubiTaskViewModel, onDismiss: () -> Unit
                 } else {
                     Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Dot(c.accent)
-                        Text(t("Looking for the computer… (the code works for 10 minutes)"),
+                        Text(if (found.isEmpty()) t("Looking for the computer… (the code works for 10 minutes)")
+                            else t("Found %s. Waiting for the code on the computer.", found.joinToString(", ") { it.name }),
                             style = MaterialTheme.typography.bodySmall, color = c.muted)
                     }
                 }

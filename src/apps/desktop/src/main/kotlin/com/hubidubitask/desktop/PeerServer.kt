@@ -24,7 +24,6 @@ import java.io.RandomAccessFile
 import java.math.BigInteger
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.net.NetworkInterface
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.KeyPairGenerator
@@ -77,7 +76,12 @@ class PeerServer(
     private val ks = loadOrCreateKeystore(File(store.dir, "tls.p12"))
     val fingerprint: String = PeerPairing.sha256Hex((ks.getCertificate("mac") as X509Certificate).encoded)
     private var server: HttpsServer? = null
-    private var mdns: JmDNS? = null
+    /** The Bonjour announcement on each interface and address it is made on ("en0/192.168.1.62"). */
+    private val announced = ConcurrentHashMap<String, JmDNS>()
+    @Volatile private var announcer: Thread? = null
+    /** Set once at stop: JmDNS swallows interrupts, so the announcer checks this too. */
+    @Volatile private var stopped = false
+    private val announcing = Any()
     val port: Int get() = server?.address?.port ?: listenPort
 
     fun start() {
@@ -98,11 +102,14 @@ class PeerServer(
         store.blobs.listFiles { f -> f.name.startsWith(".part-") }?.forEach { it.delete() }
         s.start()
         server = s
-        if (announce) Thread({ advertise() }, "mdns").apply { isDaemon = true }.start()
+        if (announce) Thread({ advertise() }, "mdns").apply { isDaemon = true }.also { announcer = it }.start()
     }
 
     fun stop() {
-        runCatching { mdns?.unregisterAllServices(); mdns?.close() }
+        stopped = true
+        announcer?.interrupt(); announcer = null
+        // Not waiting for the announcer: a registration under way sees [stopped] and lets go of its own.
+        withdraw(announced.keys.toList())
         server?.stop(0)
     }
 
@@ -111,20 +118,38 @@ class PeerServer(
         keys.remove(id); sessions.drop(id); desk.forget(id); wanted.remove(id); store.removePeer(id)
     }
 
-    /** Addresses the phone could type if Bonjour is blocked on the network. */
-    fun addresses(): List<String> = NetworkInterface.getNetworkInterfaces().toList()
-        .filter { it.isUp && !it.isLoopback && !it.isVirtual }
-        .flatMap { it.inetAddresses.toList() }
-        .filter { it is java.net.Inet4Address && it.isSiteLocalAddress }
-        .map { "${it.hostAddress}:$port" }
+    /** Addresses the phone could type if it doesn't find this computer, the likeliest first. */
+    fun addresses(): List<String> = Lan.forTyping(Lan.nics()).map { "${it.address}:$port" }
 
-    private fun advertise() = runCatching {
-        val addr = addresses().firstOrNull()?.substringBefore(':')?.let(InetAddress::getByName)
-            ?: InetAddress.getLocalHost()
-        mdns = JmDNS.create(addr, deviceName).also {
-            it.registerService(ServiceInfo.create("_hubidubios-peer._tcp.local.", deviceName, port,
-                0, 0, mapOf("fp" to fingerprint, "id" to deviceId)))
+    /**
+     * Announces this computer by Bonjour on every home-network interface, and
+     * keeps doing so as the network changes: Wi-Fi to Ethernet, a new address,
+     * a VPN switched on or off. Never on a tunnel ([Lan.announceOn]).
+     */
+    private fun advertise() {
+        while (!stopped && !Thread.currentThread().isInterrupted) {
+            runCatching { announce(Lan.announceOn(Lan.nics()).associateBy { "${it.name}/${it.address}" }) }
+            try { Thread.sleep(ANNOUNCE_CHECK_MS) } catch (_: InterruptedException) { break }
         }
+    }
+
+    private fun announce(want: Map<String, Lan.Nic>) = synchronized(announcing) {
+        withdraw(announced.keys - want.keys)
+        for ((key, nic) in want) {
+            if (announced.containsKey(key)) continue
+            if (stopped) return@synchronized
+            val j = runCatching { JmDNS.create(InetAddress.getByName(nic.address), deviceName) }.getOrNull() ?: continue
+            val info = ServiceInfo.create(SERVICE, deviceName, port, 0, 0, mapOf("fp" to fingerprint, "id" to deviceId))
+            // A stop that came while this was being made: let it go rather than keep it.
+            if (!stopped && runCatching { j.registerService(info) }.isSuccess) {
+                announced[key] = j
+                if (stopped) withdraw(listOf(key))
+            } else runCatching { j.unregisterAllServices(); j.close() }
+        }
+    }
+
+    private fun withdraw(addresses: Collection<String>) = addresses.forEach { a ->
+        announced.remove(a)?.let { runCatching { it.unregisterAllServices(); it.close() } }
     }
 
     // ---- pairing
@@ -282,7 +307,11 @@ class PeerServer(
     }
 
     companion object {
-        const val PORT = 5244
+        const val PORT = PeerPairing.PORT
+        /** The Bonjour service phones look for; its name is from the HubidubiOS days, kept so they still find it. */
+        private const val SERVICE = "_hubidubios-peer._tcp.local."
+        /** How often the network is checked for a change to announce on. */
+        private const val ANNOUNCE_CHECK_MS = 10_000L
         private const val ERR = """{"error":"refused"}"""
         private const val PAIR_LIMIT = 64 * 1024
         private const val HELLO_LIMIT = 8 * 1024

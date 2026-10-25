@@ -164,18 +164,20 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * Keep trying to pair until a computer takes [code], ten minutes pass, or
      * five tries fail: the code may be typed on the computer after it is shown
-     * here, and the computer may be found by Bonjour or at a typed [address].
-     * Returns a line to show.
+     * here, and the computer may be found by Bonjour, by a sweep of the Wi-Fi,
+     * or at a typed [address] (read on every pass). [reached] hears which
+     * computers answered. Returns a line to show.
      */
-    suspend fun pairMac(code: String, address: String?, shownHere: Boolean): Pair<Boolean, String> =
+    suspend fun pairMac(code: String, address: () -> String?, shownHere: Boolean,
+                        reached: (List<com.hubidubitask.core.peer.PeerAddress>) -> Unit = {}): Pair<Boolean, String> =
         withContext(Dispatchers.IO) {
             val ctx = getApplication<Application>()
             val name = android.os.Build.MODEL ?: t("Phone")
             val link = com.hubidubitask.mobile.net.MacLink
             val scope = kotlinx.coroutines.currentCoroutineContext()
-            val run = com.hubidubitask.core.peer.PhonePairing(code, link.deviceId(ctx), name, shownHere)
-            when (val out = run.run({ listOfNotNull(address?.let(link::parseAddress)) + link.discover(ctx) },
-                                    { scope.isActiveSafe() })) {
+            val run = com.hubidubitask.core.peer.PhonePairing(code, link.deviceId(ctx), name, shownHere,
+                reach = { link.client(ctx, it.host, it.port, null) })
+            when (val out = run.run(link.candidates(ctx, address), { scope.isActiveSafe() }, reached)) {
                 is com.hubidubitask.core.peer.PhonePairing.Result.Paired -> {
                     val mac = link.keep(ctx, out.at, out.outcome)
                     runCatching { Sync.syncMac(ctx) }
