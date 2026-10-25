@@ -1,0 +1,4 @@
+• Parowanie znajduje komputer także tam, gdzie Bonjour nie dociera, i mówi, kiedy go znalazło.
+• Adres wpisany w trakcie szukania działa od razu.
+• Synchronizacja odnajduje komputer, którego adres się zmienił.
+• Komputer z włączonym VPN znów jest widoczny (z aplikacją 3.1.2 na komputerze).

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.1.2 — 25 October 2026
 
 - **Pairing finds the computer where Bonjour doesn't get through.** The phone
   or tablet also knocks on the sync port at each address of its Wi-Fi, so

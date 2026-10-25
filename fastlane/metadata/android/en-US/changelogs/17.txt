@@ -1,0 +1,4 @@
+• Pairing finds the computer even where Bonjour doesn't get through, and says when it has found it.
+• An address typed while it looks is used at once.
+• Sync finds a computer whose address has changed.
+• A computer with a VPN is found again (with the 3.1.2 computer app).
