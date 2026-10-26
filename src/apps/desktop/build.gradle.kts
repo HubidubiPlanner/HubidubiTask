@@ -45,8 +45,27 @@ val checkRuntimeJdk by tasks.registering {
     }
 }
 
+// PqTlsTest, on that runtime rather than on 17: its TLS really agrees
+// X25519MLKEM768, as a server and as a client.
+val pqTlsTest by tasks.registering(Test::class) {
+    description = "Checks the post-quantum TLS of the JDK the app bundles."
+    group = "verification"
+    dependsOn(checkRuntimeJdk)
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    executable = "$runtimeJdk/bin/java"
+    // SQLite's native library, without the newer JDKs' warning.
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    useJUnitPlatform()
+    filter { includeTestsMatching("*.PqTlsTest") }
+}
+
 tasks.matching { it.name.startsWith("package") || it.name.startsWith("create") && it.name.contains("Distributable") ||
     it.name.startsWith("run") && it.name != "run" }.configureEach { dependsOn(checkRuntimeJdk) }
+
+// What ships proves its post-quantum TLS first.
+tasks.matching { it.name.startsWith("package") || it.name.startsWith("create") && it.name.contains("Distributable") }
+    .configureEach { dependsOn(pqTlsTest) }
 
 compose.desktop {
     application {
@@ -88,4 +107,8 @@ compose.desktop {
     }
 }
 
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    // Needs the bundled runtime: pqTlsTest runs it.
+    exclude("**/PqTlsTest*")
+}

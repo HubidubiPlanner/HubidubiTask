@@ -1,6 +1,8 @@
 # The shared and desktop tests, on every push and pull request. The desktop
 # tests draw Compose windows, so they run under a virtual display. The runner
 # image has the Android SDK (ANDROID_HOME), which configuring the build needs.
+# JDK 17 runs Gradle and the tests; JDK 27, the runtime the app bundles, runs
+# pqTlsTest (its TLS agrees the post-quantum key exchange).
 name: Test
 
 on:
@@ -20,8 +22,13 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: '17'
+          # The last one listed is the default (JAVA_HOME).
+          java-version: |
+            27
+            17
           cache: gradle
       - name: Shared and desktop tests
         working-directory: src/apps
-        run: xvfb-run -a ./gradlew --no-daemon :shared:test :desktop:test
+        env:
+          HUBIDUBITASK_RUNTIME_JDK: ${{ env.JAVA_HOME_27_X64 }}
+        run: xvfb-run -a ./gradlew --no-daemon :shared:test :desktop:test :desktop:pqTlsTest

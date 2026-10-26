@@ -19,7 +19,8 @@ class TlsCheck : BroadcastReceiver() {
         val done = goAsync()
         Thread {
             try {
-                // --es url <address> checks one more (e.g. the computer: its side logs the group).
+                // --es url <address> checks one more that answers like Cloudflare's trace.
+                // The computer's side is the desktop test: ./gradlew :desktop:pqTlsTest.
                 val urls = listOf("https://pq.cloudflareresearch.com/cdn-cgi/trace", "https://api.anthropic.com/cdn-cgi/trace") +
                     listOfNotNull(intent.getStringExtra("url"))
                 for (url in urls) {
