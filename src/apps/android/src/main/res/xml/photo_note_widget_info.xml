@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="40dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="1"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_photo_note"
+    android:previewLayout="@layout/widget_photo_note"
+    android:previewImage="@drawable/ic_photo_note_round"
+    android:description="@string/photo_note_widget_label"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen" />

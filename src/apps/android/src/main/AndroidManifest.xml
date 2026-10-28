@@ -14,6 +14,14 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
+    <!-- The phone's own speech recognizer, which writes a voice note down on
+         the phone: since Android 11 an app sees it only when it says so here. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:name=".HubidubiTaskApplication"
         android:allowBackup="false"
@@ -92,6 +100,50 @@
             android:name=".capture.QuickNoteActivity"
             android:screenOrientation="portrait"
             android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
+        <!-- "Voice note" and "Photo note" on the home screen: widgets drawn as
+             "New note" is, with a note of music or a picture above the H. Each
+             opens over the home screen like the note sheet; not exported, as
+             only the widget's own PendingIntent opens them. -->
+        <receiver
+            android:name=".capture.VoiceNoteWidgetProvider"
+            android:exported="false"
+            android:label="@string/voice_note_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/voice_note_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".capture.VoiceNoteActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
+        <receiver
+            android:name=".capture.PhotoNoteWidgetProvider"
+            android:exported="false"
+            android:label="@string/photo_note_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/photo_note_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".capture.PhotoNoteActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:taskAffinity=""
             android:excludeFromRecents="true" />
