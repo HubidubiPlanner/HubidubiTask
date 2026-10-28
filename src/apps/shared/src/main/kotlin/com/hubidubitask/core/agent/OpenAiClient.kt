@@ -28,7 +28,7 @@ class OpenAiClient(private val config: AgentConfig) : ModelClient {
     override fun complete(messages: List<Message>): String {
         val body = JSONObject().put("model", model()).put("temperature", 0.2)
             .put("messages", JSONArray().apply {
-                messages.forEach { put(JSONObject().put("role", it.role).put("content", it.content)) }
+                messages.forEach { put(JSONObject().put("role", it.role).put("content", content(it))) }
             })
         val req = Request.Builder().url("$base/chat/completions").auth()
             .post(body.toString().toRequestBody("application/json".toMediaType())).build()
@@ -45,6 +45,15 @@ class OpenAiClient(private val config: AgentConfig) : ModelClient {
             throw AgentError("the agent could not be reached: ${e.message}", e)
         }
     }
+
+    /** Plain text, or with images the parts the OpenAI shape takes: the text, then each image inline. */
+    private fun content(m: Message): Any =
+        if (m.images.isEmpty()) m.content
+        else JSONArray().put(JSONObject().put("type", "text").put("text", m.content)).apply {
+            m.images.forEach { p ->
+                put(JSONObject().put("type", "image_url").put("image_url", JSONObject().put("url", p.dataUrl)))
+            }
+        }
 
     override fun health(): Health = try {
         probe.newCall(Request.Builder().url("$base/models").auth().build()).execute().use { r ->

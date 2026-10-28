@@ -51,6 +51,33 @@ class OpencodeAgent(private val config: AgentConfig) : HomeAgentClient {
         }
     }
 
+    /**
+     * A turn carrying a photo: a session of its own, the words and each image
+     * as a file part, no schema since the answer is only words, and the
+     * session deleted after, as for a question. A plain one keeps the usual turn.
+     */
+    override fun complete(messages: List<Message>): String {
+        if (messages.none { it.images.isNotEmpty() }) return super.complete(messages)
+        val parts = JSONArray()
+        messages.filter { it.role != "system" }.forEach { m ->
+            parts.put(JSONObject().put("type", "text").put("text", m.content))
+            m.images.forEachIndexed { i, p ->
+                parts.put(JSONObject().put("type", "file").put("mime", p.mime)
+                    .put("filename", "photo-${i + 1}.${p.mime.substringAfter('/')}").put("url", p.dataUrl))
+            }
+        }
+        val session = post(probe, "/session", JSONObject().put("title", "HubidubiTask")).getString("id")
+        try {
+            val res = post(patient, "/session/$session/message", JSONObject()
+                .put("system", messages.filter { it.role == "system" }.joinToString("\n\n") { it.content })
+                .put("parts", parts))
+            failed(res)
+            return textOf(res)
+        } finally {
+            forget(session)
+        }
+    }
+
     private fun forget(session: String) {
         try { call(probe, request("/session/$session").delete().build()) } catch (_: Exception) {}
     }
@@ -62,15 +89,25 @@ class OpencodeAgent(private val config: AgentConfig) : HomeAgentClient {
             .put("system", prompt.instructions)
             .put("parts", JSONArray().put(JSONObject().put("type", "text").put("text", text)))
             .put("format", JSONObject().put("type", "json_schema").put("schema", AgentActions.SCHEMA)))
+        failed(res)
         val info = res.optJSONObject("info") ?: JSONObject()
-        info.optJSONObject("error")?.let { e ->
+        (structured(info) ?: structured(res))?.let { return it }
+        return AgentActions.fromText(textOf(res))
+    }
+
+    /** The agent's own error, as the person reads it. */
+    private fun failed(res: JSONObject) {
+        res.optJSONObject("info")?.optJSONObject("error")?.let { e ->
             throw AgentError(e.optJSONObject("data")?.optString("message")?.takeIf { it.isNotBlank() }
                 ?: e.optString("name").ifBlank { "${kind.label} could not answer" })
         }
-        (structured(info) ?: structured(res))?.let { return it }
+    }
+
+    /** What the reply says, its text parts only (not its reasoning). */
+    private fun textOf(res: JSONObject): String {
         val parts = res.optJSONArray("parts") ?: JSONArray()
-        return AgentActions.fromText((0 until parts.length()).mapNotNull { parts.optJSONObject(it) }
-            .filter { it.optString("type") == "text" }.joinToString("\n") { it.optString("text") })
+        return (0 until parts.length()).mapNotNull { parts.optJSONObject(it) }
+            .filter { it.optString("type") == "text" }.joinToString("\n") { it.optString("text") }
     }
 
     /** The schema-held answer, as an object or as its JSON text. */
