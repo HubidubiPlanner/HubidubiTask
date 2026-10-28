@@ -59,7 +59,10 @@ The facts, from the code:
   WorkManager, the Anthropic SDK used only with the user's own key).
 - Data leaves the phone only (a) to the user's **own paired computer** on the
   local network, and (b) when the user **starts it**: an AI review to the AI
-  they configured, a feed's page check, a one-time import.
+  they configured, a photo from the Photo note widget to that same AI, a
+  feed's page check, a one-time import. A voice note is written down on the
+  phone by the system's speech recognizer in its on-device mode; the audio
+  goes nowhere.
 - The local database is encrypted (SQLCipher, key sealed by the Keystore), and
   `allowBackup="false"`, so nothing goes to Android's cloud backup.
 **Recommended answers**
@@ -68,9 +71,9 @@ The facts, from the code:
 |---|---|
 | Does your app collect or share any of the required user data types? | **No** |
 
-Nothing reaches the developer. Sync goes to the user's own devices; reviews
-and imports go to services the user picked and configured, and only when
-they ask. Play does not count user-initiated transfers to a service the user
+Nothing reaches the developer. Sync goes to the user's own devices; reviews,
+photo notes and imports go to services the user picked and configured, and
+only when they ask. Play does not count user-initiated transfers to a service the user
 chose as sharing.
 
 If you prefer the conservative route, declare instead: **collected** ›
