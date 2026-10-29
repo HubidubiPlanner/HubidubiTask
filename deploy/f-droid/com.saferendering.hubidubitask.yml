@@ -1,7 +1,7 @@
 AntiFeatures:
   NonFreeNet:
     en-US: Optional AI through Anthropic's Claude API or an OpenAI-compatible server;
-      feeds use Claude. Optional one-time imports from Todoist and Google Calendar.
+      feeds use the chosen AI, or Claude when it is an agent that can run commands. Optional one-time imports from Todoist and Google Calendar.
 Categories:
   - Note
   - Task

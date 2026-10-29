@@ -3,7 +3,6 @@ package com.hubidubitask.core.feed
 import com.hubidubitask.core.ItemSink
 import com.hubidubitask.core.ItemWriter
 import com.hubidubitask.core.agent.AgentConfig
-import com.hubidubitask.core.agent.ClaudeClient
 import com.hubidubitask.core.agent.Message
 import com.hubidubitask.core.net.SafeFetch
 import com.hubidubitask.core.nowUtc
@@ -12,8 +11,8 @@ import java.time.LocalDate
 
 /**
  * Looks at feeds and saves what came of it, for the phone and the computer
- * alike. The task's wording comes from Claude, built here from the key it is
- * given: never from the agent chosen in Settings, whatever a feed says.
+ * alike. The task's wording comes from the AI chosen in Settings, or from
+ * Claude when that one can run commands ([FeedWriter]), whatever a feed says.
  */
 object FeedRunner {
 
@@ -22,12 +21,13 @@ object FeedRunner {
      * Returns what happened, by feed id. A feed of a kind this version doesn't
      * know (made on a newer device) is left alone.
      */
-    fun run(sink: ItemSink, claudeKey: String?, only: String? = null, today: LocalDate = LocalDate.now()): Map<String, String> {
-        val client = ClaudeClient(feedConfig(claudeKey))
+    fun run(sink: ItemSink, chosen: AgentConfig, claudeKey: String?, only: String? = null,
+            today: LocalDate = LocalDate.now()): Map<String, String> {
+        val client = FeedWriter.clientFor(chosen, claudeKey)
         return try { run(sink, only, today, PageFetch.web) { client.complete(it) } } finally { client.close() }
     }
 
-    /** What feeds write with: Claude, with the user's key. */
+    /** Claude, with the user's key: what feeds write with when the chosen agent can run commands. */
     fun feedConfig(claudeKey: String?) = AgentConfig(endpoint = "", protocol = "claude", apiKey = claudeKey)
 
     /** [run] through [web], with the model's answers from [ask]; for tests. */

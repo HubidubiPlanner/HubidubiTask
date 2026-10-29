@@ -66,7 +66,8 @@ computer answers only addresses on the home network.
   choose **Date**.
 - **Feeds:** **+ → A web page**, the address, **Day / Week / Month**, and a
   project (or none, for the inbox). The first look only remembers the page;
-  after that, once per period, a change becomes one task, written by Claude.
+  after that, once per period, a change becomes one task, written by the AI
+  chosen in Settings (Claude when that is an agent that can run commands).
   Pages (and calendar links) are fetched over HTTPS only and never from your
   home network.
   **+ → An RSS or Atom feed** watches a feed's address instead: each entry is
@@ -161,8 +162,10 @@ done, it says so in its answer and the app makes those changes itself, after
 checking each one fits your items. opencode and Kilo answer in a fixed JSON
 shape, and the app deletes each question's session afterwards.
 
-Feeds never go to your agent: a feed's text is a stranger's web page. They
-write their task with Claude.
+Feeds never go to an agent that can run commands: a feed's text is a
+stranger's web page. With OpenClaw, Hermes, opencode, Kilo or a server the app
+can't tell chosen, feeds write their task with Claude, with your Claude key;
+Ollama only answers, so it writes them itself.
 
 ## Where your data lives
 

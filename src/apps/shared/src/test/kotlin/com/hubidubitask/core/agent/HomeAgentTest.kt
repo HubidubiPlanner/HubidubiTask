@@ -87,7 +87,7 @@ class HomeAgentTest {
         assertEquals("hermes-agent", Agent.clientFor(cfg(AgentKind.OPENAI, "")).health().server)
     }
 
-    @Test fun `feeds have only Claude`() {
-        assertEquals(listOf("claude" to "Claude"), AgentConfig.FEED_MODELS)
+    @Test fun `only Ollama is taken to just answer, any other agent may run commands`() {
+        assertEquals(listOf(AgentKind.OLLAMA), AgentKind.entries.filter { !it.runsCommands })
     }
 }

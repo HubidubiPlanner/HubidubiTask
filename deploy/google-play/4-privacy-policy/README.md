@@ -22,7 +22,8 @@ What it says, so you can check it against the app content answers in step 5:
   server), or by the user's own agent at home (the item and a text
   copy of the items, to the agent at the address they entered); a photo
   from the Photo note widget (that photo only, to the same AI); feeds (the
-  page, then Claude); one-time imports from Todoist and iCal.
+  page, then the chosen AI, or Claude when that is an agent that can run
+  commands); one-time imports from Todoist and iCal.
 - Permissions: microphone for voice memos and voice notes (a voice note is
   written down on the phone by its own speech recognizer, the sound sent
   nowhere); network, Wi-Fi state and

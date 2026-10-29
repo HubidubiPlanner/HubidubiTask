@@ -78,9 +78,10 @@ class FeedKindsTest {
         } finally { server.shutdown() }
     }
 
-    @Test fun `feeds are only ever asked through Claude`() {
+    @Test fun `Claude for feeds is Claude with the user's key`() {
         val c = FeedRunner.feedConfig("sk-test")
         assertEquals("claude", c.protocol)
+        assertEquals("sk-test", c.apiKey)
         assertTrue(com.hubidubitask.core.agent.Agent.clientFor(c) is com.hubidubitask.core.agent.ClaudeClient)
     }
 }

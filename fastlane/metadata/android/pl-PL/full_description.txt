@@ -21,7 +21,7 @@ ZROBIONE ZNACZY ZROBIONE
 • Projekty to proste pojemniki na zadania i notatki. Notatka pod zadaniem trzyma szczegóły tam, gdzie praca.
 
 OBSERWUJ STRONĘ
-• Dodaj stronę internetową lub kanał RSS albo Atom. Aplikacja zagląda tam raz dziennie, tygodniowo lub miesięcznie, a gdy coś się zmieni, Claude (zawsze Claude, nie Twój agent) zamienia zmianę w jedno zadanie w wybranym projekcie.
+• Dodaj stronę internetową lub kanał RSS albo Atom. Aplikacja zagląda tam raz dziennie, tygodniowo lub miesięcznie, a gdy coś się zmieni, wybrane AI (lub Claude, gdy agent może uruchamiać polecenia) robi z tego zadanie w projekcie.
 
 PRZEGLĄD Z AI (OPCJONALNIE)
 • Przytrzymaj dowolny projekt, zadanie lub notatkę i wybierz Przegląd z AI. Dostaniesz podsumowanie tego, co się w nim wydarzyło, na podstawie zadań i notatek. Podsumowanie zostaje pod tytułem, oznaczone jako „Nieaktualne”, gdy coś się zmieni.

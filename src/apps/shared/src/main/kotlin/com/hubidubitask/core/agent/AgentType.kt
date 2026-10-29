@@ -12,8 +12,8 @@ import com.hubidubitask.core.i18n.t
  *
  * Every client but Claude's SDK speaks through [Agent.http]: one TLS policy
  * (a public host needs a certificate an authority vouches for; a home one is
- * pinned on first use; plain http only at home). Feeds never use these: they
- * are Claude only ([com.hubidubitask.core.feed.FeedRunner]).
+ * pinned on first use; plain http only at home). Feeds use the chosen one
+ * only when it can't run commands ([com.hubidubitask.core.feed.FeedWriter]).
  *
  * Texts shown to the user are getters that translate (t); a brand name stays
  * as it is.

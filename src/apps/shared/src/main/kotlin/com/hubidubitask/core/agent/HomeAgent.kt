@@ -35,6 +35,12 @@ enum class AgentKind(val id: String, val label: String, val port: Int?, private 
     /** Any other server speaking the OpenAI chat shape. Keep it last. */
     OPENAI("openai", "", null, null);
 
+    /**
+     * Whether it may act on what it reads: run commands, change files, go on
+     * the web. Ollama only answers; a server the app can't tell is taken to.
+     */
+    val runsCommands: Boolean get() = this != OLLAMA
+
     /** Whether it can be held to a JSON schema, so changes need no fenced block. */
     val structured: Boolean get() = this == OPENCODE || this == KILO
 

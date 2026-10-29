@@ -38,7 +38,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hubidubitask.core.EntityRecord
-import com.hubidubitask.core.agent.AgentConfig
 import com.hubidubitask.core.feed.FeedIcon
 import com.hubidubitask.core.feed.FeedKind
 import com.hubidubitask.core.feed.FeedKinds
@@ -191,7 +190,7 @@ private fun FeedSheet(feed: EntityRecord, projectTitle: Map<String, String>, vm:
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(f["url"].orEmpty(), style = MaterialTheme.typography.bodySmall, color = c.muted,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val model = t(AgentConfig.FEED_MODELS.firstOrNull { it.first == f["model"] }?.second ?: "Claude")
+            val model = com.hubidubitask.core.feed.FeedWriter.label(vm.agentConfig())
             Text("${periodLabel(f["period"])} · ${f["project"]?.let { projectTitle[it] } ?: t("Inbox")} · $model",
                 style = MaterialTheme.typography.bodyMedium)
             (result ?: f["last_error"])?.let {

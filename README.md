@@ -28,7 +28,9 @@ Website: <https://hubidubiplanner.github.io/HubidubiTask>. How to use it:
 | OpenAI | Any server that speaks OpenAI's API, with a model you run yourself |
 | Agent | The AI agent you already run on a computer at home (OpenClaw, Hermes Agent, opencode, Kilo, Ollama, or any OpenAI-shaped server), at the IP and token you type. Nothing of ours is installed there. |
 
-Feeds always write their task with Claude.
+Feeds write their task with the AI you chose, unless it is your own agent that can
+run commands (all but Ollama): a feed's text is a stranger's web page, so Claude
+writes it then.
 
 ## Build from source
 

@@ -292,7 +292,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     /** Look at every feed whose period has turned, or [only] now. Returns what happened, by feed id. */
     @Synchronized
     private fun runFeeds(only: String? = null): Map<String, String> =
-        com.hubidubitask.core.feed.FeedRunner.run(store, claudeKey(), only)
+        com.hubidubitask.core.feed.FeedRunner.run(store, agents.load(), claudeKey(), only)
 
     /** Watch a [kind] as typed ([values]); the first look happens straight away and only remembers it. */
     fun addFeed(kind: com.hubidubitask.core.feed.FeedKind, values: Map<String, String>, period: String,

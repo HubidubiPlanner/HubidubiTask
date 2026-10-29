@@ -21,7 +21,7 @@ DONE MEANS DONE
 • Projects are plain containers of tasks and notes. Put a note under a task to keep the details where the work is.
 
 WATCH A PAGE
-• Add a web page or an RSS or Atom feed. Once a day, week or month it is checked, and when something changed, Claude (always Claude, never your own agent) turns the change into one task in the project you chose.
+• Add a web page or an RSS or Atom feed. Once a day, week or month it is checked, and when something changed, the AI you chose turns the change into one task (Claude, when your choice is your own agent that can run commands) in the project you chose.
 
 REVIEW WITH AI (OPTIONAL)
 • Long-press any project, task or note and choose Review with AI. It sums up what happened in it, from its tasks and notes, and the summary stays under its title, marked "Not up to date" once something changes.

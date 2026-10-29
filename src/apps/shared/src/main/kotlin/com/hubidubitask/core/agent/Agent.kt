@@ -55,12 +55,6 @@ data class AgentConfig(
         /** A stored choice the apps no longer offer reads as the default. */
         fun knownProtocol(id: String?): String = AgentTypes.of(id).id
 
-        /**
-         * What a feed writes its task with. Never the user's own agent: a feed's
-         * text is a stranger's web page, and that agent can run commands.
-         */
-        val FEED_MODELS = listOf("claude" to "Claude")
-
         /** The model a type asks for; blank lets an OpenAI-shaped server answer with its first. */
         fun defaultModel(protocol: String) = AgentTypes.of(protocol).defaultModel
     }
