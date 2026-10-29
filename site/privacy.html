@@ -53,6 +53,11 @@
             <td>The agent at the IP and port you entered, which you run yourself, for example OpenClaw, Hermes Agent, opencode, Kilo or Ollama. What it keeps and which model answers depend on how you set it up. With opencode and Kilo the app deletes each question's session once it has answered. Without HTTPS, the app talks only to addresses in your home network.</td>
           </tr>
           <tr>
+            <td>You take a photo with the Photo note widget (optional)</td>
+            <td>That photo, made smaller, to be written out as a note. Nothing else: not your other items</td>
+            <td>The AI you chose in Settings, as in the rows above: Claude, your OpenAI-compatible server, or your own agent. If it can't read the photo, the photo is kept on your phone as a photo note instead.</td>
+          </tr>
+          <tr>
             <td>You add a feed (optional)</td>
             <td>A request for the web page or feed you entered, once a day, week or month; then the lines that changed on it</td>
             <td>The page's own server, and Claude, to write the task.</td>
@@ -74,7 +79,7 @@
 
     <h2 id="permissions">Permissions</h2>
     <ul>
-      <li><strong>Microphone</strong>: to record a voice memo, only while you are recording.</li>
+      <li><strong>Microphone</strong>: to record a voice memo or say a voice note, only while you are recording. A voice note is written down by your phone's own speech recognizer, which HubidubiTask asks to work on the phone itself; the sound is sent nowhere.</li>
       <li><strong>Network access, Wi-Fi state and multicast</strong>: to find your other devices on the local network and sync with them, and to reach an AI or import source you chose.</li>
     </ul>
     <p>Taking a photo opens your phone's own camera app; HubidubiTask receives only the photo you take and asks for no camera permission. The microphone is optional; the app works without it.</p>

@@ -15,11 +15,26 @@ class OpenAiAgent(private val config: AgentConfig) : HomeAgentClient {
     @Volatile private var client = OpenAiClient(config)
     @Volatile private var named = config.model.isNotBlank()
 
-    override fun turn(prompt: AgentPrompt): AgentReply {
+    private fun name() {
         if (!named) {
             client.health().models.firstOrNull()?.let { client = OpenAiClient(config.copy(model = it)) }
             named = true
         }
+    }
+
+    /**
+     * A turn carrying a photo goes as it is, in the OpenAI shape, so the
+     * image reaches the model; a plain question keeps the usual turn. Its
+     * reply is only read: no changes come back from it.
+     */
+    override fun complete(messages: List<Message>): String {
+        if (messages.none { it.images.isNotEmpty() }) return super.complete(messages)
+        name()
+        return client.complete(messages)
+    }
+
+    override fun turn(prompt: AgentPrompt): AgentReply {
+        name()
         val text = listOf(prompt.instructions, prompt.context, "Question:\n" + prompt.question)
             .filter { it.isNotBlank() }.joinToString("\n\n")
         return AgentActions.fromText(client.complete(listOf(Message("user", text))))

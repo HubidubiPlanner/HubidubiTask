@@ -9,7 +9,11 @@ import com.anthropic.errors.NotFoundException
 import com.anthropic.errors.PermissionDeniedException
 import com.anthropic.errors.RateLimitException
 import com.anthropic.errors.UnauthorizedException
+import com.anthropic.models.beta.messages.BetaBase64ImageSource
+import com.anthropic.models.beta.messages.BetaContentBlockParam
+import com.anthropic.models.beta.messages.BetaImageBlockParam
 import com.anthropic.models.beta.messages.BetaOutputConfig
+import com.anthropic.models.beta.messages.BetaTextBlockParam
 import com.anthropic.models.beta.messages.BetaStopReason
 import com.anthropic.models.beta.messages.MessageCreateParams
 
@@ -48,7 +52,11 @@ class ClaudeClient(
             .apply { if (system.isNotBlank()) system(system) }
             .apply {
                 messages.filter { it.role != "system" }.forEach {
-                    if (it.role == "assistant") addAssistantMessage(it.content) else addUserMessage(it.content)
+                    when {
+                        it.role == "assistant" -> addAssistantMessage(it.content)
+                        it.images.isEmpty() -> addUserMessage(it.content)
+                        else -> addUserMessageOfBetaContentBlockParams(withImages(it))
+                    }
                 }
             }
             .build()
@@ -57,6 +65,16 @@ class ClaudeClient(
             throw AgentError("Claude declined to answer this one.")
         return reply.content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("")
     }
+
+    /** A user turn's images, inline, then its text: Claude reads an image best before the words about it. */
+    private fun withImages(m: Message): List<BetaContentBlockParam> =
+        m.images.map { p ->
+            BetaContentBlockParam.ofImage(BetaImageBlockParam.builder()
+                .source(BetaBase64ImageSource.builder()
+                    .mediaType(BetaBase64ImageSource.MediaType.of(p.mime.lowercase()))
+                    .data(p.base64).build())
+                .build())
+        } + BetaContentBlockParam.ofText(BetaTextBlockParam.builder().text(m.content).build())
 
     override fun health(): Health {
         val model = config.model.ifBlank { AgentConfig.CLAUDE_MODEL }

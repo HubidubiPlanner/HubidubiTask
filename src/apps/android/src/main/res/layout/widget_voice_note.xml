@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One cell holding one icon, like the launcher's own: no name under it, as
+     a home screen of themed icons shows none. It shrinks to fit a smaller cell. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_voice_note"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/voice_note_widget_label"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_voice_note_round" />
+</FrameLayout>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The "Photo note" widget and its preview in the widget list: drawn as the
+     "New note" one is (see ic_note_round), with a picture above the H instead
+     of the +: what a photo shows becomes a note. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="61dp"
+    android:height="61dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <path android:fillColor="#1E1B19" android:pathData="M0,36a36,36 0,1 0,72 0a36,36 0,1 0,-72 0z" />
+    <group
+        android:scaleX="0.5315"
+        android:scaleY="0.5315"
+        android:translateX="7.3"
+        android:translateY="7.3">
+        <group android:scaleX="0.85" android:scaleY="0.85" android:pivotX="54" android:pivotY="54">
+            <path android:fillColor="#F7EFEC" android:pathData="M38,47h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
+            <path
+                android:pathData="M47,26.5h14a2.5,2.5 0 0,1 2.5,2.5v9a2.5,2.5 0 0,1 -2.5,2.5h-14a2.5,2.5 0 0,1 -2.5,-2.5v-9a2.5,2.5 0 0,1 2.5,-2.5z"
+                android:strokeColor="#F7EFEC"
+                android:strokeWidth="3.2"
+                android:strokeLineJoin="round" />
+            <path android:fillColor="#F7EFEC" android:pathData="M47,39L52,32.8L55.4,36.6L57.6,34.4L61,39Z" />
+            <path android:fillColor="#F7EFEC" android:pathData="M56.6,31.4a1.7,1.7 0 1,0 3.4,0a1.7,1.7 0 1,0 -3.4,0z" />
+        </group>
+    </group>
+</vector>

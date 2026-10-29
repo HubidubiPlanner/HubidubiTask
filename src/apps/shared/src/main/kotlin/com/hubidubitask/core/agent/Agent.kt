@@ -1,5 +1,6 @@
 package com.hubidubitask.core.agent
 
+import com.hubidubitask.core.NoteSplit
 import com.hubidubitask.core.i18n.t
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
@@ -70,7 +71,15 @@ data class Health(val connected: Boolean, val server: String?, val models: List<
                   /** The sha256 of the server's certificate, when it was reached over TLS. */
                   val fingerprint: String? = null)
 
-data class Message(val role: String, val content: String)
+/** One turn of a conversation. A user turn may carry [images], sent before its text. */
+data class Message(val role: String, val content: String, val images: List<Picture> = emptyList())
+
+/** An image a turn carries: its bytes and their type ("image/jpeg"). */
+class Picture(val bytes: ByteArray, val mime: String) {
+    val base64: String get() = java.util.Base64.getEncoder().encodeToString(bytes)
+    /** The image inline, as the OpenAI shape and opencode take it. */
+    val dataUrl: String get() = "data:$mime;base64,$base64"
+}
 
 class AgentError(message: String, cause: Throwable? = null) : Exception(message, cause)
 
@@ -130,6 +139,31 @@ object Agent {
         }
         return "error: the model spent its whole reply reasoning and never answered, " +
             "twice (${raw.length} characters of it). Try again."
+    }
+
+    /** How a photo is read: its words as they stand, or what it shows. [describeIn] names a language. */
+    internal fun photoSystem(language: String?, describeIn: String): String =
+        "You turn a photo into a note. If the photo shows writing (a page, a whiteboard, a receipt, " +
+            "a screen, a sign, handwriting), write that text out faithfully, keeping its lines and lists. " +
+            "If it shows no writing, describe what it shows in two or three plain sentences in $describeIn. " +
+            "Start with a short title of at most eight words on a line of its own, then a blank line, " +
+            "then the text. No markdown fences, no commentary, no tool calls. " + languageInstruction(language)
+
+    /**
+     * A photo as a note, read by the chosen agent: a title and the text.
+     * Only the photo and how to read it go out, never the user's items, and
+     * nothing the reply asks for is done: it is only words. One retry, as
+     * [ask] has. Throws [AgentError] when no text comes back.
+     */
+    fun readPhoto(client: ModelClient, config: AgentConfig, bytes: ByteArray, mime: String,
+                  describeIn: String = com.hubidubitask.core.i18n.I18n.language.locale
+                      .getDisplayLanguage(java.util.Locale.ENGLISH)): NoteSplit.Note {
+        val messages = listOf(Message("system", photoSystem(config.language, describeIn)),
+            Message("user", "Here is the photo.", listOf(Picture(bytes, mime))))
+        repeat(2) {
+            NoteSplit.titleAndBody(Text.stripReasoning(client.complete(messages)))?.let { return it }
+        }
+        throw AgentError("the agent sent back no text")
     }
 
     private fun askHome(client: HomeAgentClient, config: AgentConfig, question: String,

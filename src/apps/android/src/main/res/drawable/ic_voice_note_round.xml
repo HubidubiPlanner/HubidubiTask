@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The "Voice note" widget and its preview in the widget list: drawn as the
+     "New note" one is (see ic_note_round), with a note of music above the H
+     instead of the +: what is said becomes a note. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="61dp"
+    android:height="61dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <path android:fillColor="#1E1B19" android:pathData="M0,36a36,36 0,1 0,72 0a36,36 0,1 0,-72 0z" />
+    <group
+        android:scaleX="0.5315"
+        android:scaleY="0.5315"
+        android:translateX="7.3"
+        android:translateY="7.3">
+        <group android:scaleX="0.85" android:scaleY="0.85" android:pivotX="54" android:pivotY="54">
+            <path android:fillColor="#F7EFEC" android:pathData="M38,47h9v15h14v-15h9v38h-9v-15h-14v15h-9z" />
+            <group android:scaleX="1.18" android:scaleY="1.18" android:pivotX="54" android:pivotY="33.5" android:translateX="1.4" android:translateY="1.1">
+                <group android:rotation="-20" android:pivotX="49" android:pivotY="38.5">
+                    <path android:fillColor="#F7EFEC" android:pathData="M44,38.5a5,3.8 0 1,0 10,0a5,3.8 0 1,0 -10,0z" />
+                </group>
+                <path
+                    android:pathData="M52.2,37.5V24.5c1.2,3.8 7,4.3 7,9.8"
+                    android:strokeColor="#F7EFEC"
+                    android:strokeWidth="4"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round" />
+            </group>
+        </group>
+    </group>
+</vector>

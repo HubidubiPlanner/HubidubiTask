@@ -57,6 +57,23 @@ class ClaudeClientTest {
         assertEquals("sk-ant-test", lastKey)
     }
 
+    @Test fun `a photo goes as an inline image before the words about it`() {
+        reply = message("end_turn", "Receipt\\n\\nMilk 3.49")
+        val photo = Picture(byteArrayOf(1, 2, 3), "image/jpeg")
+        val note = Agent.readPhoto(client(), AgentConfig(endpoint = "", protocol = "claude"),
+            photo.bytes, photo.mime, describeIn = "Polish")
+        assertEquals("Receipt", note.title)
+        assertEquals("Milk 3.49", note.body)
+        val content = lastBody!!.getJSONArray("messages").getJSONObject(0).getJSONArray("content")
+        val image = content.getJSONObject(0)
+        assertEquals("image", image.getString("type"))
+        assertEquals("base64", image.getJSONObject("source").getString("type"))
+        assertEquals("image/jpeg", image.getJSONObject("source").getString("media_type"))
+        assertEquals(photo.base64, image.getJSONObject("source").getString("data"))
+        assertEquals("text", content.getJSONObject(1).getString("type"))
+        assertTrue("in Polish" in lastBody!!.getString("system"))
+    }
+
     @Test fun `a refusal is reported, not shown as an answer`() {
         reply = message("refusal", "")
         val e = assertFailsWith<AgentError> { client().complete(listOf(Message("user", "x"))) }
