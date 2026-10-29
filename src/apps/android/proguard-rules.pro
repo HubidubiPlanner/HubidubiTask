@@ -17,3 +17,6 @@
 # BouncyCastle: only its lightweight API is used, directly (J-PAKE, ML-KEM);
 # other parts refer to JDK classes Android doesn't have.
 -dontwarn org.bouncycastle.**
+
+# whisper.cpp calls the progress listener by name (src/main/cpp/whisper_jni.cpp).
+-keep interface com.hubidubitask.mobile.capture.WhisperNative$Listener { *; }

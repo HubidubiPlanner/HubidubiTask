@@ -25,8 +25,10 @@ What it says, so you can check it against the app content answers in step 5:
   page, then the chosen AI, or Claude when that is an agent that can run
   commands); one-time imports from Todoist and iCal.
 - Permissions: microphone for voice memos and voice notes (a voice note is
-  written down on the phone by its own speech recognizer, the sound sent
-  nowhere); network, Wi-Fi state and
+  written down on the phone by its own speech recognizer or by Whisper inside
+  the app, the sound sent nowhere; its words then go to the chosen AI to be
+  tidied, when one is set up); a foreground service while a voice note is
+  written out; network, Wi-Fi state and
   multicast for finding and syncing with paired devices. Photos are taken by
   the phone's camera app, so the app asks for no camera permission.
 - Deletion, children, this website, changes, contact (the GitHub issues,

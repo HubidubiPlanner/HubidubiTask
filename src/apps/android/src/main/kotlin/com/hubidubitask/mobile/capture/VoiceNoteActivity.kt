@@ -20,15 +20,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Stop
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -36,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.hubidubitask.core.NoteSplit
+import com.hubidubitask.core.Wav
 import com.hubidubitask.core.i18n.I18n
 import com.hubidubitask.core.i18n.t
 import com.hubidubitask.mobile.ui.AppSheet
@@ -44,21 +49,23 @@ import com.hubidubitask.mobile.ui.NewDue
 import com.hubidubitask.mobile.ui.PrimaryButton
 import com.hubidubitask.mobile.ui.SecondaryButton
 import com.hubidubitask.mobile.ui.SheetTitle
+import com.hubidubitask.mobile.ui.SpeechChoice
 import com.hubidubitask.mobile.ui.ThemeChoice
 import com.hubidubitask.mobile.ui.UiLanguage
 import java.io.File
 import java.util.Locale
 
 /**
- * A note said aloud, from the home screen. The phone's own speech recognizer
- * writes it down as it is said, on the phone itself (its on-device mode: the
- * audio goes nowhere), and Stop saves the words as a text note, with the
- * date Settings gives new notes. A phone that can't write speech down here
- * (no recognizer, or none for the app's language yet) records a voice memo
- * instead, as the "+" does, so nothing said is lost.
+ * A note said aloud, from the home screen, written down on the phone itself:
+ * the sound goes nowhere. What writes it down is chosen in Settings
+ * ([SpeechChoice]): Android's own recognizer, in its on-device mode, the
+ * words showing as they are said; or Whisper, inside the app, after Stop.
+ * Where Android can't (no recognizer, or none yet for the app's language),
+ * Whisper does. Stop hands the words or the recording to [VoiceNoteService],
+ * which has the chosen AI tidy them and saves a text note.
  */
 class VoiceNoteActivity : ComponentActivity() {
-    private enum class Phase { WAIT, LISTEN, RECORD }
+    private enum class Phase { WAIT, LISTEN, RECORD, WRITE }
 
     private var phase by mutableStateOf(Phase.WAIT)
     /** What the recognizer has settled on, and what it is still unsure of. */
@@ -68,8 +75,9 @@ class VoiceNoteActivity : ComponentActivity() {
     private var recognizer: SpeechRecognizer? = null
     private var stopping = false
     private var done = false
-    private var memo: AudioRecorder? = null
-    private var memoNote = ""
+    private var pcm: PcmRecorder? = null
+    /** The note handed to [VoiceNoteService]; this screen closes once it is done. */
+    private val id = System.currentTimeMillis()
     private val main = Handler(Looper.getMainLooper())
 
     private val askMic = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -85,6 +93,7 @@ class VoiceNoteActivity : ComponentActivity() {
             HubidubiTaskTheme(ThemeChoice.load(applicationContext)) { Sheet() }
         }
         if (savedInstanceState != null) { finish(); return }
+        VoiceNoteService.keepLeftovers(applicationContext)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             == PackageManager.PERMISSION_GRANTED) start()
         else askMic.launch(Manifest.permission.RECORD_AUDIO)
@@ -94,11 +103,24 @@ class VoiceNoteActivity : ComponentActivity() {
     private fun Sheet() {
         if (phase == Phase.WAIT) return
         val c = HubidubiTaskTheme.colors
+        if (phase == Phase.WRITE) {
+            // Closing this only hides it: the note is still written, and said when it is.
+            val work by VoiceNoteService.work.collectAsState()
+            val finished by VoiceNoteService.finished.collectAsState()
+            LaunchedEffect(finished) { if (finished >= id) finish() }
+            AppSheet(onDismiss = { finish() }) {
+                SheetTitle(t("Writing it out…"))
+                val bar = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                when (val w = work) {
+                    is VoiceNoteService.Work.Writing -> LinearProgressIndicator(progress = { w.percent / 100f },
+                        modifier = bar, color = c.accent, trackColor = c.line)
+                    else -> LinearProgressIndicator(bar, color = c.accent, trackColor = c.line)
+                }
+            }
+            return
+        }
         AppSheet(onDismiss = { stop() }) {
             SheetTitle(if (phase == Phase.LISTEN) t("Listening…") else t("Recording…"))
-            // Said before a word is spoken, so no one dictates into a memo expecting text.
-            if (phase == Phase.RECORD) Text(memoNote, style = MaterialTheme.typography.bodyMedium,
-                color = c.muted, modifier = Modifier.padding(bottom = 18.dp))
             if (phase == Phase.LISTEN) {
                 val text = (said + guess).filter { it.isNotBlank() }.joinToString(" ")
                 Text(text.ifEmpty { "…" }, style = MaterialTheme.typography.bodyLarge,
@@ -113,11 +135,11 @@ class VoiceNoteActivity : ComponentActivity() {
         }
     }
 
-    /** The recognizer when it can write this language down here; a memo otherwise. */
+    /** Android's recognizer when chosen and it can write this language down here; Whisper otherwise. */
     private fun start() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
-            record(t("This phone can't turn speech into text here, so this is kept as a voice memo.")); return
+            SpeechChoice.load(this) == SpeechChoice.WHISPER || !SpeechChoice.androidAvailable(this)) {
+            record(); return
         }
         check()
     }
@@ -138,14 +160,14 @@ class VoiceNoteActivity : ComponentActivity() {
                     done -> {}
                     installed != null -> listen(r, installed)
                     (support.supportedOnDeviceLanguages + support.pendingOnDeviceLanguages).any(::ours) -> {
-                        // Fetched for next time; said now, kept as it was said.
+                        // Fetched for next time; Whisper writes this one down.
                         runCatching { r.triggerModelDownload(intentFor(null)) }
                         letGo()
-                        record(t("The speech pack for this language is still downloading, so this is kept as a voice memo."))
+                        record()
                     }
                     else -> {
                         letGo()
-                        record(t("This phone can't turn speech into text here, so this is kept as a voice memo."))
+                        record()
                     }
                 }
             }
@@ -215,9 +237,9 @@ class VoiceNoteActivity : ComponentActivity() {
                     error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                         r.startListening(intent)
                     said.isEmpty() && guess.isEmpty() -> {
-                        // It can't listen after all: what is said now is kept as sound.
+                        // It can't listen after all: Whisper writes this one down.
                         letGo()
-                        record(t("This phone can't turn speech into text here, so this is kept as a voice memo."))
+                        record()
                     }
                     else -> write()
                 }
@@ -239,70 +261,92 @@ class VoiceNoteActivity : ComponentActivity() {
                 recognizer?.stopListening()
                 main.postDelayed({ write() }, LAST_WORDS_MS)
             }
-            Phase.RECORD -> keepMemo()
-            Phase.WAIT -> finish()
+            Phase.RECORD -> handOver()
+            Phase.WAIT, Phase.WRITE -> finish()
         }
     }
 
-    /** The words heard, as a text note. */
+    /** The words heard, handed over to be tidied and saved. */
     private fun write() {
         if (done) return
         done = true
         main.removeCallbacksAndMessages(null)
         recognizer?.destroy(); recognizer = null
         val text = (said + guess).filter { it.isNotBlank() }.joinToString(" ").trim()
-        val note = NoteSplit.titleAndBody(text)
-        if (note == null) toast(t("Nothing heard"))
-        else {
-            val due = NewDue.date(applicationContext)
-            saveInBackground(this, t("Note saved")) { it.noteText(note.title, note.body, due) }
+        when {
+            text.isEmpty() -> { toast(t("Nothing heard")); finish() }
+            VoiceNoteService.words(applicationContext, id, text) -> if (isFinishing || !hasWindowFocus()) finish() else phase = Phase.WRITE
+            else -> {
+                // The service couldn't start: saved here, as heard.
+                val note = NoteSplit.titleAndBody(text) ?: return finish()
+                val due = NewDue.date(applicationContext)
+                saveInBackground(this, t("Note saved")) { it.noteText(note.title, note.body, due) }
+                finish()
+            }
         }
-        finish()
     }
 
-    /** No recognizer here: the sound itself, as the "+" records it. */
-    private fun record(why: String) {
+    /** For Whisper: the sound itself, at 16 kHz, while the model loads. */
+    private fun record() {
         if (done) return
-        val f = File(cacheDir, "rec_${System.currentTimeMillis()}.m4a")
-        runCatching { AudioRecorder(f).also { it.start(); memo = it } }
-            .onSuccess { memoNote = why; phase = Phase.RECORD }
+        val r = PcmRecorder { stop() }
+        runCatching { r.start() }
+            .onSuccess {
+                pcm = r
+                phase = Phase.RECORD
+                if (Whisper.roomFor(this)) Whisper.preload(this)
+            }
             .onFailure { done = true; toast(t("The microphone could not be started.")); finish() }
     }
 
-    private fun keepMemo() {
+    /** The recording, handed over to be written out, tidied and saved. */
+    private fun handOver() {
         if (done) return
         done = true
-        val f = memo?.stop(); memo = null
-        if (f != null) {
+        val samples = pcm?.stop(); pcm = null
+        if (samples == null || samples.size < PcmRecorder.RATE / 2) {
+            Whisper.release(); toast(t("Nothing heard")); finish(); return
+        }
+        val wav = File(VoiceNoteService.folder(this), "voice_$id.wav")
+        runCatching { wav.writeBytes(Wav.of(samples, PcmRecorder.RATE)) }
+            .onFailure { Whisper.release(); toast(t("The microphone could not be started.")); finish(); return }
+        if (VoiceNoteService.recording(applicationContext, id, wav)) {
+            if (isFinishing || !hasWindowFocus()) finish() else phase = Phase.WRITE
+        } else {
+            // The service couldn't start: the recording is kept as it is.
+            Whisper.release()
             val due = NewDue.date(applicationContext)
             saveInBackground(this, t("Note saved")) {
-                try { it.noteMedia("audio", f.readBytes(), "audio/mp4", t("Voice memo"), due) } finally { f.delete() }
+                try { it.noteMedia("audio", wav.readBytes(), "audio/wav", t("Voice memo"), due) } finally { wav.delete() }
             }
+            finish()
         }
-        finish()
     }
 
     private fun discard() {
         done = true
         main.removeCallbacksAndMessages(null)
         recognizer?.cancel(); recognizer?.destroy(); recognizer = null
-        memo?.stop()?.delete(); memo = null
+        pcm?.stop(); pcm = null
+        Whisper.release()
         finish()
     }
 
     // Left for another app mid-note: what was said is kept, not lost.
     override fun onStop() {
         super.onStop()
-        if (!done && !isChangingConfigurations) when (phase) {
+        if (isChangingConfigurations) return
+        if (!done) when (phase) {
             Phase.LISTEN -> write()
-            Phase.RECORD -> keepMemo()
-            Phase.WAIT -> {}
+            Phase.RECORD -> handOver()
+            Phase.WAIT, Phase.WRITE -> {}
         }
+        if (phase == Phase.WRITE) finish()
     }
 
     override fun onDestroy() {
         recognizer?.destroy(); recognizer = null
-        if (!done) memo?.stop()?.delete()
+        if (!done) { pcm?.stop(); pcm = null; Whisper.release() }
         super.onDestroy()
     }
 

@@ -60,9 +60,17 @@ The facts, from the code:
 - Data leaves the phone only (a) to the user's **own paired computer** on the
   local network, and (b) when the user **starts it**: an AI review to the AI
   they configured, a photo from the Photo note widget to that same AI, a
-  feed's page check, a one-time import. A voice note is written down on the
-  phone by the system's speech recognizer in its on-device mode; the audio
-  goes nowhere.
+  feed's page check, a one-time import, and a voice note's words (written
+  down on the phone) to that same AI to be tidied. A voice note is written
+  down on the phone by the system's speech recognizer in its on-device mode
+  or by Whisper inside the app; the audio goes nowhere.
+- **Foreground service** (Play asks at upload, for apps targeting Android 14+):
+  type **mediaProcessing** (Android 15 on; a short service on Android 14).
+  Use: writing out a voice note the user just recorded with the Voice note
+  widget (speech to text inside the app with Whisper) and saving it, which
+  can take minutes on a slow phone and must not stop when the user leaves the
+  screen. Started only by the user's tap on Stop; shows a notification while
+  it runs and stops when the note is saved.
 - The local database is encrypted (SQLCipher, key sealed by the Keystore), and
   `allowBackup="false"`, so nothing goes to Android's cloud backup.
 **Recommended answers**

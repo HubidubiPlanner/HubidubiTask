@@ -64,6 +64,15 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun due(): String? = NewItemDue.due(_newDue.value)
 
+    /** What writes voice notes down ([SpeechChoice]), chosen in Settings. */
+    private val _speech = MutableStateFlow(SpeechChoice.load(app))
+    val speech: StateFlow<String> = _speech.asStateFlow()
+
+    fun setSpeech(choice: String) {
+        SpeechChoice.save(getApplication(), choice)
+        _speech.value = SpeechChoice.load(getApplication())
+    }
+
     /** The colour theme ([ColorTheme]) chosen in Settings. */
     private val _theme = MutableStateFlow(ThemeChoice.load(app))
     val theme: StateFlow<ColorTheme> = _theme.asStateFlow()

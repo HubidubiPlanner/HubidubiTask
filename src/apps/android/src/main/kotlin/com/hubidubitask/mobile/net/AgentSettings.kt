@@ -25,6 +25,9 @@ object AgentSettings {
 
     fun claudeKey(context: Context): String? = store(context).claudeKey()
 
+    /** Whether the AI chosen in Settings has what it needs to be asked (a key, an address). */
+    fun ready(context: Context): Boolean = store(context).let { s -> s.type().let { it.ready(s.form(it)) } }
+
     fun pin(context: Context, cfg: AgentConfig, fingerprint: String) = store(context).pin(cfg, fingerprint)
 
     private class Prefs(private val context: Context) : AgentPrefs {

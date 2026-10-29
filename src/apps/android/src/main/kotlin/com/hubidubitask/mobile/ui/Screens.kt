@@ -1095,6 +1095,8 @@ fun SettingsScreen(
         val newDue by vm.newDue.collectAsStateWithLifecycle()
         val language by vm.language.collectAsStateWithLifecycle()
         val theme by vm.theme.collectAsStateWithLifecycle()
+        val speech by vm.speech.collectAsStateWithLifecycle()
+        val androidSpeech = remember { SpeechChoice.androidAvailable(context) }
         // The computers (Mac or Linux) this phone keeps in step with, every
         // minute. In the list each has when it last synced, a tick once it has,
         // and a button on its right that unpairs it; then Sync now, and New
@@ -1102,7 +1104,8 @@ fun SettingsScreen(
         var pairingMac by remember { mutableStateOf(false) }
         PairMacSheet(pairingMac, vm) { pairingMac = false }
         val macs = state.macs
-        val labelWidth = labelColumnWidth(listOf(t("Due date for new tasks"), t("Language"), t("Theme"), t("Devices")), max = 180.dp)
+        val labelWidth = labelColumnWidth(listOf(t("Due date for new tasks"), t("Language"), t("Speech to text"), t("Theme"),
+            t("Devices")), max = 180.dp)
         Column(Modifier.padding(horizontal = edge)) {
             // The date every new task and note gets: tomorrow brings it back on
             // Incoming the next day.
@@ -1112,6 +1115,14 @@ fun SettingsScreen(
             // The app's own language, each named in itself.
             SettingRow(t("Language"), language.label,
                 Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } }, labelWidth)
+            // What writes a voice note down: Android's recognizer, or Whisper in the app.
+            SettingRow(t("Speech to text"), SpeechChoice.OPTIONS.first { it.first == speech }.second,
+                SpeechChoice.OPTIONS.map { (id, label) ->
+                    DropdownItem(label, id == speech,
+                        detail = if (id == SpeechChoice.ANDROID && !androidSpeech) t("Not on this phone") else null) {
+                        vm.setSpeech(id)
+                    }
+                }, labelWidth)
             // Ivory and Sand follow the system's light or dark, the others are always one
             // of them, said on the right of each in the list.
             SettingRow(t("Theme"), t(theme.label), ColorTheme.entries.map {

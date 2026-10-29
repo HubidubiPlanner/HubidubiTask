@@ -66,9 +66,7 @@ class PhotoNoteActivity : ComponentActivity() {
         // Back from the camera into a new copy of this screen: the result comes to it by itself.
         savedInstanceState?.getString(SHOT)?.let { shot = File(it); return }
 
-        val store = AgentSettings.store(this)
-        val type = store.type()
-        if (!type.ready(store.form(type))) {
+        if (!AgentSettings.ready(this)) {
             toast(t("AI not connected. Set it up in Settings.")); finish(); return
         }
         val f = File(cacheDir, "cam_${System.currentTimeMillis()}.jpg")
