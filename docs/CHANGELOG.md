@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.2.0 — 31 October 2026
+
+- **Voice note and Photo note widgets** on the phone's home screen, beside
+  New note. **Voice note**: tap, speak, **Stop**, and a text note is saved.
+  **Photo note**: tap, take a photo, and the AI chosen in Settings writes
+  out the text in it, or describes it; if it can't, the photo is kept as a
+  photo note.
+- **Whisper is built into the phone app.** **Settings → Speech to text**
+  chooses Android's own recognizer, the default, its words showing as you
+  speak, or Whisper, after **Stop**. Where Android can't (no recognizer on
+  the phone, or none for the app's language), Whisper writes the note out
+  instead of a voice memo being kept. Either way the sound stays on the
+  phone.
+- **The chosen AI tidies a voice note**: punctuation, a title, words it
+  misheard, in the language you spoke. Only the words go to it, never your
+  other items. Without an AI, the words are kept as they were heard.
+- **Feeds write their task with the AI chosen in Settings**, not always
+  Claude: Claude, an OpenAI-compatible server or Ollama. An agent that can
+  run commands on your computer (OpenClaw, Hermes, opencode, Kilo) still
+  never reads a feed; then Claude writes the task, as before.
+- **A long press on Incoming can move an item to a project**, as on
+  Projects, on the phone and the computer. **Date** opens on the date the
+  item has, so a late one shows how late it is.
+- **"No project" takes a task out of its project.** It used to leave the
+  task where it was.
+- **The phone app is bigger**, about 170 MB instead of 37 MB: Whisper's
+  model is inside it.
+
 ## 3.1.2 — 25 October 2026
 
 - **Pairing finds the computer where Bonjour doesn't get through.** The phone

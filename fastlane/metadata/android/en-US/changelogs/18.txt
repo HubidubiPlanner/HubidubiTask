@@ -1,0 +1,6 @@
+• Voice note and Photo note widgets for the home screen.
+• Whisper built in: Settings › Speech to text. Voice notes are written down on the phone, and the AI you chose tidies them.
+• Feeds write their task with the AI chosen in Settings.
+• Incoming: a long press can move a task to a project, and Date opens on the task's date.
+• "No project" now takes a task out of its project.
+• The app is bigger (about 170 MB): Whisper's model is inside it.

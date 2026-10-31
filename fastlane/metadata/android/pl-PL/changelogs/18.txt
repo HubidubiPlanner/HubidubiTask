@@ -1,0 +1,6 @@
+• Widżety Notatka głosowa i Notatka ze zdjęcia na ekranie głównym.
+• Wbudowany Whisper: Ustawienia › Mowa na tekst. Notatki głosowe są zapisywane na telefonie, a wybrane AI je porządkuje.
+• Kanały piszą zadanie wybranym w Ustawieniach AI.
+• Nadchodzące: długie przytrzymanie przenosi zadanie do projektu, a Data otwiera się na jego dacie.
+• „Bez projektu” wyjmuje teraz zadanie z projektu.
+• Aplikacja jest większa (ok. 170 MB): w środku jest model Whispera.

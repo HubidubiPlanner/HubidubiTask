@@ -92,7 +92,7 @@ transit: yes**; **deletion: yes** (delete in the app, or uninstall). The
 listing then shows a longer list, but it cannot be faulted.
 
 ## Permissions declarations
-None. RECORD_AUDIO is an ordinary runtime permission. FOREGROUND_SERVICE,
-WAKE_LOCK and RECEIVE_BOOT_COMPLETED come from WorkManager, which declares no
-foreground-service type, so Play's foreground-service declaration does not
-apply.
+None beyond the foreground service above. RECORD_AUDIO is an ordinary
+runtime permission. FOREGROUND_SERVICE_MEDIA_PROCESSING is the voice note's
+service, declared as above (from 3.2.0). WAKE_LOCK and RECEIVE_BOOT_COMPLETED
+come from WorkManager.
