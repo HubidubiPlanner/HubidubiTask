@@ -45,10 +45,19 @@ Builds:
       - src/apps/android/whisper.cpp/bindings
     ndk: 28.2.13676358
 
+  - versionName: 3.2.1
+    versionCode: 19
+    commit: 04a44105e658ad3ccb508326ce70205482fd139a
+    subdir: src/apps/android
+    gradle:
+      - yes
+    gradleprops:
+      - hubidubitask.androidOnly=true
+
 AllowedAPKSigningKeys: 9edba9349d2da2c0e032a855b09b2e8ca046d26dc7ed2a13257eb093a99d8184
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
 UpdateCheckData: src/apps/gradle.properties|hubidubitask\.versionCode=(\d+)|.|hubidubitask\.version=([\d.]+)
-CurrentVersion: 3.2.0
-CurrentVersionCode: 18
+CurrentVersion: 3.2.1
+CurrentVersionCode: 19
