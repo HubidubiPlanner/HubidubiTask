@@ -1,0 +1,6 @@
+• Widżety Notatka głosowa i Notatka ze zdjęcia na ekranie głównym.
+• Ustawienia › Mowa na tekst: Android zapisuje notatki głosowe na telefonie, a Brak zachowuje je jako nagrania. Wybrane AI porządkuje słowa.
+• Ustawienia › Zdjęcie na tekst: AI spisuje zdjęcie, a Brak zachowuje samo zdjęcie.
+• Kanały piszą zadanie wybranym w Ustawieniach AI.
+• Nadchodzące: długie przytrzymanie przenosi zadanie do projektu, a Data otwiera się na jego dacie.
+• „Bez projektu” wyjmuje teraz zadanie z projektu.

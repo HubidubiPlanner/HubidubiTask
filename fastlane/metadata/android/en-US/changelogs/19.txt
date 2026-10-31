@@ -1,0 +1,6 @@
+• Voice note and Photo note widgets for the home screen.
+• Settings › Speech to text: Android writes voice notes down on the phone, or None keeps them as voice memos. The AI you chose tidies the words.
+• Settings › Photo to text: the AI writes out the photo, or None keeps the photo.
+• Feeds write their task with the AI chosen in Settings.
+• Incoming: a long press can move a task to a project, and Date opens on the task's date.
+• "No project" now takes a task out of its project.

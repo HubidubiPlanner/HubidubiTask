@@ -1,14 +1,14 @@
 # 6. Release
 
 Release notes go in with each upload, per language:
-[`en-US/changelogs/18.txt`](../../../fastlane/metadata/android/en-US/changelogs/18.txt) and
-[`pl-PL/changelogs/18.txt`](../../../fastlane/metadata/android/pl-PL/changelogs/18.txt)
-in `fastlane/metadata/android/` for this version (versionCode 18; 500
+[`en-US/changelogs/19.txt`](../../../fastlane/metadata/android/en-US/changelogs/19.txt) and
+[`pl-PL/changelogs/19.txt`](../../../fastlane/metadata/android/pl-PL/changelogs/19.txt)
+in `fastlane/metadata/android/` for this version (versionCode 19; 500
 characters at most). F-Droid shows the same files. Older ones are kept
 beside them.
 
 1. **Testing › Internal testing**: create a release, upload
-   `../1-app-bundle/out/hubidubitask-3.2.0-18.aab`, paste the release notes,
+   `../1-app-bundle/out/hubidubitask-3.2.1-19.aab`, paste the release notes,
    add yourself as a tester, install from the opt-in link. Check: the app
    opens on Incoming, the + menu, Settings › Language, pairing with the computer, a review with AI,
    adding a feed.

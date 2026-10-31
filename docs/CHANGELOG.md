@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.2.1 — 31 October 2026
+
+- **Whisper is out of the phone app**, which is about 37 MB again. Google
+  Play wanted the background service it needed justified, and it made the
+  app five times bigger.
+- **Settings → Speech to text: Android or None.** Android writes a voice
+  note down on the phone as before. With **None**, or where Android can't
+  (Android 12 or older, no recognizer, no language pack), what you say is
+  kept as a voice memo to play back. A phone that chose Whisper in 3.2.0
+  now has None.
+- **Settings → Photo to text: AI or None.** With None, or with no AI set
+  up, the Photo note widget keeps the photo as a photo note; before, it
+  didn't open the camera without an AI.
+- **Leaving the screen right after Stop or a photo loses nothing**: the
+  AI's part runs in the background, with no notification.
+
 ## 3.2.0 — 31 October 2026
 
 - **Voice note and Photo note widgets** on the phone's home screen, beside
