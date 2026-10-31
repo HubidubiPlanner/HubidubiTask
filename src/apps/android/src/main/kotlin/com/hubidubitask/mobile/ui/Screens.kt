@@ -1148,6 +1148,7 @@ fun SettingsScreen(
         val theme by vm.theme.collectAsStateWithLifecycle()
         val speech by vm.speech.collectAsStateWithLifecycle()
         val androidSpeech = remember { SpeechChoice.androidAvailable(context) }
+        val photo by vm.photo.collectAsStateWithLifecycle()
         // The computers (Mac or Linux) this phone keeps in step with, every
         // minute. In the list each has when it last synced, a tick once it has,
         // and a button on its right that unpairs it; then Sync now, and New
@@ -1155,7 +1156,8 @@ fun SettingsScreen(
         var pairingMac by remember { mutableStateOf(false) }
         PairMacSheet(pairingMac, vm) { pairingMac = false }
         val macs = state.macs
-        val labelWidth = labelColumnWidth(listOf(t("Due date for new tasks"), t("Language"), t("Speech to text"), t("Theme"),
+        val labelWidth = labelColumnWidth(listOf(t("Due date for new tasks"), t("Language"), t("Speech to text"),
+            t("Photo to text"), t("Theme"),
             t("Devices")), max = 180.dp)
         Column(Modifier.padding(horizontal = edge)) {
             // The date every new task and note gets: tomorrow brings it back on
@@ -1166,13 +1168,22 @@ fun SettingsScreen(
             // The app's own language, each named in itself.
             SettingRow(t("Language"), language.label,
                 Language.entries.map { DropdownItem(it.label, it == language) { vm.setLanguage(it) } }, labelWidth)
-            // What writes a voice note down: Android's recognizer, or Whisper in the app.
-            SettingRow(t("Speech to text"), SpeechChoice.OPTIONS.first { it.first == speech }.second,
-                SpeechChoice.OPTIONS.map { (id, label) ->
-                    DropdownItem(label, id == speech,
+            // The Voice note widget: Android's recognizer writes it down, or
+            // None keeps the sound, as a voice memo.
+            fun speechLabel(id: String) = if (id == SpeechChoice.NONE) t("None") else "Android"
+            SettingRow(t("Speech to text"), speechLabel(speech),
+                SpeechChoice.OPTIONS.map { (id, _) ->
+                    DropdownItem(speechLabel(id), id == speech,
                         detail = if (id == SpeechChoice.ANDROID && !androidSpeech) t("Not on this phone") else null) {
                         vm.setSpeech(id)
                     }
+                }, labelWidth)
+            // The Photo note widget: the chosen AI writes the photo out, or None
+            // keeps the photo.
+            fun photoLabel(id: String) = if (id == PhotoChoice.NONE) t("None") else t("AI")
+            SettingRow(t("Photo to text"), photoLabel(photo),
+                PhotoChoice.OPTIONS.map { (id, _) ->
+                    DropdownItem(photoLabel(id), id == photo) { vm.setPhoto(id) }
                 }, labelWidth)
             // Ivory and Sand follow the system's light or dark, the others are always one
             // of them, said on the right of each in the list.

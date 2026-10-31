@@ -36,28 +36,6 @@ F-Droid compares with the signed APK. New versions are found by their tags
    signs it with the APK key. Attach it to the GitHub release under that
    name, with the other files; F-Droid looks for it there.
 
-From the first release with Whisper (after 3.1.2), the phone app builds
-whisper.cpp with the NDK and makes the Whisper model during the build
-([`src/apps/tools/whisper-model.sh`](../../src/apps/tools/whisper-model.sh):
-a pinned download, quantized to 4 bits, checked against a pinned hash; the
-same file on macOS and on Linux). The build entry in the recipe then needs:
-
-```yaml
-    submodules: true
-    sudo:
-      - sdkmanager 'cmake;3.31.6'
-    ndk: 28.2.13676358
-    scandelete:
-      - src/apps/android/whisper.cpp/models
-      - src/apps/android/whisper.cpp/examples/whisper.android.java
-      - src/apps/android/whisper.cpp/bindings
-```
-
-The model is downloaded by Gradle, after F-Droid's scanner has run; say so
-in the merge request. The native libraries are built without paths, build
-ids or git hashes in them, so the Mac and F-Droid's Linux make the same
-ones.
-
 The APK must come from the tag, never from a checkout with local changes:
 F-Droid's build has to match it byte for byte, or F-Droid skips the version.
 Line endings count too: a file checked out with Windows line endings (CRLF)

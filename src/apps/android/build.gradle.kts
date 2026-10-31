@@ -1,6 +1,3 @@
-import javax.inject.Inject
-import org.gradle.process.ExecOperations
-
 plugins {
     id("com.android.application")
     kotlin("android")
@@ -14,20 +11,8 @@ android {
     packaging {
         resources.excludes += setOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*",
             "META-INF/INDEX.LIST")
-        // ggml finds its CPU libraries by listing the app's library folder, so
-        // they are unpacked at install. whisper.cpp also builds Parakeet, unused here.
-        jniLibs {
-            useLegacyPackaging = true
-            excludes += "**/libparakeet.so"
-        }
     }
-    // The Whisper model is read straight from the APK, not inflated first.
-    androidResources { noCompress += "bin" }
-    // whisper.cpp's JFK sample, for WhisperTest.
-    sourceSets.getByName("androidTest").assets.srcDir("whisper.cpp/samples")
     namespace = "com.hubidubitask.mobile"
-    // The NDK that builds whisper.cpp (src/main/cpp); F-Droid must use the same.
-    ndkVersion = "28.2.13676358"
     // Play takes new apps only at its current target level (API 36 from 31 Aug 2026).
     compileSdk = 36
 
@@ -42,18 +27,6 @@ android {
         versionCode = (project.property("hubidubitask.versionCode") as String).toInt()
         versionName = project.property("hubidubitask.version") as String
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // The four the bundled SQLCipher ships, so no phone loses the app.
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64") }
-        // Optimised in debug builds too: whisper.cpp at -O0 takes minutes a sentence.
-        externalNativeBuild { cmake { arguments += listOf("-DCMAKE_BUILD_TYPE=Release", "-DANDROID_STL=c++_shared") } }
-    }
-
-    // whisper.cpp, for voice notes written out on the phone (capture/Whisper.kt).
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.31.6"
-        }
     }
 
     // A release build is signed only where a key is set up, and never from the
@@ -114,32 +87,6 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
-    }
-}
-
-/**
- * The Whisper model the app ships, made by tools/whisper-model.sh (a pinned
- * download, quantized to 4 bits and checked against a pinned hash) into the
- * build folder, never into the sources.
- */
-abstract class WhisperModel : DefaultTask() {
-    @get:InputFile abstract val script: RegularFileProperty
-    @get:OutputDirectory abstract val outputDir: DirectoryProperty
-    @get:Inject abstract val exec: ExecOperations
-
-    @TaskAction fun make() {
-        exec.exec { commandLine("sh", script.get().asFile.path, outputDir.get().asFile.path) }
-    }
-}
-
-val whisperModel = tasks.register<WhisperModel>("whisperModel") {
-    script.set(rootProject.file("tools/whisper-model.sh"))
-    outputDir.set(layout.buildDirectory.dir("generated/whisper"))
-}
-
-androidComponents {
-    onVariants { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(whisperModel, WhisperModel::outputDir)
     }
 }
 

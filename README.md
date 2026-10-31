@@ -34,11 +34,7 @@ writes it then.
 
 ## Build from source
 
-The Gradle build is in `src/apps`. It needs JDK 17 and an Android SDK; the
-phone app also needs the NDK (28.2.13676358) and CMake 3.31.6 from the SDK,
-for whisper.cpp, a git submodule (`git clone --recurse-submodules`). Its
-first build downloads Whisper small (490 MB, checked against a pinned hash)
-and makes the 4-bit model the app ships (`src/apps/tools/whisper-model.sh`).
+The Gradle build is in `src/apps`. It needs JDK 17 and an Android SDK.
 
 ```sh
 cd src/apps
@@ -81,5 +77,4 @@ Copyright (C) 2026 HubidubiPlanner.
 HubidubiTask is free software: you can redistribute it and modify it under
 the terms of the GNU General Public License, version 3 or (at your option)
 any later version. See [`LICENSE`](LICENSE). The IBM Plex Sans fonts it ships
-are under the SIL Open Font License 1.1; whisper.cpp and OpenAI's Whisper
-model, in the phone app, under the MIT License.
+are under the SIL Open Font License 1.1.

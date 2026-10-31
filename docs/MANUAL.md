@@ -61,14 +61,16 @@ computer answers only addresses on the home network.
   app never opens.
 - **Voice note and Photo note on the home screen** (phone): two more widgets,
   an H with a note of music and an H with a picture. **Voice note**: tap,
-  speak, **Stop**, and a text note is saved. It is written down on the phone,
-  and the sound goes nowhere: by Android's own recognizer, the words showing
-  as you speak, or by Whisper, built into the app, after Stop (**Settings →
-  Speech to text**). Where Android can't (no recognizer on the phone, or none
-  yet for the app's language), Whisper does. The AI chosen in Settings then
-  tidies the words: punctuation, a title, words that were misheard; without
-  one they are kept as heard. **Photo note**: tap, take a photo, and the
-  chosen AI writes out the text in it, or describes it.
+  speak, **Stop**, and a text note is saved. Android's own recognizer writes
+  it down on the phone, the words showing as you speak, and the sound goes
+  nowhere. The AI chosen in Settings then tidies the words: punctuation, a
+  title, words that were misheard; without one they are kept as heard. With
+  **Settings → Speech to text → None**, or where Android can't (Android 12
+  or older, no recognizer on the phone, or none yet for the app's language),
+  what you say is kept as a voice memo to play back. **Photo note**: tap,
+  take a photo, and the chosen AI writes out the text in it, or describes
+  it. With **Settings → Photo to text → None**, with no AI set up, or when
+  the AI can't read it, the photo is kept as a photo note.
 - **Nothing asks for a date.** Every new task and note is due tomorrow, so it
   comes back on Incoming the next day; **Settings → Due date for new
   tasks** switches that to **Next week** (seven days on) or **No date**, kept

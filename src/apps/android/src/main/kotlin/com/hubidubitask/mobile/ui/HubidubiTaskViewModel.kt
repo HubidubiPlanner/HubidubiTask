@@ -64,13 +64,22 @@ class HubidubiTaskViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun due(): String? = NewItemDue.due(_newDue.value)
 
-    /** What writes voice notes down ([SpeechChoice]), chosen in Settings. */
+    /** What the Voice note widget does with what is said ([SpeechChoice]), chosen in Settings. */
     private val _speech = MutableStateFlow(SpeechChoice.load(app))
     val speech: StateFlow<String> = _speech.asStateFlow()
 
     fun setSpeech(choice: String) {
         SpeechChoice.save(getApplication(), choice)
         _speech.value = SpeechChoice.load(getApplication())
+    }
+
+    /** What the Photo note widget does with a photo ([PhotoChoice]), chosen in Settings. */
+    private val _photo = MutableStateFlow(PhotoChoice.load(app))
+    val photo: StateFlow<String> = _photo.asStateFlow()
+
+    fun setPhoto(choice: String) {
+        PhotoChoice.save(getApplication(), choice)
+        _photo.value = PhotoChoice.load(getApplication())
     }
 
     /** The colour theme ([ColorTheme]) chosen in Settings. */

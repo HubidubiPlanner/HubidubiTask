@@ -9,10 +9,7 @@ beside them.
 
 1. **Testing › Internal testing**: create a release, upload
    `../1-app-bundle/out/hubidubitask-3.2.0-18.aab`, paste the release notes,
-   add yourself as a tester, install from the opt-in link. From 3.2.0 Play
-   asks for the foreground-service declaration at upload: the answer is in
-   [`5-app-content/`](../5-app-content/README.md) (mediaProcessing, the
-   voice note). Check: the app
+   add yourself as a tester, install from the opt-in link. Check: the app
    opens on Incoming, the + menu, Settings › Language, pairing with the computer, a review with AI,
    adding a feed.
 2. **Testing › Closed testing**, if the account is a new personal one: at

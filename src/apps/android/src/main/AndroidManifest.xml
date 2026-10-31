@@ -9,10 +9,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!-- A voice note is written out by Whisper and saved while the app is in
-         the background (capture/VoiceNoteService): a foreground service. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
     <!-- Photos go through the phone's own camera app, so no camera permission;
          a device with no camera must still install. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -163,11 +159,5 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Writes a voice note out and saves it: media processing on Android 15
-             on, a short service on Android 14. -->
-        <service
-            android:name=".capture.VoiceNoteService"
-            android:exported="false"
-            android:foregroundServiceType="mediaProcessing|shortService" />
     </application>
 </manifest>

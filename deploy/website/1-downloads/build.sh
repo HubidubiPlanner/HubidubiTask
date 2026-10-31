@@ -66,7 +66,7 @@ if $rebuild || [ ! -f "$apk" ]; then
     { echo "!! tag v$version is missing: tag the release first" >&2; exit 1; }
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT
-  git clone -q --no-local --recurse-submodules --branch "v$version" "$repo" "$tmp/src" 2>/dev/null
+  git clone -q --no-local --branch "v$version" "$repo" "$tmp/src" 2>/dev/null
   [ -f "$apps/local.properties" ] && cp "$apps/local.properties" "$tmp/src/src/apps/"
   (cd "$tmp/src/src/apps" && ./gradlew -q -Phubidubitask.androidOnly=true \
     -Phubidubitask.keystore="${HUBIDUBITASK_APK_KEYSTORE:-$HOME/.keystores/hubidubitask-release.jks}" \

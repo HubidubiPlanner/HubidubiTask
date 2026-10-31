@@ -41,7 +41,7 @@ PRIVACY
 • No account, no sign-in, no ads, no analytics, no trackers.
 • We run no servers, so we never receive your data.
 • The source code is public, so anyone can check this.
-• Taking a photo opens your camera app; the microphone is used only while you record a voice memo or say a voice note. A voice note is written down on your phone, by Android or by Whisper built into the app; the sound goes nowhere.
+• Taking a photo opens your camera app; the microphone is used only while you record a voice memo or say a voice note. A voice note is written down on your phone by Android, or kept as a voice memo; the sound goes nowhere.
 
 Six colour themes, all high in contrast. The default, Ivory, follows your system's light and dark mode.
 

@@ -62,15 +62,9 @@ The facts, from the code:
   they configured, a photo from the Photo note widget to that same AI, a
   feed's page check, a one-time import, and a voice note's words (written
   down on the phone) to that same AI to be tidied. A voice note is written
-  down on the phone by the system's speech recognizer in its on-device mode
-  or by Whisper inside the app; the audio goes nowhere.
-- **Foreground service** (Play asks at upload, for apps targeting Android 14+):
-  type **mediaProcessing** (Android 15 on; a short service on Android 14).
-  Use: writing out a voice note the user just recorded with the Voice note
-  widget (speech to text inside the app with Whisper) and saving it, which
-  can take minutes on a slow phone and must not stop when the user leaves the
-  screen. Started only by the user's tap on Stop; shows a notification while
-  it runs and stops when the note is saved.
+  down on the phone by the system's speech recognizer in its on-device mode,
+  the audio going nowhere, or kept on the phone as a voice memo. Settings ›
+  Speech to text and Photo to text can keep both widgets off the AI.
 - The local database is encrypted (SQLCipher, key sealed by the Keystore), and
   `allowBackup="false"`, so nothing goes to Android's cloud backup.
 **Recommended answers**
@@ -92,7 +86,8 @@ transit: yes**; **deletion: yes** (delete in the app, or uninstall). The
 listing then shows a longer list, but it cannot be faulted.
 
 ## Permissions declarations
-None beyond the foreground service above. RECORD_AUDIO is an ordinary
-runtime permission. FOREGROUND_SERVICE_MEDIA_PROCESSING is the voice note's
-service, declared as above (from 3.2.0). WAKE_LOCK and RECEIVE_BOOT_COMPLETED
-come from WorkManager.
+None. RECORD_AUDIO is an ordinary runtime permission. FOREGROUND_SERVICE,
+WAKE_LOCK and RECEIVE_BOOT_COMPLETED come from WorkManager, which declares no
+foreground-service type, so Play's foreground-service declaration does not
+apply. (3.2.0 had a media-processing foreground service for Whisper; Play
+asked for a declaration, and 3.2.1 took Whisper and the service out.)
