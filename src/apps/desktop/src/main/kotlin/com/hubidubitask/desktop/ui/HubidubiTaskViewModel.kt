@@ -221,7 +221,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     }
 
     fun move(id: String, parentId: String?) = io {
-        edit(id) { f -> if (parentId.isNullOrBlank()) f - "parent" else f + ("parent" to parentId) }
+        edit(id) { f -> ProjectTree.moved(f, parentId, store.byType("project")) }
     }
 
     fun setDue(id: String, due: String?) = io {
@@ -238,7 +238,7 @@ class HubidubiTaskViewModel(val store: Store, val server: PeerServer) {
     fun complete(rec: EntityRecord) = io {
         val up = rec.fields["parent"]?.takeIf { it.isNotBlank() }
         ProjectTree.children(rec.id, store.byType("note")).forEach { n ->
-            edit(n.id) { f -> if (up == null) f - "parent" else f + ("parent" to up) }
+            edit(n.id) { f -> ProjectTree.moved(f, up, store.byType("project")) }
         }
         if (rec.type == "inbox_item") store.get(rec.id)?.let { store.put(it.tombstone(nowUtc())) }
         else edit(rec.id) { it + ("done" to "true") }

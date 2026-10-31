@@ -48,7 +48,8 @@ computer answers only addresses on the home network.
 ## Everyday use
 
 - **Incoming**, the first tab and where the app opens: today, this week or this
-  month. A long press marks a task done.
+  month. A long press on an item, late ones too, opens what Projects offers:
+  **Mark done**, **Move to a project**, **Date**, **Review with AI**, **Delete**.
 - **+** on Incoming and on Projects, in the same place: a project, a task, a note,
   a photo, a picture from the gallery, a voice memo or a file. On the computer
   you can also drop a file on the window.

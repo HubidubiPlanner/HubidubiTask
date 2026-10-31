@@ -131,6 +131,24 @@ object ProjectTree {
         return target.type == "project"
     }
 
+    /**
+     * An item's fields once filed under [parentId] (null = no project). A task
+     * also names its project by slug, and [parentOf] reads that slug when there
+     * is no parent, so the slug moves too: otherwise "No project" would leave
+     * the task in the project it was in.
+     */
+    fun moved(fields: Map<String, String?>, parentId: String?,
+              projects: List<EntityRecord>): Map<String, String?> {
+        val out = fields.toMutableMap()
+        if (parentId.isNullOrBlank()) out.remove("parent") else out["parent"] = parentId
+        if (!fields["project"].isNullOrBlank()) {
+            if (parentId.isNullOrBlank()) out["project"] = "inbox"
+            else projects.firstOrNull { it.id == parentId && it.type == "project" }
+                ?.let { out["project"] = slugOf(it.fields["title"] ?: it.id) }
+        }
+        return out
+    }
+
     /** Valid destinations for [id], as (id, label); null means no project. */
     fun moveTargets(id: String, records: List<EntityRecord>): List<Pair<String?, String>> {
         val self = records.firstOrNull { it.id == id }

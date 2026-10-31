@@ -363,7 +363,13 @@ private fun DatePickerFor(
     vm: HubidubiTaskViewModel,
     onDone: () -> Unit,
 ) {
-    val state = rememberDatePickerState()
+    // Opens on the date the item has, so an overdue one shows how late it is
+    // and the month it was in; UTC midnight is what the picker works in.
+    val state = rememberDatePickerState(initialSelectedDateMillis = record.fields["due"]?.let {
+        runCatching {
+            java.time.LocalDate.parse(it).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        }.getOrNull()
+    })
     DatePickerDialog(
         onDismissRequest = onDone,
         confirmButton = {
@@ -389,6 +395,44 @@ private fun DatePickerFor(
             }
         },
     ) { DatePicker(state = state) }
+}
+
+/**
+ * Where an item can go: no project, or any project. The one it is in is
+ * marked and can't be chosen. [records] are the projects and items, as the
+ * Projects view has them.
+ */
+@Composable
+private fun MoveSheet(
+    record: EntityRecord?,
+    records: List<EntityRecord>,
+    vm: HubidubiTaskViewModel,
+    onDismiss: () -> Unit,
+) {
+    record ?: return
+    val c = HubidubiTaskTheme.colors
+    val targets = remember(record.id, records) {
+        ProjectTree.moveTargets(record.id, records.filter { it.id != record.id } + record)
+    }
+    val current = remember(record, records) {
+        val bySlug = records.filter { it.type == "project" }
+            .associate { ProjectTree.slugOf(it.fields["title"] ?: it.id) to it.id }
+        ProjectTree.parentOf(record, bySlug)
+    }
+    AppSheet(onDismiss) {
+        SheetTitle(ReviewBrowse.labelOf(record), overline = t("Move to"))
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            targets.forEachIndexed { i, (id, label) ->
+                val here = id == current
+                ActionRow(Icons.Outlined.Folder, if (id == null) t("No project") else label,
+                    meta = if (here) t("here") else null,
+                    color = c.accent, enabled = !here, last = i == targets.lastIndex) {
+                    vm.move(record.id, id); onDismiss()
+                }
+            }
+        }
+        SecondaryButton(t("Cancel"), onDismiss, Modifier.fillMaxWidth().padding(top = 16.dp))
+    }
 }
 
 /** The small tracked heading inside a sheet or card: REVIEW, AGENT. */
@@ -829,9 +873,16 @@ fun NextScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewModel) 
 
     var addingNoteTo by remember { mutableStateOf<EntityRecord?>(null) }
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
+    // Moved from here as from Projects: an overdue task is often one that
+    // belongs somewhere else, or nowhere.
+    var moving by remember { mutableStateOf<EntityRecord?>(null) }
+    val movable = remember(state.projects, state.nextActions, state.notes, state.inbox) {
+        ProjectTree.records(state.projects, state.nextActions, state.notes, state.inbox)
+    }
+    MoveSheet(moving, movable, vm) { moving = null }
     ItemActionsMenu(
-        record = menuFor, canMove = false, vm = vm,
-        onMove = {}, onReview = { rec -> reviewing = rec },
+        record = menuFor, canMove = menuFor?.type != "project", vm = vm,
+        onMove = { rec -> moving = rec }, onReview = { rec -> reviewing = rec },
         onDelete = { rec -> pendingDelete = rec }, onDismiss = { menuFor = null },
         onAddNote = { rec -> addingNoteTo = rec },
     )
@@ -1373,7 +1424,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
     // tap opens the one being looked for. Only the ones opened are remembered,
     // so a project that arrives later (a sync, a new one) is closed too.
     var expanded by remember { mutableStateOf(setOf<String>()) }
-    var moving by remember { mutableStateOf<ProjectTree.Node?>(null) }
+    var moving by remember { mutableStateOf<EntityRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<EntityRecord?>(null) }
     var menuFor by remember { mutableStateOf<EntityRecord?>(null) }
     var reviewing by remember { mutableStateOf<EntityRecord?>(null) }
@@ -1420,7 +1471,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
     ConfirmDelete(pendingDelete, onDismiss = { pendingDelete = null }) { vm.delete(it) }
     ItemActionsMenu(
         record = menuFor, canMove = menuFor?.type != "project", vm = vm,
-        onMove = { rec -> moving = nodes.firstOrNull { it.id == rec.id } },
+        onMove = { rec -> moving = rec },
         onReview = { rec -> reviewing = rec },
         onDelete = { rec -> pendingDelete = rec },
         onDismiss = { menuFor = null },
@@ -1448,23 +1499,7 @@ fun ProjectsScreen(state: HubidubiTaskViewModel.UiState, vm: HubidubiTaskViewMod
         })
     AnalysisSheet(reviewing, state.inference.connected, vm) { reviewing = null }
 
-    moving?.let { node ->
-        val targets = remember(node.id, records) { ProjectTree.moveTargets(node.id, records) }
-        AppSheet(onDismiss = { moving = null }) {
-            SheetTitle(node.title, overline = t("Move to"))
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                val current = node.record.fields["parent"]
-                targets.forEachIndexed { i, (id, label) ->
-                    val here = id == current || (id == null && current.isNullOrBlank())
-                    ActionRow(Icons.Outlined.Folder, label, meta = if (here) t("here") else null,
-                        color = c.accent, enabled = !here, last = i == targets.lastIndex) {
-                        vm.move(node.id, id); moving = null
-                    }
-                }
-            }
-            SecondaryButton(t("Cancel"), { moving = null }, Modifier.fillMaxWidth().padding(top = 16.dp))
-        }
-    }
+    MoveSheet(moving, records, vm) { moving = null }
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(t("Projects")) {

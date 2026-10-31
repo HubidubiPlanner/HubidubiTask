@@ -245,4 +245,36 @@ class ProjectTreeFreeItemsTest {
         val records = listOf(rec("t2", "next_action", mapOf("text" to "Buy paint", "parent" to "t_gone")))
         assertEquals(listOf("t2"), ProjectTree.build(records).map { it.id })
     }
+
+    @Test
+    fun `moving a task to no project takes it out of its project`() {
+        val garden = rec("p_garden", "project", mapOf("title" to "Garden"))
+        val task = rec("t1", "next_action",
+            mapOf("text" to "Prune roses", "parent" to "p_garden", "project" to "garden"))
+        val moved = task.copy(fields = ProjectTree.moved(task.fields, null, listOf(garden)))
+
+        assertEquals("inbox", moved.fields["project"])
+        assertEquals(null, moved.fields["parent"])
+        assertEquals(listOf("t1"), ProjectTree.build(listOf(garden, moved)).filter { it.isFree }.map { it.id })
+    }
+
+    @Test
+    fun `moving a task to another project moves its slug too`() {
+        val projects = listOf(rec("p_garden", "project", mapOf("title" to "Garden")),
+            rec("p_house", "project", mapOf("title" to "Front House")))
+        val fields = ProjectTree.moved(
+            mapOf("text" to "Prune roses", "parent" to "p_garden", "project" to "garden"), "p_house", projects)
+
+        assertEquals("p_house", fields["parent"])
+        assertEquals("front-house", fields["project"])
+    }
+
+    @Test
+    fun `a note gets no project slug when moved`() {
+        val projects = listOf(rec("p_garden", "project", mapOf("title" to "Garden")))
+        val fields = ProjectTree.moved(mapOf("title" to "Rose types"), "p_garden", projects)
+
+        assertEquals("p_garden", fields["parent"])
+        assertEquals(false, "project" in fields)
+    }
 }

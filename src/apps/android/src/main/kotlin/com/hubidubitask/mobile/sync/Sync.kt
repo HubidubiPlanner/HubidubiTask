@@ -230,8 +230,7 @@ class Sync private constructor(
      *  attachment, so moving something around the tree can never lose content. */
     fun moveTo(id: String, parentId: String?): Boolean {
         val rec = store.get(id) ?: return false
-        val fields = rec.fields.toMutableMap()
-        if (parentId.isNullOrBlank()) fields.remove("parent") else fields["parent"] = parentId
+        val fields = com.hubidubitask.mobile.tree.ProjectTree.moved(rec.fields, parentId, store.byType("project"))
         val updated = rec.copy(updated = com.hubidubitask.core.nowUtc(), fields = fields)
         store.put(updated)
         return true
